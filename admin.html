@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FOH Command, Inventory & Pricing Control</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root { 
+            --dark-bg: #0b1329; 
+            --card-bg: #1c2541; 
+            --accent: #e67e22; 
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --success: #10b981;
+            --border-clr: #334155;
+        }
+        body { 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0; background: var(--dark-bg); color: #f8fafc; display: flex; flex-direction: column; height: 100vh; -webkit-font-smoothing: antialiased;
+        }
+        .top-search-bar { background: #0b0f19; padding: 16px 24px; border-bottom: 1px solid var(--border-clr); display: flex; justify-content: space-between; align-items: center; }
+        .search-input { width: 100%; max-width: 600px; padding: 12px 18px; background: var(--card-bg); border: 1px solid var(--border-clr); color: white; border-radius: 10px; font-size: 15px; font-weight: 600; outline: none; transition: border-color 0.2s; }
+        .search-input:focus { border-color: var(--accent); }
+        .logout-btn { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); color: #fca5a5; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 13px; }
+        .logout-btn:hover { background: var(--danger); color: white; }
+        
+        .workspace-container { display: grid; grid-template-columns: 1fr; flex: 1; overflow-y: auto; }
+        @media (min-width: 1200px) {
+            .workspace-container { grid-template-columns: 1.2fr 1fr 1fr 0.8fr; overflow: hidden; }
+            .pane-main, .pane-inventory, .pane-pricing, .pane-analytics { overflow-y: auto; height: 100%; }
+        }
+        
+        .pane-main { padding: 24px; border-bottom: 1px solid var(--border-clr); }
+        .pane-inventory { padding: 24px; background: #0b0f19; border-bottom: 1px solid var(--border-clr); }
+        .pane-pricing { padding: 24px; background: #070a12; border-bottom: 1px solid var(--border-clr); }
+        .pane-analytics { padding: 24px; background: #090d1a; }
+        
+        @media (min-width: 1200px) {
+            .pane-main { border-right: 1px solid var(--border-clr); border-bottom: none; }
+            .pane-inventory { border-right: 1px solid var(--border-clr); border-bottom: none; }
+            .pane-pricing { border-right: 1px solid var(--border-clr); border-bottom: none; }
+        }
+
+        .header-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .live-indicator { font-size: 11px; font-weight: 700; background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid var(--success); padding: 4px 10px; border-radius: 20px; }
+        .alert-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        .ticket { background: var(--card-bg); border-radius: 14px; padding: 16px; border-top: 6px solid #94a3b8; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); margin-bottom: 12px; }
+        .ticket.urgent { border-color: var(--danger); background: linear-gradient(135deg, var(--card-bg), #2d0f13); }
+        .ticket.bill { border-color: var(--warning); background: linear-gradient(135deg, var(--card-bg), #2a1a08); }
+        .ticket.feedback-alert { border-color: #a855f7; background: linear-gradient(135deg, var(--card-bg), #1e113a); }
+        .ticket-hdr { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: #94a3b8; margin-bottom: 8px; }
+        .ticket-title { margin: 4px 0 8px 0; font-size: 22px; font-weight: 800; }
+        .clear-btn { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid #475569; color: #cbd5e1; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 13px; margin-top: 14px; }
+        .clear-btn:hover { background: var(--success); border-color: var(--success); color: white; }
+        
+        .inv-item { background: var(--card-bg); padding: 16px; border-radius: 12px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; border: 1px solid transparent; position: relative; }
+        .inv-row-top { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px; }
+        .inline-input-text { background: transparent; border: none; border-bottom: 1px dashed var(--border-clr); color: white; padding: 4px 0; font-size: 14px; width: 70%; outline: none; }
+        .inline-input-text:focus { border-bottom-color: var(--accent); }
+        .inline-textarea { background: transparent; border: none; border-bottom: 1px dashed var(--border-clr); color: #cbd5e1; padding: 4px 0; font-size: 12px; width: 100%; outline: none; resize: none; font-family: inherit; }
+        .inline-textarea:focus { border-bottom-color: var(--accent); }
+        
+        .sort-handle-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-clr); color: #94a3b8; border-radius: 4px; padding: 2px 6px; cursor: pointer; font-size: 11px; font-weight: bold; }
+        .sort-handle-btn:hover { background: var(--accent); color: white; }
+
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #475569; transition: .2s; border-radius: 30px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .2s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--danger); }
+        input:checked + .slider:before { transform: translateX(20px); }
+        
+        .price-card { background: var(--card-bg); padding: 16px; border-radius: 12px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
+        .price-row { display: flex; justify-content: space-between; align-items: center; }
+        .price-input { width: 85px; padding: 8px; background: #0f172a; border: 1px solid var(--border-clr); color: white; border-radius: 6px; font-weight: 700; text-align: center; outline: none; }
+        .price-input:focus { border-color: var(--accent); }
+        .promo-price-input { width: 100%; padding: 8px; background: #0f172a; border: 1px solid var(--border-clr); color: #f59e0b; border-radius: 6px; font-weight: 700; font-size: 13px; margin-top: 4px; outline: none; }
+        .promo-price-input:focus { border-color: var(--warning); }
+        .deal-btn { background: #475569; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer; text-transform: uppercase; }
+        .deal-btn.active-deal { background: var(--success); }
+        .trash-btn { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 6px; transition: all 0.2s; }
+        .trash-btn:hover { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+        
+        .qr-wrapper { background: white; padding: 12px; border-radius: 8px; display: inline-block; margin-top: 8px; text-align: center; }
+        .qr-dl-btn { width: 100%; background: var(--info); color: white; border: none; padding: 6px; border-radius: 4px; font-size: 11px; font-weight: bold; margin-top: 6px; cursor: pointer; }
+        
+        .analytics-card { background: #111a36; border: 1px solid var(--border-clr); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+        .analytics-val { font-size: 20px; font-weight: 800; color: var(--accent); margin-top: 4px; }
+        
+        .publishing-spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="admin-app-root" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+        <div style="text-align: center; padding: 40px; color: #94a3b8; font-weight: bold;">⏳ Securing backend configuration handshake...</div>
+    </div>
+
+<script>
+    const MASTER_URL = "https://okrwklulwrfnrhnffbwp.supabase.co";
+    const MASTER_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rcndrbHVsd3JmbnJobmZmYndwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NjUyNzAsImV4cCI6MjA5NzE0MTI3MH0.hyXSxopMDh3nfcrVicgQxkTDKb11ChA8UDBb9h2tMVk";
+    
+    const URL_ROUTING_PARAMS = new URLSearchParams(window.location.search);
+    const clientSlug = URL_ROUTING_PARAMS.get('client') || 'the-bistro';
+
+    let adminChannel = null;
+    let supabaseInstance = null; 
+    let tableMerges = {}; 
+    let trackingCachedMenuItems = [];
+
+    let localAudioSpeechBuffer = [];
+    let isSpeechEngineProcessing = false;
+    const historicalVoiceAntiSpamRegistry = {};
+
+    executeSecurePlatformBootloader();
+
+    async function executeSecurePlatformBootloader() {
+        try {
+            const masterSupabase = supabase.createClient(MASTER_URL, MASTER_KEY);
+            
+            const { data: config, error } = await masterSupabase
+                .from('restaurant_clients')
+                .select('supabase_url, supabase_anon_key')
+                .eq('client_slug', clientSlug)
+                .single();
+
+            if (error || !config) {
+                document.getElementById('admin-app-root').innerHTML = `
+                    <div style="max-width: 440px; margin: 100px auto; padding: 32px; background: var(--card-bg); border: 1px solid var(--danger); border-radius: 12px; text-align: center;">
+                        <h3 style="color: var(--danger); margin-top: 0;">⚠️ Routing Connection Error</h3>
+                        <p style="font-size: 14px; color: #cbd5e1;">The tenant client ID <strong>"${sanitize(clientSlug)}"</strong> could not be verified on this server.</p>
+                    </div>`;
+                return;
+            }
+
+            supabaseInstance = supabase.createClient(config.supabase_url, config.supabase_anon_key);
+            initAdminAuth();
+
+        } catch (err) {
+            console.error("Bootloader system exception:", err);
+        }
+    }
+
+    function sanitize(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    async function compressImage(file, maxWidthPx = 800, qualityLevel = 0.75) {
+        return new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const scale = Math.min(1, maxWidthPx / img.width);
+                    canvas.width = img.width * scale;
+                    canvas.height = img.height * scale;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+                    const quality = outputType === 'image/png' ? undefined : qualityLevel;
+                    
+                    canvas.toBlob(blob => {
+                        resolve(new File([blob], file.name, { type: outputType }));
+                    }, outputType, quality);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function initAdminAuth() {
+        const { data: { session } } = await supabaseInstance.auth.getSession();
+        if (!session) {
+            renderAuthFormWindow();
+            return;
+        }
+        
+        renderMainWorkspaceShellMarkup();
+
+        await syncTableMergesFromCloudDb();
+        await syncServiceTicketsFromCloudDb();
+
+        supabaseInstance.channel('dashboard-realtime-mutations')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'service_tickets' }, (payload) => {
+                if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
+                    const row = payload.new;
+                    let displayTable = tableMerges[row.table_number.toString()] || row.table_number.toString();
+                    triggerHardenedAcousticFeedback(displayTable, row.request_type);
+                }
+                syncServiceTicketsFromCloudDb();
+                refreshLiveAnalyticsMetrics();
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'table_configurations' }, async () => {
+                await syncTableMergesFromCloudDb();
+                syncServiceTicketsFromCloudDb();
+            })
+            .subscribe();
+        
+        loadLiveMenuFromDatabase();
+    }
+
+    function renderMainWorkspaceShellMarkup() {
+        document.getElementById('admin-app-root').innerHTML = `
+            <div class="top-search-bar">
+                <input type="text" class="search-input" id="menuSearch" placeholder="🔍 Type food name to filter controls..." onkeyup="executeDashboardLiveSearch(this.value)">
+                <button class="logout-btn" onclick="executeAdminLogout()">Sign Out</button>
+            </div>
+
+            <div class="workspace-container">
+                <div class="pane-main">
+                    <div class="header-title">
+                        <div><h1 style="margin:0; font-size:20px; font-weight:800;">Floor Activity</h1></div>
+                        <div class="live-indicator">● LIVE</div>
+                    </div>
+                    <div class="alert-grid" id="queue"></div>
+                </div>
+
+                <div class="pane-inventory">
+                    <div style="background: #10172a; padding: 16px; border-radius: 14px; margin-bottom: 24px; border: 1px dashed var(--border-clr);">
+                        <h4 style="margin:0 0 10px 0; font-size:13px; color:var(--warning); text-transform:uppercase;">🔗 Merge Floor Tables</h4>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="mergeSource" placeholder="Move Table" style="width: 45%; padding: 10px; background: var(--dark-bg); border: 1px solid var(--border-clr); color: white; border-radius: 8px; font-weight: 700; text-align: center; outline:none;">
+                            <span style="align-self: center; color: #64748b; font-weight: bold;">➔</span>
+                            <input type="text" id="mergeTarget" placeholder="Into Table" style="width: 45%; padding: 10px; background: var(--dark-bg); border: 1px solid var(--border-clr); color: white; border-radius: 8px; font-weight: 700; text-align: center; outline:none;">
+                        </div>
+                        <button onclick="executeUiTableMerge()" style="width: 100%; background: var(--accent); color: white; border: none; padding: 10px; border-radius: 8px; margin-top: 10px; font-weight: 700; cursor: pointer;">Link Tables Instantly</button>
+                        
+                        <div id="qrGenerationZone" style="margin-top: 14px; border-top: 1px solid var(--border-clr); padding-top: 12px;">
+                            <h4 style="margin:0 0 6px 0; font-size:11px; color:var(--info); text-transform:uppercase;">📱 Get Table QR Code</h4>
+                            <div style="display: flex; gap: 6px;">
+                                <input type="text" id="qrTargetTable" placeholder="Table #" style="width: 40%; padding: 8px; background: var(--dark-bg); border: 1px solid var(--border-clr); color: white; border-radius: 6px; font-weight: 700; text-align: center; outline:none; font-size:13px;">
+                                <button onclick="generateTableQrCodeCanvas()" style="width: 60%; background: var(--info); color: white; border: none; padding: 8px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size:12px;">Generate QR</button>
+                            </div>
+                            <div id="qrContainerWrapper" style="display:none; text-align:center; margin-top:10px;">
+                                <div id="qrCodeTargetArea" class="qr-wrapper"></div>
+                            </div>
+                        </div>
+                        
+                        <div id="activeMergesList" style="margin-top: 10px; font-size: 11px; color: #94a3b8; display: none;">
+                            <strong>Active Links:</strong> <span id="mergesListItems"></span>
+                        </div>
+                    </div>
+
+                    <h3 style="margin:0 0 8px 0; font-size:16px; font-weight:800;">86 / Stock & Sort Ordering</h3>
+                    <div id="dynamicInventoryContainer"></div>
+                </div>
+
+                <div class="pane-pricing">
+                    <div style="background: #0b0f19; padding: 18px; border-radius: 14px; margin-bottom: 24px; border: 1px solid var(--border-clr);">
+                        <h3 style="margin:0 0 4px 0; font-size:15px; font-weight:800; color:var(--accent);">➕ Add New Menu Item</h3>
+                        <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+                            <input type="text" id="newItemName" placeholder="Dish Name" style="padding:10px; background:var(--card-bg); border:1px solid var(--border-clr); color:white; border-radius:8px; outline:none;">
+                            <input type="text" id="newItemPrice" placeholder="Price" style="padding:10px; background:var(--card-bg); border:1px solid var(--border-clr); color:white; border-radius:8px; outline:none;">
+                            <textarea id="newItemDesc" placeholder="Description..." style="padding:10px; background:var(--card-bg); border:1px solid var(--border-clr); color:white; border-radius:8px; height:60px; resize:none; font-family:inherit; outline:none;"></textarea>
+                            
+                            <div style="display:flex; flex-direction:column; gap:4px;">
+                                <label style="font-size:11px; font-weight:700; color:#cbd5e1;">📸 DISH PHOTO</label>
+                                <input type="file" id="newItemFile" accept="image/*" style="padding:10px; background:var(--card-bg); border:1px solid var(--border-clr); color:white; border-radius:8px; font-size:12px; outline:none;">
+                            </div>
+
+                            <div style="display:flex; justify-content:space-between; font-size:12px; background:var(--card-bg); padding:10px; border-radius:8px; border:1px solid var(--border-clr);">
+                                <label><input type="checkbox" id="tagCeliac"> 🌾 Celiac</label>
+                                <label><input type="checkbox" id="tagGF"> 🌱 GF</label>
+                                <label><input type="checkbox" id="tagVeg"> 🥦 Veg</label>
+                            </div>
+                            <button id="publishItemBtn" onclick="createNewDishOnCloud()" style="background:var(--success); color:white; border:none; padding:12px; border-radius:8px; font-weight:700; cursor:pointer;">Publish Live to Menu</button>
+                        </div>
+                    </div>
+                    <h3 style="margin:0 0 4px 0; font-size:16px; font-weight:800;">Menu Adjustments & Deals</h3>
+                    <div id="dynamicPricingContainer"></div>
+                </div>
+
+                <div class="pane-analytics">
+                    <h3 style="margin:0 0 16px 0; font-size:16px; font-weight:800; color:#cbd5e1;">📊 Live Traffic Insights</h3>
+                    <div class="analytics-card">
+                        <div style="font-size:11px; font-weight:bold; color:#94a3b8; text-transform:uppercase;">Menu Sessions Today</div>
+                        <div class="analytics-val" id="metricTotalViews">0</div>
+                    </div>
+                    <div class="analytics-card">
+                        <div style="font-size:11px; font-weight:bold; color:#94a3b8; text-transform:uppercase;">Active Assistance Calls</div>
+                        <div class="analytics-val" id="metricAssistanceCalls" style="color:var(--warning);">0</div>
+                    </div>
+                    <div class="analytics-card">
+                        <div style="font-size:11px; font-weight:bold; color:#94a3b8; text-transform:uppercase;">Top Clicked Item</div>
+                        <div class="analytics-val" id="metricTopItem" style="font-size:14px; font-weight:800; color:var(--info); word-break:break-word;">None</div>
+                    </div>
+                    <button onclick="refreshLiveAnalyticsMetrics()" style="width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--border-clr); color:white; border-radius:6px; padding:8px; font-size:12px; cursor:pointer; font-weight:bold;">🔄 Refresh Metrics</button>
+                </div>
+            </div>`;
+    }
+
+    function renderAuthFormWindow() {
+        const root = document.getElementById('admin-app-root');
+        root.innerHTML = `
+            <div style="max-width: 400px; margin: 120px auto; padding: 32px; background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border-clr); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.4);">
+                <h2 style="margin: 0 0 8px 0; text-align: center; color: white; font-weight:800;">Dashboard Login</h2>
+                <p style="margin: 0 0 24px 0; text-align: center; color: #94a3b8; font-size:13px;">Enter credentials to open FOH metrics</p>
+                <form id="adminAuthForm" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div>
+                        <label style="display:block; margin-bottom: 6px; font-size: 12px; font-weight:700; color:#cbd5e1; text-transform:uppercase;">Email Address</label>
+                        <input type="email" id="authEmail" required style="width: 100%; padding: 12px; background: var(--dark-bg); border: 1px solid var(--border-clr); color: white; border-radius: 8px; box-sizing: border-box; outline:none;">
+                    </div>
+                    <div>
+                        <label style="display:block; margin-bottom: 6px; font-size: 12px; font-weight:700; color:#cbd5e1; text-transform:uppercase;">Password</label>
+                        <input type="password" id="authPassword" required style="width: 100%; padding: 12px; background: var(--dark-bg); border: 1px solid var(--border-clr); color: white; border-radius: 8px; box-sizing: border-box; outline:none;">
+                    </div>
+                    <button type="submit" style="background: var(--accent); color: white; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size:14px; margin-top:8px;">Sign In to Dashboard</button>
+                </form>
+                <div id="authErrorDisplay" style="color: var(--danger); margin-top: 14px; text-align: center; font-size: 13px; font-weight:600;"></div>
+            </div>
+        `;
+        document.getElementById('adminAuthForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            const errDiv = document.getElementById('authErrorDisplay');
+            
+            const { error } = await supabaseInstance.auth.signInWithPassword({ email, password });
+            if (error) {
+                errDiv.innerText = `❌ ${error.message}`;
+            } else {
+                window.location.reload();
+            }
+        });
+    }
+
+    async function executeAdminLogout() {
+        await supabaseInstance.auth.signOut();
+        window.location.reload();
+    }
+
+    async function loadLiveMenuFromDatabase() {
+        if (!supabaseInstance) return;
+        const { data: items, error } = await supabaseInstance.from('menu_items').select('*').order('sort_order', { ascending: true });
+        if (error) return console.error(error);
+        
+        trackingCachedMenuItems = items;
+
+        const inventoryContainer = document.getElementById('dynamicInventoryContainer');
+        const pricingContainer = document.getElementById('dynamicPricingContainer');
+        if (!inventoryContainer || !pricingContainer) return;
+
+        inventoryContainer.innerHTML = '';
+        pricingContainer.innerHTML = '';
+
+        items.forEach((dish, idx) => {
+            const safeName = sanitize(dish.name);
+            const safeDesc = sanitize(dish.description);
+            const isPromoActive = dish.is_promo;
+
+            inventoryContainer.insertAdjacentHTML('beforeend', `
+                <div class="inv-item" id="inv-card-${dish.id}" data-id="${dish.id}" data-search-name="${safeName.toLowerCase()}">
+                    <div class="inv-row-top">
+                        <div style="display:flex; gap:4px; align-items:center;">
+                            <button class="sort-handle-btn" onclick="shiftElementOrderWeights(${idx}, -1)">▲</button>
+                            <button class="sort-handle-btn" onclick="shiftElementOrderWeights(${idx}, 1)">▼</button>
+                        </div>
+                        <input type="text" value="${safeName}" class="inline-input-text" style="width:55%;" onblur="updateDishFieldInline('${dish.id}', 'name', this.value)">
+                        <label class="switch">
+                            <input type="checkbox" ${dish.is_out_of_stock ? 'checked' : ''} onchange="toggleItemStock('${dish.id}', '${safeName}', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <textarea class="inline-textarea" placeholder="No description added" onblur="updateDishFieldInline('${dish.id}', 'description', this.value)">${safeDesc}</textarea>
+                    <div style="display:flex; justify-content:flex-end; width:100%; margin-top:-4px;">
+                        <button class="trash-btn" onclick="deleteDishPermanently('${dish.id}')">🗑️ Delete Dish</button>
+                    </div>
+                </div>
+            `);
+            
+            pricingContainer.insertAdjacentHTML('beforeend', `
+                <div class="price-card" id="price-card-${dish.id}" data-search-name="${safeName.toLowerCase()}">
+                    <div style="font-weight:700; font-size:14px; color:#f8fafc;">${safeName}</div>
+                    <div class="price-row">
+                        <div style="display:flex; flex-direction:column; gap:2px;">
+                            <label style="font-size:10px; color:#94a3b8; font-weight:700;">BASE PRICE</label>
+                            <input type="text" class="price-input" id="price-${dish.id}" value="$${parseFloat(dish.price).toFixed(2)}" onchange="broadcastPriceUpdate('${dish.id}', this.value)">
+                        </div>
+                        <button class="deal-btn ${isPromoActive ? 'active-deal' : ''}" id="deal-${dish.id}" onclick="toggleHappyHour('${dish.id}')">
+                            ${isPromoActive ? '🔥 Promo On' : 'Promo Off'}
+                        </button>
+                    </div>
+                    <div id="promo-field-block-${dish.id}" style="display: ${isPromoActive ? 'block' : 'none'}; border-top:1px dashed var(--border-clr); padding-top:8px;">
+                        <label style="font-size:10px; color: var(--warning); font-weight:700;">PROMO PRICE ($)</label>
+                        <input type="text" class="promo-price-input" id="promo-price-field-${dish.id}" value="${dish.promo_price ? dish.promo_price : ''}" placeholder="e.g. 12.50" onchange="updatePromoPriceValue('${dish.id}', this.value)">
+                    </div>
+                </div>
+            `);
+        });
+        
+        refreshLiveAnalyticsMetrics();
+    }
+
+    async function shiftElementOrderWeights(currentIndex, orientationDirection) {
+        const targetedTargetIndex = currentIndex + orientationDirection;
+        if (targetedTargetIndex < 0 || targetedTargetIndex >= trackingCachedMenuItems.length) return;
+        
+        const holdingBlockValue = trackingCachedMenuItems[currentIndex];
+        trackingCachedMenuItems[currentIndex] = trackingCachedMenuItems[targetedTargetIndex];
+        trackingCachedMenuItems[targetedTargetIndex] = holdingBlockValue;
+        
+        const concurrencyMapPayloads = trackingCachedMenuItems.map((item, index) => {
+            return supabaseInstance
+                .from('menu_items')
+                .update({ sort_order: index })
+                .eq('id', item.id);
+        });
+        
+        try {
+            await Promise.all(concurrencyMapPayloads);
+            loadLiveMenuFromDatabase();
+        } catch(err) {
+            console.error("Sorting concurrency write dropout:", err);
+        }
+    }
+
+    async function refreshLiveAnalyticsMetrics() {
+        if (!supabaseInstance) return;
+        
+        const { count: viewCount } = await supabaseInstance
+            .from('menu_events')
+            .select('*', { count: 'exact', head: true })
+            .eq('event_type', 'menu_view')
+            .eq('client_slug', clientSlug); // FIXED: Filtered explicitly to isolate client workspace metrics
+            
+        const { count: assistanceCount } = await supabaseInstance
+            .from('menu_events')
+            .select('*', { count: 'exact', head: true })
+            .eq('event_type', 'assistance_requested')
+            .eq('client_slug', clientSlug); // FIXED: Filtered explicitly to isolate client workspace metrics
+            
+        const { data: interactionRecords } = await supabaseInstance
+            .from('menu_events')
+            .select('item_id')
+            .not('item_id', 'is', null)
+            .eq('client_slug', clientSlug); // FIXED: Filtered explicitly to isolate client workspace metrics
+
+        let elementClickFrequencies = {};
+        let dominantItemRecord = "None";
+        let topCount = 0;
+        
+        if (interactionRecords && interactionRecords.length > 0) {
+            interactionRecords.forEach(r => {
+                elementClickFrequencies[r.item_id] = (elementClickFrequencies[r.item_id] || 0) + 1;
+                if(elementClickFrequencies[r.item_id] > topCount) {
+                    topCount = elementClickFrequencies[r.item_id];
+                    dominantItemRecord = r.item_id;
+                }
+            });
+        }
+
+        const viewNode = document.getElementById('metricTotalViews');
+        const callNode = document.getElementById('metricAssistanceCalls');
+        const topNode = document.getElementById('metricTopItem');
+
+        if(viewNode) viewNode.innerText = viewCount || 0;
+        if(callNode) callNode.innerText = assistanceCount || 0;
+        
+        if(topNode) {
+            if (dominantItemRecord !== "None") {
+                const matchingDishObj = trackingCachedMenuItems.find(dish => dish.id.toString() === dominantItemRecord.toString());
+                const cleanDisplayName = matchingDishObj ? matchingDishObj.name : `ID: ${dominantItemRecord.substring(0,8)}...`;
+                topNode.innerText = `${cleanDisplayName} (${topCount} taps)`;
+            } else {
+                topNode.innerText = "None";
+            }
+        }
+    }
+
+    async function updateDishFieldInline(itemId, field, value) {
+        if (!supabaseInstance) return;
+        let cleanValue = value.trim();
+        await supabaseInstance.from('menu_items').update({ [field]: cleanValue }).eq('id', itemId);
+    }
+
+    async function deleteDishPermanently(itemId) {
+        if (!confirm("Are you sure you want to delete this dish permanently from the menu?")) return;
+        const { error } = await supabaseInstance.from('menu_items').delete().eq('id', itemId);
+        if (error) return alert("Failed to delete item.");
+        
+        document.getElementById(`inv-card-${itemId}`)?.remove();
+        document.getElementById(`price-card-${itemId}`)?.remove();
+    }
+
+    async function createNewDishOnCloud() {
+        if (!supabaseInstance) return;
+        const name = document.getElementById('newItemName').value.trim();
+        const price = parseFloat(document.getElementById('newItemPrice').value.replace('$', '').trim());
+        const description = document.getElementById('newItemDesc').value.trim();
+        const fileInput = document.getElementById('newItemFile');
+        const publishBtn = document.getElementById('publishItemBtn');
+
+        if(!name || isNaN(price)) return alert("Specify valid values!");
+
+        publishBtn.disabled = true;
+        const originalBtnHtml = publishBtn.innerHTML;
+        publishBtn.innerHTML = `<span class="publishing-spinner"></span> Processing...`;
+
+        try {
+            let finalImageUrl = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400';
+
+            if (fileInput.files.length > 0) {
+                const compressedFile = await compressImage(fileInput.files[0]);
+                const fileExtension = compressedFile.name.split('.').pop();
+                const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExtension}`;
+                
+                const { data: uploadData, error: uploadError } = await supabaseInstance.storage
+                    .from('menu-pictures')
+                    .upload(uniqueFileName, compressedFile, { cacheControl: '3600', upsert: false });
+
+                if (uploadError) throw new Error("Image bucket write handshake failed.");
+
+                const { data: publicUrlData } = supabaseInstance.storage.from('menu-pictures').getPublicUrl(uniqueFileName);
+                finalImageUrl = publicUrlData.publicUrl;
+            }
+
+            let tags = [];
+            if(document.getElementById('tagCeliac').checked) tags.push('celiac');
+            if(document.getElementById('tagGF').checked) tags.push('gf');
+            if(document.getElementById('tagVeg').checked) tags.push('veg');
+
+            const currentSortingTargetOrder = trackingCachedMenuItems.length;
+
+            // FIXED: Injected the required 'client_slug' property parameter to satisfy the schema non-nullable constraint row rules
+            const { error } = await supabaseInstance.from('menu_items').insert([{ 
+                client_slug: clientSlug,
+                name, 
+                price, 
+                description, 
+                tags, 
+                image_url: finalImageUrl, 
+                sort_order: currentSortingTargetOrder 
+            }]);
+            if (error) throw new Error("Database dynamic insertion failed.");
+
+            alert('✅ Dish published live to menu');
+
+            document.getElementById('newItemName').value = '';
+            document.getElementById('newItemPrice').value = '';
+            document.getElementById('newItemDesc').value = '';
+            fileInput.value = '';
+            document.getElementById('tagCeliac').checked = false;
+            document.getElementById('tagGF').checked = false;
+            document.getElementById('tagVeg').checked = false;
+            loadLiveMenuFromDatabase();
+
+        } catch (err) {
+            console.error(err);
+            alert('❌ Failed to publish. Check connection.');
+        } finally {
+            publishBtn.disabled = false;
+            publishBtn.innerHTML = originalBtnHtml;
+        }
+    }
+
+    function executeDashboardLiveSearch(queryString) {
+        const query = queryString.toLowerCase().trim();
+        document.querySelectorAll('.inv-item, .price-card').forEach(el => {
+            const matchName = el.getAttribute('data-search-name') || '';
+            el.style.display = matchName.includes(query) ? (el.classList.contains('inv-item') ? 'flex' : 'block') : 'none';
+        });
+    }
+
+    async function executeUiTableMerge() {
+        if (!supabaseInstance) return;
+        const source = document.getElementById('mergeSource').value.trim().toString();
+        const target = document.getElementById('mergeTarget').value.trim().toString();
+        
+        if (!source || !target) return alert("Fill fields");
+        if (source === target) return alert("Cannot link table to itself");
+        if (tableMerges[target] === source) return alert("Circular table dependency path blocked.");
+
+        try {
+            const { error } = await supabaseInstance
+                .from('table_configurations')
+                .upsert([{ source_table: source, target_table: target }]);
+
+            if (error) throw error;
+
+            document.getElementById('mergeSource').value = '';
+            document.getElementById('mergeTarget').value = '';
+        } catch (err) {
+            alert("Failed to synchronize table links to cluster disk.");
+        }
+    }
+
+    async function syncTableMergesFromCloudDb() {
+        if (!supabaseInstance) return;
+        try {
+            const { data: configs, error } = await supabaseInstance
+                .from('table_configurations')
+                .select('source_table, target_table');
+
+            if (error) throw error;
+
+            tableMerges = {};
+            configs.forEach(row => {
+                tableMerges[row.source_table.toString()] = row.target_table.toString();
+            });
+
+            renderActiveMergesUI();
+        } catch (err) {
+            console.error("Failed structural blueprint sync:", err);
+        }
+    }
+
+    function renderActiveMergesUI() {
+        const listContainer = document.getElementById('activeMergesList');
+        const itemsSpan = document.getElementById('mergesListItems');
+        if (!listContainer || !itemsSpan) return;
+
+        const keys = Object.keys(tableMerges);
+        if(keys.length > 0) {
+            itemsSpan.innerText = keys.map(src => `T${src}➔T${tableMerges[src]}`).join(', ');
+            listContainer.style.display = 'block';
+        } else {
+            listContainer.style.display = 'none';
+        }
+    }
+
+    function generateTableQrCodeCanvas() {
+        const tableNumRaw = document.getElementById('qrTargetTable').value.trim();
+        if (!tableNumRaw) return alert("Specify a table number");
+        
+        const wrapper = document.getElementById('qrContainerWrapper');
+        const targetArea = document.getElementById('qrCodeTargetArea');
+        
+        targetArea.innerHTML = '';
+        wrapper.style.display = 'block';
+        
+        const linkUrl = `https://ting.supportyeti.com/?client=${encodeURIComponent(clientSlug)}&table=${encodeURIComponent(tableNumRaw)}`;
+        
+        const qrcode = new QRCode(targetArea, {
+            text: linkUrl,
+            width: 160,
+            height: 160,
+            colorDark : "#000000",
+            colorLight : "#ffffff"
+        });
+        
+        setTimeout(() => {
+            const canvas = targetArea.querySelector('canvas');
+            if (canvas) {
+                document.getElementById('qrDlBtn')?.remove();
+                const dlBtn = document.createElement('button');
+                dlBtn.id = 'qrDlBtn';
+                dlBtn.className = 'qr-dl-btn';
+                dlBtn.innerText = '📥 Save PNG';
+                dlBtn.onclick = () => {
+                    const a = document.createElement('a');
+                    a.download = `QR_Table_${tableNumRaw}.png`;
+                    a.href = canvas.toDataURL("image/png");
+                    a.click();
+                };
+                targetArea.appendChild(dlBtn);
+            }
+        }, 150);
+    }
+
+    async function syncServiceTicketsFromCloudDb() {
+        const queue = document.getElementById('queue');
+        if (!queue || !supabaseInstance) return;
+
+        try {
+            const { data: tickets, error } = await supabaseInstance
+                .from('service_tickets')
+                .select('*')
+                .eq('status', 'pending')
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+
+            let groupedMap = {};
+            tickets.forEach(ticket => {
+                let srcTableStr = ticket.table_number.toString();
+                let displayTable = tableMerges[srcTableStr] ? tableMerges[srcTableStr] : srcTableStr;
+                let noticeText = tableMerges[srcTableStr] ? ` (Merged T${srcTableStr})` : '';
+
+                let targetKey = `tk-group-table-${displayTable}`;
+                if (!groupedMap[targetKey]) {
+                    groupedMap[targetKey] = {
+                        id: targetKey,
+                        displayTable: displayTable,
+                        ticketIds: [], 
+                        requests: [],
+                        isUrgent: false,
+                        isBill: false,
+                        isFeedback: false
+                    };
+                }
+
+                groupedMap[targetKey].ticketIds.push(ticket.id);
+                groupedMap[targetKey].requests.push(sanitize(ticket.request_type) + noticeText);
+                
+                if (ticket.request_type.includes('Allergy') || ticket.request_type.includes('Celiac')) groupedMap[targetKey].isUrgent = true;
+                if (ticket.request_type.includes('Bill')) groupedMap[targetKey].isBill = true;
+                if (ticket.request_type.includes('FEEDBACK')) groupedMap[targetKey].isFeedback = true;
+            });
+
+            queue.innerHTML = '';
+            Object.keys(groupedMap).forEach(key => {
+                const ticketData = groupedMap[key];
+                let severityClass = ticketData.isUrgent ? 'urgent' : (ticketData.isBill ? 'bill' : (ticketData.isFeedback ? 'feedback-alert' : 'service'));
+                let headerBadgeText = ticketData.isUrgent ? '🚨 ALLERGY CRITICAL' : (ticketData.isBill ? '💵 ACCOUNT SETTLE' : (ticketData.isFeedback ? '💬 FEEDBACK INTERCEPT' : '👋 DISPATCH SERVER'));
+                let compiledLines = ticketData.requests.map(req => `• ${req}`).join('<br>');
+                let idPayloadAttr = JSON.stringify(ticketData.ticketIds);
+
+                queue.insertAdjacentHTML('afterbegin', `
+                    <div class="ticket ${severityClass}" id="${ticketData.id}">
+                        <div>
+                            <div class="ticket-hdr"><span>${headerBadgeText}</span><span>Active</span></div>
+                            <div class="ticket-title">Table ${ticketData.displayTable}</div>
+                            <p class="ticket-desc" style="margin:0; font-size:13px; opacity:0.9; line-height:1.4;">${compiledLines}</p>
+                        </div>
+                        <button class="clear-btn" data-payload='${idPayloadAttr}' onclick="clearUnifiedTicketsGroup(this)">Mark Resolved</button>
+                    </div>
+                `);
+            });
+
+        } catch (err) {
+            console.error("Database connection synchronization error:", err);
+        }
+    }
+
+    async function clearUnifiedTicketsGroup(buttonEl) {
+        if (!supabaseInstance) return;
+        const targetIdsArray = JSON.parse(buttonEl.getAttribute('data-payload'));
+        const parentTicketCard = buttonEl.closest('.ticket');
+        if (parentTicketCard) parentTicketCard.style.opacity = '0.2';
+
+        try {
+            const { error } = await supabaseInstance
+                .from('service_tickets')
+                .update({ status: 'resolved' })
+                .in('id', targetIdsArray);
+
+            if (error) throw error;
+            if (parentTicketCard) parentTicketCard.remove();
+        } catch (err) {
+            alert("Failed to resolve state across the database cluster.");
+            if (parentTicketCard) parentTicketCard.style.opacity = '1';
+        }
+    }
+
+    function triggerHardenedAcousticFeedback(tableNumber, requestText) {
+        const currentTime = Date.now();
+        const spamTrackingKey = `${tableNumber}-${requestText}`;
+
+        if (historicalVoiceAntiSpamRegistry[spamTrackingKey] && 
+            (currentTime - historicalVoiceAntiSpamRegistry[spamTrackingKey] < 180000)) {
+            return; 
+        }
+        historicalVoiceAntiSpamRegistry[spamTrackingKey] = currentTime;
+
+        let priority = "medium";
+        let speechPhrase = "";
+
+        if (requestText.includes('Allergy') || requestText.includes('Celiac')) {
+            priority = "high";
+            speechPhrase = `Alert. Table ${tableNumber} has an urgent allergy question. Repeat. Table ${tableNumber} allergy inquiry.`;
+        } else if (requestText.includes('Bill')) {
+            speechPhrase = `Bill requested at table ${tableNumber}.`;
+        } else if (requestText.includes('Server') || requestText.includes('Assistance')) {
+            speechPhrase = `Table ${tableNumber} requests a server.`;
+        } else {
+            playLowPriorityChime();
+            return;
+        }
+
+        localAudioSpeechBuffer.push({ text: speechPhrase, priority: priority });
+        localAudioSpeechBuffer.sort((a, b) => (b.priority === 'high') - (a.priority === 'high'));
+        processSpeechQueueSequentially();
+    }
+
+    function processSpeechQueueSequentially() {
+        if (isSpeechEngineProcessing || localAudioSpeechBuffer.length === 0) return;
+        if (!('speechSynthesis' in window)) return;
+
+        isSpeechEngineProcessing = true;
+        const currentItem = localAudioSpeechBuffer.shift();
+        const utterance = new SpeechSynthesisUtterance(currentItem.text);
+
+        utterance.rate = currentItem.priority === "high" ? 0.82 : 0.92;
+        utterance.pitch = currentItem.priority === "high" ? 1.05 : 1.0;
+
+        utterance.onend = () => {
+            isSpeechEngineProcessing = false;
+            setTimeout(processSpeechQueueSequentially, 300); 
+        };
+
+        utterance.onerror = () => { isSpeechEngineProcessing = false; };
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function playLowPriorityChime() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); 
+            gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+        } catch(e){}
+    }
+
+    async function toggleItemStock(itemId, dishName, isChecked) {
+        if (!supabaseInstance) return;
+        
+        if (isChecked && !confirm(`Mark "${dishName}" as out of stock? This hides it from customer menus immediately.`)) {
+            loadLiveMenuFromDatabase();
+            return;
+        }
+
+        await supabaseInstance.from('menu_items').update({ is_out_of_stock: isChecked }).eq('id', itemId);
+    }
+
+    async function broadcastPriceUpdate(itemId, targetPrice) {
+        if (!supabaseInstance) return;
+        const cleanPrice = parseFloat(targetPrice.replace('$', '').trim());
+        if(isNaN(cleanPrice)) return alert("Invalid price numeric format");
+
+        await supabaseInstance.from('menu_items').update({ price: cleanPrice }).eq('id', itemId);
+    }
+
+    async function toggleHappyHour(itemId) {
+        if (!supabaseInstance) return;
+        const btn = document.getElementById(`deal-${itemId}`);
+        const nextState = !btn.classList.contains('active-deal');
+        const promoBlock = document.getElementById(`promo-field-block-${itemId}`);
+
+        const { error } = await supabaseInstance.from('menu_items').update({ is_promo: nextState }).eq('id', itemId);
+        if (error) return alert("Sync error");
+
+        btn.classList.toggle('active-deal', nextState);
+        btn.innerText = nextState ? "🔥 Promo On" : "Promo Off";
+        if(promoBlock) promoBlock.style.display = nextState ? 'block' : 'none';
+    }
+
+    async function updatePromoPriceValue(itemId, val) {
+        if (!supabaseInstance) return;
+        const cleanPromoPrice = parseFloat(val.trim());
+        if(isNaN(cleanPromoPrice)) return alert("Please specify a numeric pricing value");
+
+        await supabaseInstance.from('menu_items').update({ promo_price: cleanPromoPrice }).eq('id', itemId);
+    }
+</script>
+</body>
+</html>
