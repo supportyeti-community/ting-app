@@ -546,13 +546,14 @@
 
             const currentSortingTargetOrder = trackingCachedMenuItems.length;
 
-            // FIXED: Removed non-existent client_slug item injection parameters to sync natively with database tables
+            // Scope the new menu item to the active client.
             const { error } = await supabaseInstance.from('menu_items').insert([{ 
                 name, 
                 price, 
                 description, 
                 tags, 
                 image_url: finalImageUrl, 
+                client_slug: clientSlug,
                 sort_order: currentSortingTargetOrder 
             }]);
             if (error) throw new Error("Database dynamic insertion failed.");
