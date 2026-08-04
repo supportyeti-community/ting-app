@@ -184,7 +184,7 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const tableNumber = urlParams.get('table') || 'Unknown';
-    const clientSlug = urlParams.get('client') || 'the-bistro';
+    const clientSlug = urlParams.get('client')?.trim() || null;
 
     let supabaseInstance = null;
     let fallbackReviewUrl = "https://search.google.com";
@@ -200,6 +200,14 @@
     executeSecureClientBootloader();
 
     async function executeSecureClientBootloader() {
+        if (!clientSlug) {
+            document.getElementById('menu-wrapper').innerHTML = `
+                <div style="text-align:center; padding:40px; color:var(--accent); font-weight:700;">
+                    ⚠️ Menu unavailable. Please ask your server for assistance.
+                </div>`;
+            return;
+        }
+
         try {
             const masterSupabase = supabase.createClient(MASTER_URL, MASTER_KEY);
 
@@ -395,15 +403,28 @@
         setTimeout(() => content.style.transform = open ? 'translateY(0)' : 'translateY(100%)', 10);
     }
 
-    async function emitSignalWithRetry(requestType, retries = 3) {
+    function isExpectedServiceTicketDuplicate(error, requestId) {
+        return error?.code === '23505'
+            && typeof error.message === 'string'
+            && error.message.includes('service_tickets_pkey')
+            && typeof error.details === 'string'
+            && error.details.includes(`Key (id)=(${requestId}) already exists.`);
+    }
+
+    async function emitSignalWithRetry(requestType, requestId, retries = 3) {
         if (!supabaseInstance) return false;
         for (let i = 0; i < retries; i++) {
             try {
                 const { error } = await supabaseInstance.from('service_tickets').insert([{
+                    id: requestId,
                     table_number: tableNumber,
-                    request_type: requestType
+                    request_type: requestType,
+                    client_slug: clientSlug
                 }]);
-                if (error) throw error;
+                if (error) {
+                    if (isExpectedServiceTicketDuplicate(error, requestId)) return true;
+                    throw error;
+                }
                 return true;
             } catch (e) {
                 if (i === retries - 1) {
@@ -421,7 +442,8 @@
         const originalHTML = btn.innerHTML;
         btn.innerHTML = `<span>⏳</span> Sending...`;
 
-        const success = await emitSignalWithRetry(reqType);
+        const requestId = crypto.randomUUID();
+        const success = await emitSignalWithRetry(reqType, requestId);
 
         if (!success) {
             document.querySelectorAll('.opt-btn').forEach(b => b.disabled = false);
@@ -462,7 +484,7 @@
         const text = document.getElementById('internalFeedbackText').value.trim();
         toggleModal(false);
         if (text !== "") {
-            await emitSignalWithRetry(`⚠️ FEEDBACK INTERCEPT: "${text}"`);
+            await emitSignalWithRetry(`⚠️ FEEDBACK INTERCEPT: "${text}"`, crypto.randomUUID());
         }
     }
 
