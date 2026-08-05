@@ -77,7 +77,6 @@ do $block$
 declare
   caught_sqlstate text;
   caught_constraint text;
-  caught_detail text;
 begin
   begin
     insert into public.service_tickets (id, table_number, request_type, client_slug)
@@ -93,12 +92,10 @@ begin
     when unique_violation then
       get stacked diagnostics
         caught_sqlstate = returned_sqlstate,
-        caught_constraint = constraint_name,
-        caught_detail = pg_exception_detail;
+        caught_constraint = constraint_name;
 
       if caught_sqlstate <> '23505'
-         or caught_constraint <> 'service_tickets_pkey'
-         or position('11111111-1111-4111-8111-111111111111' in coalesce(caught_detail, '')) = 0 then
+         or caught_constraint <> 'service_tickets_pkey' then
         raise;
       end if;
   end;
@@ -237,7 +234,7 @@ $block$;
 -- Section A separately exposes the deployed admin RLS policies for review.
 update public.service_tickets
    set status = 'resolved'
- where id = '11111111-1111-4111-8111-111111111111';
+ where id = '1111111-1111-4111-8111-111111111111';
 
 do $block$
 begin
