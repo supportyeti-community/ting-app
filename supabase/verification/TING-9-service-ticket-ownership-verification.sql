@@ -234,7 +234,7 @@ $block$;
 -- Section A separately exposes the deployed admin RLS policies for review.
 update public.service_tickets
    set status = 'resolved'
- where id = '1111111-1111-4111-8111-111111111111';
+ where id = '11111111-1111-4111-8111-111111111111';
 
 do $block$
 begin
