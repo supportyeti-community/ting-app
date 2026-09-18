@@ -25,12 +25,19 @@ export async function rehearseHistory(db,report,command,workdir) {
   mkdirSync(directory,{recursive:true});
   // verify() already checked the CLI-generated loopback endpoint and exact
   // restored catalogue. This callback cannot be invoked with a cloud URL.
-  assert.equal((await db.query('select count(*)::int as n from supabase_migrations.schema_migrations')).rows[0].n,0,'Local history must be empty');
+  const hasHistory = (await db.query("select to_regclass('supabase_migrations.schema_migrations') as object")).rows[0].object;
+  if(hasHistory) assert.equal((await db.query('select count(*)::int as n from supabase_migrations.schema_migrations')).rows[0].n,0,'Local history must be empty');
+  for(const row of files) writeFileSync(join(directory,row.filename),row.sql);
+  // Let the pinned CLI create its own history schema on the fresh local stack.
+  // This repair is ONLY for the already catalogue-verified disposable restore.
+  command(['migration','repair',...files.map(r=>r.version),'--local','--status','applied']);
   await db.query('BEGIN');
   try {
     for(const row of files) {
-      await db.query('insert into supabase_migrations.schema_migrations(version,name,statements) values ($1,$2,$3)',[row.version,row.name,[row.sql]]);
-      writeFileSync(join(directory,row.filename),row.sql);
+      // CLI parsing may split SQL strings. Preserve the original ledger's exact
+      // statement-array representation so fingerprint comparisons stay valid.
+      const restored = await db.query('update supabase_migrations.schema_migrations set name=$2,statements=$3 where version=$1',[row.version,row.name,[row.sql]]);
+      assert.equal(restored.rowCount,1,'CLI did not initialize expected history version');
     }
     await db.query('COMMIT');
   } catch(e) { await db.query('ROLLBACK'); throw e; }
