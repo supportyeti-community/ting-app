@@ -51,6 +51,10 @@ renderer using the source array; object content is otherwise compared exactly.
 The recorded test used PostgreSQL 17.5 (PGlite 0.3.14); production is 17.6.
 This is meaningful schema replay evidence, **not** a full Supabase stack test.
 
+A separate [native service rehearsal](native/README.md) and GitHub Actions
+workflow now provide the full-stack test harness. Its execution result must be
+checked separately; the recorded `verification.json` above remains PGlite-only.
+
 ## Empty Supabase-compatible target bootstrap
 
 Only use a disposable target with managed Auth/Storage schemas already present,
