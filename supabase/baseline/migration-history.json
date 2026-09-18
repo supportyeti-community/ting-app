@@ -1,0 +1,47 @@
+[
+  {
+    "name": "ting_secure_tenant_foundation",
+    "statements_md5": "5021f413cb52f49f68f542637999d34a",
+    "version": "20260731143616"
+  },
+  {
+    "name": "ting_harden_security_definer_functions",
+    "statements_md5": "0748ebd97be38bbef6eddab636d61453",
+    "version": "20260801163330"
+  },
+  {
+    "name": "ting_seed_internal_demo_tenant_v3",
+    "statements_md5": "fe252a9079813d8216265cc4e6a3b96c",
+    "version": "20260801174026"
+  },
+  {
+    "name": "ting_backfill_internal_demo_history",
+    "statements_md5": "df174a7a0b322bfbce81baca5408c161",
+    "version": "20260801181205"
+  },
+  {
+    "name": "ting_remove_internal_demo_slug_defaults",
+    "statements_md5": "b0e0a2e5e6222922fc75942a0016f6fc",
+    "version": "20260803090652"
+  },
+  {
+    "name": "ting9_service_ticket_ownership_expansion",
+    "statements_md5": "d5d6d31b2099aa3e3071daa867a94058",
+    "version": "20260803120714"
+  },
+  {
+    "name": "ting9_service_ticket_ownership_enforcement",
+    "statements_md5": "ecc9268cddaf23aeba102be44e43bfaf",
+    "version": "20260805041650"
+  },
+  {
+    "name": "ting9_rollback_enforcement_after_upsert_rls_regression",
+    "statements_md5": "9c6c00a08b27281e705ad51e01148617",
+    "version": "20260805041932"
+  },
+  {
+    "name": "ting9_reapply_enforcement_after_deployed_writer_confirmation",
+    "statements_md5": "85e386a503794fd52dbb65530c72e7f3",
+    "version": "20260805042037"
+  }
+]

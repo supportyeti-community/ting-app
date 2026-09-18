@@ -1,0 +1,8 @@
+{
+  "name": "ting-baseline-verification",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": { "test": "node verify-replay.mjs" },
+  "devDependencies": { "@electric-sql/pglite": "0.3.14" }
+}
