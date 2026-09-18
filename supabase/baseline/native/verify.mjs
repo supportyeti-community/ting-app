@@ -81,9 +81,14 @@ export async function verify(status, report) {
     const ticketId = randomUUID();
     let receive;
     const delivery = new Promise(resolve => { receive=resolve; });
-    const channel = admin.channel('restore-tickets').on('postgres_changes',{event:'INSERT',schema:'public',table:'service_tickets'}, payload => { if(payload.new.id === ticketId) receive(payload.new); });
+    // A channel join alone can precede database-stream startup. Wait for the
+    // server's postgres_changes confirmation before producing the test event.
+    report.realtime_system_events = [];
+    const channel = admin.channel('restore-tickets', {config:{postgres_changes_options:{wait:true,timeout:20000}}})
+      .on('system', {}, payload => { report.realtime_system_events.push({extension:payload.extension,status:payload.status}); })
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'service_tickets'}, payload => { if(payload.new.id === ticketId) receive(payload.new); });
     await new Promise((resolve,reject) => {
-      const timer = setTimeout(() => reject(new Error('Realtime subscription timeout')),20000);
+      const timer = setTimeout(() => reject(new Error('Realtime subscription timeout')),25000);
       channel.subscribe(state => {
         if(state === 'SUBSCRIBED') { clearTimeout(timer); resolve(); }
         else if(state === 'CHANNEL_ERROR' || state === 'TIMED_OUT') { clearTimeout(timer); reject(new Error('Realtime subscription failed')); }
