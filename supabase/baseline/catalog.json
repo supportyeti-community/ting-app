@@ -1,0 +1,1708 @@
+{
+  "buckets": [
+    {
+      "allowed_mime_types": [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+      ],
+      "file_size_limit": 1048576,
+      "id": "menu-pictures",
+      "name": "menu-pictures",
+      "public": true
+    }
+  ],
+  "captured_at": "2026-09-17T11:38:29.737134+00:00",
+  "constraints": [
+    {
+      "definition": "CHECK (client_slug ~ '^[A-Za-z0-9_-]{1,80}$'::text)",
+      "name": "menu_events_client_slug_clean",
+      "schema": "public",
+      "table": "menu_events",
+      "type": "c"
+    },
+    {
+      "definition": "CHECK (event_type = ANY (ARRAY['menu_view'::text, 'item_viewed'::text, 'filter_used'::text, 'assistance_requested'::text]))",
+      "name": "menu_events_known_event_type",
+      "schema": "public",
+      "table": "menu_events",
+      "type": "c"
+    },
+    {
+      "definition": "CHECK (metadata IS NULL OR jsonb_typeof(metadata) = 'object'::text)",
+      "name": "menu_events_metadata_object",
+      "schema": "public",
+      "table": "menu_events",
+      "type": "c"
+    },
+    {
+      "definition": "CHECK (price >= 0::numeric)",
+      "name": "menu_items_price_nonnegative",
+      "schema": "public",
+      "table": "menu_items",
+      "type": "c"
+    },
+    {
+      "definition": "CHECK (promo_price IS NULL OR promo_price >= 0::numeric)",
+      "name": "menu_items_promo_price_nonnegative",
+      "schema": "public",
+      "table": "menu_items",
+      "type": "c"
+    },
+    {
+      "definition": "CHECK (length(TRIM(BOTH FROM request_type)) >= 1 AND length(TRIM(BOTH FROM request_type)) <= 500)",
+      "name": "service_tickets_request_type_length",
+      "schema": "public",
+      "table": "service_tickets",
+      "type": "c"
+    },
+    {
+      "definition": "CHECK (status = ANY (ARRAY['pending'::text, 'resolved'::text]))",
+      "name": "service_tickets_status_check",
+      "schema": "public",
+      "table": "service_tickets",
+      "type": "c"
+    },
+    {
+      "definition": "CHECK (table_number ~ '^[A-Za-z0-9 _-]{1,20}$'::text)",
+      "name": "service_tickets_table_number_clean",
+      "schema": "public",
+      "table": "service_tickets",
+      "type": "c"
+    },
+    {
+      "definition": "CHECK (source_table <> target_table)",
+      "name": "table_configurations_no_self_merge",
+      "schema": "public",
+      "table": "table_configurations",
+      "type": "c"
+    },
+    {
+      "definition": "CHECK (source_table ~ '^[A-Za-z0-9 _-]{1,20}$'::text)",
+      "name": "table_configurations_source_clean",
+      "schema": "public",
+      "table": "table_configurations",
+      "type": "c"
+    },
+    {
+      "definition": "CHECK (target_table ~ '^[A-Za-z0-9 _-]{1,20}$'::text)",
+      "name": "table_configurations_target_clean",
+      "schema": "public",
+      "table": "table_configurations",
+      "type": "c"
+    },
+    {
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+      "name": "admin_users_user_id_fkey",
+      "schema": "public",
+      "table": "admin_users",
+      "type": "f"
+    },
+    {
+      "definition": "FOREIGN KEY (item_id) REFERENCES menu_items(id) ON DELETE SET NULL",
+      "name": "menu_events_item_id_fkey",
+      "schema": "public",
+      "table": "menu_events",
+      "type": "f"
+    },
+    {
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id)",
+      "name": "menu_events_tenant_id_fkey",
+      "schema": "public",
+      "table": "menu_events",
+      "type": "f"
+    },
+    {
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id)",
+      "name": "menu_items_tenant_id_fkey",
+      "schema": "public",
+      "table": "menu_items",
+      "type": "f"
+    },
+    {
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id)",
+      "name": "restaurant_settings_tenant_id_fkey",
+      "schema": "public",
+      "table": "restaurant_settings",
+      "type": "f"
+    },
+    {
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id)",
+      "name": "service_tickets_tenant_id_fkey",
+      "schema": "public",
+      "table": "service_tickets",
+      "type": "f"
+    },
+    {
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id)",
+      "name": "table_configurations_tenant_id_fkey",
+      "schema": "public",
+      "table": "table_configurations",
+      "type": "f"
+    },
+    {
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE",
+      "name": "tenant_memberships_tenant_id_fkey",
+      "schema": "public",
+      "table": "tenant_memberships",
+      "type": "f"
+    },
+    {
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+      "name": "tenant_memberships_user_id_fkey",
+      "schema": "public",
+      "table": "tenant_memberships",
+      "type": "f"
+    },
+    {
+      "definition": "PRIMARY KEY (user_id)",
+      "name": "admin_users_pkey",
+      "schema": "public",
+      "table": "admin_users",
+      "type": "p"
+    },
+    {
+      "definition": "PRIMARY KEY (id)",
+      "name": "menu_events_pkey",
+      "schema": "public",
+      "table": "menu_events",
+      "type": "p"
+    },
+    {
+      "definition": "PRIMARY KEY (id)",
+      "name": "menu_items_pkey",
+      "schema": "public",
+      "table": "menu_items",
+      "type": "p"
+    },
+    {
+      "definition": "PRIMARY KEY (id)",
+      "name": "restaurant_clients_pkey",
+      "schema": "public",
+      "table": "restaurant_clients",
+      "type": "p"
+    },
+    {
+      "definition": "PRIMARY KEY (id)",
+      "name": "restaurant_settings_pkey",
+      "schema": "public",
+      "table": "restaurant_settings",
+      "type": "p"
+    },
+    {
+      "definition": "PRIMARY KEY (id)",
+      "name": "service_tickets_pkey",
+      "schema": "public",
+      "table": "service_tickets",
+      "type": "p"
+    },
+    {
+      "definition": "PRIMARY KEY (source_table, target_table)",
+      "name": "table_configurations_pkey",
+      "schema": "public",
+      "table": "table_configurations",
+      "type": "p"
+    },
+    {
+      "definition": "PRIMARY KEY (id)",
+      "name": "tenant_memberships_pkey",
+      "schema": "public",
+      "table": "tenant_memberships",
+      "type": "p"
+    },
+    {
+      "definition": "PRIMARY KEY (id)",
+      "name": "tenants_pkey",
+      "schema": "public",
+      "table": "tenants",
+      "type": "p"
+    },
+    {
+      "definition": "UNIQUE (client_slug)",
+      "name": "restaurant_clients_client_slug_key",
+      "schema": "public",
+      "table": "restaurant_clients",
+      "type": "u"
+    },
+    {
+      "definition": "UNIQUE (tenant_id, user_id)",
+      "name": "tenant_memberships_tenant_user_key",
+      "schema": "public",
+      "table": "tenant_memberships",
+      "type": "u"
+    },
+    {
+      "definition": "UNIQUE (client_slug)",
+      "name": "tenants_client_slug_key",
+      "schema": "public",
+      "table": "tenants",
+      "type": "u"
+    }
+  ],
+  "custom_types": null,
+  "default_acls": [
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "owner": "postgres",
+      "schema": "public",
+      "type": "r"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "owner": "postgres",
+      "schema": "public",
+      "type": "f"
+    },
+    {
+      "acl": [
+        "postgres=rwU/postgres",
+        "anon=rwU/postgres",
+        "authenticated=rwU/postgres",
+        "service_role=rwU/postgres"
+      ],
+      "owner": "postgres",
+      "schema": "public",
+      "type": "S"
+    },
+    {
+      "acl": [
+        "postgres=rwU/supabase_admin",
+        "anon=rwU/supabase_admin",
+        "authenticated=rwU/supabase_admin",
+        "service_role=rwU/supabase_admin"
+      ],
+      "owner": "supabase_admin",
+      "schema": "public",
+      "type": "S"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/supabase_admin",
+        "anon=arwdDxtm/supabase_admin",
+        "authenticated=arwdDxtm/supabase_admin",
+        "service_role=arwdDxtm/supabase_admin"
+      ],
+      "owner": "supabase_admin",
+      "schema": "public",
+      "type": "r"
+    },
+    {
+      "acl": [
+        "postgres=X/supabase_admin",
+        "anon=X/supabase_admin",
+        "authenticated=X/supabase_admin",
+        "service_role=X/supabase_admin"
+      ],
+      "owner": "supabase_admin",
+      "schema": "public",
+      "type": "f"
+    }
+  ],
+  "event_triggers": [
+    {
+      "enabled": "O",
+      "event": "ddl_command_end",
+      "function": "ting_private.rls_auto_enable",
+      "name": "ensure_rls",
+      "owner": "postgres",
+      "tags": [
+        "CREATE TABLE",
+        "CREATE TABLE AS",
+        "SELECT INTO"
+      ]
+    }
+  ],
+  "extensions": [
+    {
+      "name": "plpgsql",
+      "schema": "pg_catalog",
+      "version": "1.0"
+    },
+    {
+      "name": "pg_stat_statements",
+      "schema": "extensions",
+      "version": "1.11"
+    },
+    {
+      "name": "uuid-ossp",
+      "schema": "extensions",
+      "version": "1.1"
+    },
+    {
+      "name": "pgcrypto",
+      "schema": "extensions",
+      "version": "1.3"
+    },
+    {
+      "name": "supabase_vault",
+      "schema": "vault",
+      "version": "0.3.1"
+    }
+  ],
+  "functions": [
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION public.is_admin()\n RETURNS boolean\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF auth.uid() IS NULL THEN RETURN false; END IF;\n  RETURN EXISTS (SELECT 1 FROM public.admin_users WHERE public.admin_users.user_id=auth.uid());\nEND\n$function$\n",
+      "identity_args": "",
+      "name": "is_admin",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION public.sanitize_text()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nBEGIN\r\n    IF TG_TABLE_NAME = 'menu_items' THEN\r\n        IF NEW.name IS NOT NULL THEN\r\n            NEW.name := regexp_replace(NEW.name, '<[^>]*>', '', 'g');\r\n        END IF;\r\n\r\n        IF NEW.description IS NOT NULL THEN\r\n            NEW.description := regexp_replace(NEW.description, '<[^>]*>', '', 'g');\r\n        END IF;\r\n\r\n        IF NEW.image_url IS NOT NULL AND NEW.image_url !~* '^https?://' THEN\r\n            NEW.image_url := NULL;\r\n        END IF;\r\n    END IF;\r\n\r\n    IF TG_TABLE_NAME = 'restaurant_settings' THEN\r\n        IF NEW.restaurant_name IS NOT NULL THEN\r\n            NEW.restaurant_name := regexp_replace(NEW.restaurant_name, '<[^>]*>', '', 'g');\r\n        END IF;\r\n\r\n        IF NEW.logo_url IS NOT NULL AND NEW.logo_url !~* '^https?://' THEN\r\n            NEW.logo_url := NULL;\r\n        END IF;\r\n    END IF;\r\n\r\n    IF TG_TABLE_NAME = 'service_tickets' THEN\r\n        IF NEW.request_type IS NOT NULL THEN\r\n            NEW.request_type := regexp_replace(NEW.request_type, '<[^>]*>', '', 'g');\r\n        END IF;\r\n    END IF;\r\n\r\n    RETURN NEW;\r\nEND;\r\n$function$\n",
+      "identity_args": "",
+      "name": "sanitize_text",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.assign_service_ticket_tenant()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  resolved_tenant_id uuid;\nbegin\n  if tg_table_schema <> 'public'\n     or tg_table_name <> 'service_tickets'\n     or tg_when <> 'BEFORE'\n     or tg_level <> 'ROW'\n     or tg_op not in ('INSERT', 'UPDATE') then\n    raise exception 'assign_service_ticket_tenant may only run as the approved public.service_tickets row trigger'\n      using errcode = '42501';\n  end if;\n\n  if tg_op = 'UPDATE' then\n    if new.client_slug is distinct from old.client_slug\n       or new.tenant_id is distinct from old.tenant_id then\n      raise exception 'service ticket ownership cannot be changed after creation'\n        using errcode = '23514';\n    end if;\n    return new;\n  end if;\n\n  -- Compatibility window: the deployed legacy customer page sends neither field.\n  if new.client_slug is null then\n    if new.tenant_id is not null then\n      raise exception 'tenant_id requires client_slug for canonical verification'\n        using errcode = '23514';\n    end if;\n    return new;\n  end if;\n\n  select tenant.id\n    into resolved_tenant_id\n    from public.tenants as tenant\n   where tenant.client_slug = new.client_slug;\n\n  if resolved_tenant_id is null then\n    raise exception 'unknown client_slug'\n      using errcode = '23514';\n  end if;\n\n  if new.tenant_id is not null and new.tenant_id <> resolved_tenant_id then\n    raise exception 'tenant_id does not match client_slug'\n      using errcode = '23514';\n  end if;\n\n  new.tenant_id := resolved_tenant_id;\n  return new;\nend;\n$function$\n",
+      "identity_args": "",
+      "name": "assign_service_ticket_tenant",
+      "owner": "postgres",
+      "schema": "ting_private"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.assign_tenant_id_from_client_slug()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n    resolved_tenant_id UUID;\nBEGIN\n    IF TG_OP <> 'INSERT'\n       OR TG_TABLE_SCHEMA <> 'public'\n       OR TG_TABLE_NAME NOT IN ('menu_items', 'menu_events') THEN\n        RAISE EXCEPTION\n            'assign_tenant_id_from_client_slug may only run for approved INSERT triggers';\n    END IF;\n\n    IF NEW.client_slug IS NULL THEN\n        RETURN NEW;\n    END IF;\n\n    SELECT tenant.id\n    INTO resolved_tenant_id\n    FROM public.tenants AS tenant\n    WHERE tenant.client_slug = NEW.client_slug;\n\n    IF NEW.tenant_id IS NULL THEN\n        NEW.tenant_id := resolved_tenant_id;\n\n    ELSIF resolved_tenant_id IS NULL\n          OR NEW.tenant_id <> resolved_tenant_id THEN\n        RAISE EXCEPTION\n            'tenant_id does not match client_slug'\n            USING ERRCODE = '23514';\n    END IF;\n\n    RETURN NEW;\nEND;\n$function$\n",
+      "identity_args": "",
+      "name": "assign_tenant_id_from_client_slug",
+      "owner": "postgres",
+      "schema": "ting_private"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.rls_auto_enable()\n RETURNS event_trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog'\nAS $function$\nDECLARE cmd record;\nBEGIN\n  FOR cmd IN SELECT * FROM pg_event_trigger_ddl_commands() WHERE command_tag IN ('CREATE TABLE','CREATE TABLE AS','SELECT INTO') AND object_type IN ('table','partitioned table')\n  LOOP\n    IF cmd.schema_name IS NOT NULL AND cmd.schema_name IN ('public') AND cmd.schema_name NOT IN ('pg_catalog','information_schema') AND cmd.schema_name NOT LIKE 'pg_toast%' AND cmd.schema_name NOT LIKE 'pg_temp%' THEN\n      BEGIN\n        EXECUTE format('alter table if exists %s enable row level security',cmd.object_identity);\n        RAISE LOG 'rls_auto_enable: enabled RLS on %',cmd.object_identity;\n      EXCEPTION WHEN OTHERS THEN\n        RAISE LOG 'rls_auto_enable: failed to enable RLS on %',cmd.object_identity;\n      END;\n    ELSE\n      RAISE LOG 'rls_auto_enable: skip % (schema: %)',cmd.object_identity,cmd.schema_name;\n    END IF;\n  END LOOP;\nEND\n$function$\n",
+      "identity_args": "",
+      "name": "rls_auto_enable",
+      "owner": "postgres",
+      "schema": "ting_private"
+    }
+  ],
+  "indexes": [
+    {
+      "constraint_backed": true,
+      "definition": "CREATE UNIQUE INDEX admin_users_pkey ON public.admin_users USING btree (user_id)",
+      "name": "admin_users_pkey",
+      "schema": "public",
+      "table": "admin_users"
+    },
+    {
+      "constraint_backed": false,
+      "definition": "CREATE INDEX idx_master_clients_slug ON public.restaurant_clients USING btree (client_slug)",
+      "name": "idx_master_clients_slug",
+      "schema": "public",
+      "table": "restaurant_clients"
+    },
+    {
+      "constraint_backed": false,
+      "definition": "CREATE INDEX idx_menu_events_metrics ON public.menu_events USING btree (client_slug, event_type)",
+      "name": "idx_menu_events_metrics",
+      "schema": "public",
+      "table": "menu_events"
+    },
+    {
+      "constraint_backed": false,
+      "definition": "CREATE INDEX idx_menu_sort ON public.menu_items USING btree (sort_order)",
+      "name": "idx_menu_sort",
+      "schema": "public",
+      "table": "menu_items"
+    },
+    {
+      "constraint_backed": false,
+      "definition": "CREATE INDEX idx_tickets_pending ON public.service_tickets USING btree (status) WHERE (status = 'pending'::text)",
+      "name": "idx_tickets_pending",
+      "schema": "public",
+      "table": "service_tickets"
+    },
+    {
+      "constraint_backed": true,
+      "definition": "CREATE UNIQUE INDEX menu_events_pkey ON public.menu_events USING btree (id)",
+      "name": "menu_events_pkey",
+      "schema": "public",
+      "table": "menu_events"
+    },
+    {
+      "constraint_backed": false,
+      "definition": "CREATE INDEX menu_events_tenant_id_idx ON public.menu_events USING btree (tenant_id)",
+      "name": "menu_events_tenant_id_idx",
+      "schema": "public",
+      "table": "menu_events"
+    },
+    {
+      "constraint_backed": true,
+      "definition": "CREATE UNIQUE INDEX menu_items_pkey ON public.menu_items USING btree (id)",
+      "name": "menu_items_pkey",
+      "schema": "public",
+      "table": "menu_items"
+    },
+    {
+      "constraint_backed": false,
+      "definition": "CREATE INDEX menu_items_tenant_id_idx ON public.menu_items USING btree (tenant_id)",
+      "name": "menu_items_tenant_id_idx",
+      "schema": "public",
+      "table": "menu_items"
+    },
+    {
+      "constraint_backed": true,
+      "definition": "CREATE UNIQUE INDEX restaurant_clients_client_slug_key ON public.restaurant_clients USING btree (client_slug)",
+      "name": "restaurant_clients_client_slug_key",
+      "schema": "public",
+      "table": "restaurant_clients"
+    },
+    {
+      "constraint_backed": true,
+      "definition": "CREATE UNIQUE INDEX restaurant_clients_pkey ON public.restaurant_clients USING btree (id)",
+      "name": "restaurant_clients_pkey",
+      "schema": "public",
+      "table": "restaurant_clients"
+    },
+    {
+      "constraint_backed": true,
+      "definition": "CREATE UNIQUE INDEX restaurant_settings_pkey ON public.restaurant_settings USING btree (id)",
+      "name": "restaurant_settings_pkey",
+      "schema": "public",
+      "table": "restaurant_settings"
+    },
+    {
+      "constraint_backed": false,
+      "definition": "CREATE INDEX restaurant_settings_tenant_id_idx ON public.restaurant_settings USING btree (tenant_id)",
+      "name": "restaurant_settings_tenant_id_idx",
+      "schema": "public",
+      "table": "restaurant_settings"
+    },
+    {
+      "constraint_backed": true,
+      "definition": "CREATE UNIQUE INDEX service_tickets_pkey ON public.service_tickets USING btree (id)",
+      "name": "service_tickets_pkey",
+      "schema": "public",
+      "table": "service_tickets"
+    },
+    {
+      "constraint_backed": false,
+      "definition": "CREATE INDEX service_tickets_tenant_id_idx ON public.service_tickets USING btree (tenant_id)",
+      "name": "service_tickets_tenant_id_idx",
+      "schema": "public",
+      "table": "service_tickets"
+    },
+    {
+      "constraint_backed": true,
+      "definition": "CREATE UNIQUE INDEX table_configurations_pkey ON public.table_configurations USING btree (source_table, target_table)",
+      "name": "table_configurations_pkey",
+      "schema": "public",
+      "table": "table_configurations"
+    },
+    {
+      "constraint_backed": false,
+      "definition": "CREATE INDEX table_configurations_tenant_id_idx ON public.table_configurations USING btree (tenant_id)",
+      "name": "table_configurations_tenant_id_idx",
+      "schema": "public",
+      "table": "table_configurations"
+    },
+    {
+      "constraint_backed": true,
+      "definition": "CREATE UNIQUE INDEX tenant_memberships_pkey ON public.tenant_memberships USING btree (id)",
+      "name": "tenant_memberships_pkey",
+      "schema": "public",
+      "table": "tenant_memberships"
+    },
+    {
+      "constraint_backed": false,
+      "definition": "CREATE INDEX tenant_memberships_tenant_id_idx ON public.tenant_memberships USING btree (tenant_id)",
+      "name": "tenant_memberships_tenant_id_idx",
+      "schema": "public",
+      "table": "tenant_memberships"
+    },
+    {
+      "constraint_backed": true,
+      "definition": "CREATE UNIQUE INDEX tenant_memberships_tenant_user_key ON public.tenant_memberships USING btree (tenant_id, user_id)",
+      "name": "tenant_memberships_tenant_user_key",
+      "schema": "public",
+      "table": "tenant_memberships"
+    },
+    {
+      "constraint_backed": false,
+      "definition": "CREATE INDEX tenant_memberships_user_id_idx ON public.tenant_memberships USING btree (user_id)",
+      "name": "tenant_memberships_user_id_idx",
+      "schema": "public",
+      "table": "tenant_memberships"
+    },
+    {
+      "constraint_backed": true,
+      "definition": "CREATE UNIQUE INDEX tenants_client_slug_key ON public.tenants USING btree (client_slug)",
+      "name": "tenants_client_slug_key",
+      "schema": "public",
+      "table": "tenants"
+    },
+    {
+      "constraint_backed": true,
+      "definition": "CREATE UNIQUE INDEX tenants_pkey ON public.tenants USING btree (id)",
+      "name": "tenants_pkey",
+      "schema": "public",
+      "table": "tenants"
+    }
+  ],
+  "other_relations": null,
+  "policies": [
+    {
+      "cmd": "SELECT",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can read own admin allowlist row",
+      "qual": "(user_id = auth.uid())",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "admin_users",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can delete menu analytics",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "menu_events",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can read menu analytics",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "menu_events",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "permissive": "PERMISSIVE",
+      "policyname": "Public can insert menu analytics",
+      "qual": null,
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "menu_events",
+      "with_check": "((event_type = ANY (ARRAY['menu_view'::text, 'item_viewed'::text, 'filter_used'::text, 'assistance_requested'::text])) AND (client_slug ~ '^[A-Za-z0-9_-]{1,80}$'::text) AND ((metadata IS NULL) OR (jsonb_typeof(metadata) = 'object'::text)))"
+    },
+    {
+      "cmd": "DELETE",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can delete menu items",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "menu_items",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can insert menu items",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "menu_items",
+      "with_check": "(is_admin() AND (price >= (0)::numeric) AND ((promo_price IS NULL) OR (promo_price >= (0)::numeric)))"
+    },
+    {
+      "cmd": "UPDATE",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can update menu items",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "menu_items",
+      "with_check": "(is_admin() AND (price >= (0)::numeric) AND ((promo_price IS NULL) OR (promo_price >= (0)::numeric)))"
+    },
+    {
+      "cmd": "SELECT",
+      "permissive": "PERMISSIVE",
+      "policyname": "Public can read menu items",
+      "qual": "true",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "menu_items",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can delete client routing config",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "restaurant_clients",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can insert client routing config",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "restaurant_clients",
+      "with_check": "is_admin()"
+    },
+    {
+      "cmd": "UPDATE",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can update client routing config",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "restaurant_clients",
+      "with_check": "is_admin()"
+    },
+    {
+      "cmd": "SELECT",
+      "permissive": "PERMISSIVE",
+      "policyname": "Public can read client routing config",
+      "qual": "true",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "restaurant_clients",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can delete restaurant settings",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "restaurant_settings",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can insert restaurant settings",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "restaurant_settings",
+      "with_check": "is_admin()"
+    },
+    {
+      "cmd": "UPDATE",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can update restaurant settings",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "restaurant_settings",
+      "with_check": "is_admin()"
+    },
+    {
+      "cmd": "SELECT",
+      "permissive": "PERMISSIVE",
+      "policyname": "Public can read restaurant settings",
+      "qual": "true",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "restaurant_settings",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can delete service tickets",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "service_tickets",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can read service tickets",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "service_tickets",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can update service tickets",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "service_tickets",
+      "with_check": "(is_admin() AND (status = ANY (ARRAY['pending'::text, 'resolved'::text])))"
+    },
+    {
+      "cmd": "INSERT",
+      "permissive": "PERMISSIVE",
+      "policyname": "Public can create pending service tickets",
+      "qual": null,
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "service_tickets",
+      "with_check": "((status = 'pending'::text) AND (table_number ~ '^[A-Za-z0-9 _-]{1,20}$'::text) AND (request_type IS NOT NULL) AND ((length(TRIM(BOTH FROM request_type)) >= 1) AND (length(TRIM(BOTH FROM request_type)) <= 500)) AND (client_slug IS NOT NULL) AND (tenant_id IS NOT NULL))"
+    },
+    {
+      "cmd": "DELETE",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can delete table configurations",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "table_configurations",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can insert table configurations",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "table_configurations",
+      "with_check": "(is_admin() AND (source_table ~ '^[A-Za-z0-9 _-]{1,20}$'::text) AND (target_table ~ '^[A-Za-z0-9 _-]{1,20}$'::text) AND (source_table <> target_table))"
+    },
+    {
+      "cmd": "UPDATE",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can update table configurations",
+      "qual": "is_admin()",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "table_configurations",
+      "with_check": "(is_admin() AND (source_table ~ '^[A-Za-z0-9 _-]{1,20}$'::text) AND (target_table ~ '^[A-Za-z0-9 _-]{1,20}$'::text) AND (source_table <> target_table))"
+    },
+    {
+      "cmd": "SELECT",
+      "permissive": "PERMISSIVE",
+      "policyname": "Public can read table configurations",
+      "qual": "true",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "schemaname": "public",
+      "tablename": "table_configurations",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can delete menu pictures",
+      "qual": "((bucket_id = 'menu-pictures'::text) AND is_admin())",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "storage",
+      "tablename": "objects",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can update menu pictures",
+      "qual": "((bucket_id = 'menu-pictures'::text) AND is_admin())",
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "storage",
+      "tablename": "objects",
+      "with_check": "((bucket_id = 'menu-pictures'::text) AND is_admin())"
+    },
+    {
+      "cmd": "INSERT",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can upload menu pictures",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "schemaname": "storage",
+      "tablename": "objects",
+      "with_check": "((bucket_id = 'menu-pictures'::text) AND is_admin())"
+    },
+    {
+      "cmd": "SELECT",
+      "permissive": "PERMISSIVE",
+      "policyname": "Public can view menu pictures",
+      "qual": "(bucket_id = 'menu-pictures'::text)",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "schemaname": "storage",
+      "tablename": "objects",
+      "with_check": null
+    }
+  ],
+  "publication_tables": [
+    {
+      "attnames": [
+        "id",
+        "restaurant_name",
+        "google_place_id",
+        "accent_color",
+        "logo_url",
+        "created_at",
+        "tenant_id"
+      ],
+      "pubname": "supabase_realtime",
+      "rowfilter": null,
+      "schemaname": "public",
+      "tablename": "restaurant_settings"
+    },
+    {
+      "attnames": [
+        "id",
+        "client_slug",
+        "name",
+        "price",
+        "description",
+        "image_url",
+        "tags",
+        "is_out_of_stock",
+        "is_promo",
+        "promo_price",
+        "sort_order",
+        "created_at",
+        "tenant_id"
+      ],
+      "pubname": "supabase_realtime",
+      "rowfilter": null,
+      "schemaname": "public",
+      "tablename": "menu_items"
+    },
+    {
+      "attnames": [
+        "id",
+        "table_number",
+        "request_type",
+        "status",
+        "created_at",
+        "tenant_id",
+        "client_slug"
+      ],
+      "pubname": "supabase_realtime",
+      "rowfilter": null,
+      "schemaname": "public",
+      "tablename": "service_tickets"
+    },
+    {
+      "attnames": [
+        "source_table",
+        "target_table",
+        "created_at",
+        "tenant_id"
+      ],
+      "pubname": "supabase_realtime",
+      "rowfilter": null,
+      "schemaname": "public",
+      "tablename": "table_configurations"
+    }
+  ],
+  "publications": [
+    {
+      "all_tables": false,
+      "delete": true,
+      "insert": true,
+      "name": "supabase_realtime",
+      "owner": "postgres",
+      "truncate": true,
+      "update": true,
+      "via_root": false
+    }
+  ],
+  "schemas": [
+    {
+      "acl": [
+        "postgres=UC/postgres"
+      ],
+      "name": "ting_private",
+      "owner": "postgres"
+    },
+    {
+      "acl": [
+        "pg_database_owner=UC/pg_database_owner",
+        "=U/pg_database_owner",
+        "postgres=U/pg_database_owner",
+        "anon=U/pg_database_owner",
+        "authenticated=U/pg_database_owner",
+        "service_role=U/pg_database_owner"
+      ],
+      "name": "public",
+      "owner": "pg_database_owner"
+    }
+  ],
+  "tables": [
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "columns": [
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "user_id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "comment": null,
+          "default": "now()",
+          "generated": "",
+          "identity": "",
+          "name": "created_at",
+          "not_null": false,
+          "type": "timestamp with time zone"
+        }
+      ],
+      "comment": null,
+      "force_rls": false,
+      "name": "admin_users",
+      "owner": "postgres",
+      "replica_identity": "d",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "columns": [
+        {
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "generated": "",
+          "identity": "",
+          "name": "id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "event_type",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "item_id",
+          "not_null": false,
+          "type": "uuid"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "table_number",
+          "not_null": false,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "client_slug",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": "'{}'::jsonb",
+          "generated": "",
+          "identity": "",
+          "name": "metadata",
+          "not_null": false,
+          "type": "jsonb"
+        },
+        {
+          "comment": null,
+          "default": "now()",
+          "generated": "",
+          "identity": "",
+          "name": "created_at",
+          "not_null": false,
+          "type": "timestamp with time zone"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "tenant_id",
+          "not_null": false,
+          "type": "uuid"
+        }
+      ],
+      "comment": null,
+      "force_rls": false,
+      "name": "menu_events",
+      "owner": "postgres",
+      "replica_identity": "d",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "columns": [
+        {
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "generated": "",
+          "identity": "",
+          "name": "id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "client_slug",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "name",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "price",
+          "not_null": true,
+          "type": "numeric"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "description",
+          "not_null": false,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "image_url",
+          "not_null": false,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": "'{}'::text[]",
+          "generated": "",
+          "identity": "",
+          "name": "tags",
+          "not_null": false,
+          "type": "text[]"
+        },
+        {
+          "comment": null,
+          "default": "false",
+          "generated": "",
+          "identity": "",
+          "name": "is_out_of_stock",
+          "not_null": false,
+          "type": "boolean"
+        },
+        {
+          "comment": null,
+          "default": "false",
+          "generated": "",
+          "identity": "",
+          "name": "is_promo",
+          "not_null": false,
+          "type": "boolean"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "promo_price",
+          "not_null": false,
+          "type": "numeric"
+        },
+        {
+          "comment": null,
+          "default": "0",
+          "generated": "",
+          "identity": "",
+          "name": "sort_order",
+          "not_null": false,
+          "type": "integer"
+        },
+        {
+          "comment": null,
+          "default": "now()",
+          "generated": "",
+          "identity": "",
+          "name": "created_at",
+          "not_null": false,
+          "type": "timestamp with time zone"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "tenant_id",
+          "not_null": false,
+          "type": "uuid"
+        }
+      ],
+      "comment": null,
+      "force_rls": false,
+      "name": "menu_items",
+      "owner": "postgres",
+      "replica_identity": "d",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "columns": [
+        {
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "generated": "",
+          "identity": "",
+          "name": "id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "client_slug",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "supabase_url",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "supabase_anon_key",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "restaurant_name",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": "now()",
+          "generated": "",
+          "identity": "",
+          "name": "created_at",
+          "not_null": false,
+          "type": "timestamp with time zone"
+        }
+      ],
+      "comment": null,
+      "force_rls": false,
+      "name": "restaurant_clients",
+      "owner": "postgres",
+      "replica_identity": "d",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "columns": [
+        {
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "generated": "",
+          "identity": "",
+          "name": "id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "restaurant_name",
+          "not_null": false,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "google_place_id",
+          "not_null": false,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": "'#e67e22'::text",
+          "generated": "",
+          "identity": "",
+          "name": "accent_color",
+          "not_null": false,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "logo_url",
+          "not_null": false,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": "now()",
+          "generated": "",
+          "identity": "",
+          "name": "created_at",
+          "not_null": false,
+          "type": "timestamp with time zone"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "tenant_id",
+          "not_null": false,
+          "type": "uuid"
+        }
+      ],
+      "comment": null,
+      "force_rls": false,
+      "name": "restaurant_settings",
+      "owner": "postgres",
+      "replica_identity": "d",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "columns": [
+        {
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "generated": "",
+          "identity": "",
+          "name": "id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "table_number",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "request_type",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": "'pending'::text",
+          "generated": "",
+          "identity": "",
+          "name": "status",
+          "not_null": false,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": "now()",
+          "generated": "",
+          "identity": "",
+          "name": "created_at",
+          "not_null": false,
+          "type": "timestamp with time zone"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "tenant_id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "client_slug",
+          "not_null": false,
+          "type": "text"
+        }
+      ],
+      "comment": null,
+      "force_rls": false,
+      "name": "service_tickets",
+      "owner": "postgres",
+      "replica_identity": "d",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "columns": [
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "source_table",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "target_table",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": "now()",
+          "generated": "",
+          "identity": "",
+          "name": "created_at",
+          "not_null": false,
+          "type": "timestamp with time zone"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "tenant_id",
+          "not_null": false,
+          "type": "uuid"
+        }
+      ],
+      "comment": null,
+      "force_rls": false,
+      "name": "table_configurations",
+      "owner": "postgres",
+      "replica_identity": "d",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "columns": [
+        {
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "generated": "",
+          "identity": "",
+          "name": "id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "tenant_id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "user_id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "role",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": "now()",
+          "generated": "",
+          "identity": "",
+          "name": "created_at",
+          "not_null": true,
+          "type": "timestamp with time zone"
+        }
+      ],
+      "comment": null,
+      "force_rls": false,
+      "name": "tenant_memberships",
+      "owner": "postgres",
+      "replica_identity": "d",
+      "rls": true,
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "columns": [
+        {
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "generated": "",
+          "identity": "",
+          "name": "id",
+          "not_null": true,
+          "type": "uuid"
+        },
+        {
+          "comment": null,
+          "default": null,
+          "generated": "",
+          "identity": "",
+          "name": "client_slug",
+          "not_null": true,
+          "type": "text"
+        },
+        {
+          "comment": null,
+          "default": "now()",
+          "generated": "",
+          "identity": "",
+          "name": "created_at",
+          "not_null": true,
+          "type": "timestamp with time zone"
+        }
+      ],
+      "comment": null,
+      "force_rls": false,
+      "name": "tenants",
+      "owner": "postgres",
+      "replica_identity": "d",
+      "rls": true,
+      "schema": "public"
+    }
+  ],
+  "triggers": [
+    {
+      "definition": "CREATE TRIGGER menu_events_assign_tenant_id BEFORE INSERT ON menu_events FOR EACH ROW EXECUTE FUNCTION ting_private.assign_tenant_id_from_client_slug()",
+      "enabled": "O",
+      "name": "menu_events_assign_tenant_id",
+      "schema": "public",
+      "table": "menu_events"
+    },
+    {
+      "definition": "CREATE TRIGGER clean_menu_items_trigger BEFORE INSERT OR UPDATE ON menu_items FOR EACH ROW EXECUTE FUNCTION sanitize_text()",
+      "enabled": "O",
+      "name": "clean_menu_items_trigger",
+      "schema": "public",
+      "table": "menu_items"
+    },
+    {
+      "definition": "CREATE TRIGGER menu_items_assign_tenant_id BEFORE INSERT ON menu_items FOR EACH ROW EXECUTE FUNCTION ting_private.assign_tenant_id_from_client_slug()",
+      "enabled": "O",
+      "name": "menu_items_assign_tenant_id",
+      "schema": "public",
+      "table": "menu_items"
+    },
+    {
+      "definition": "CREATE TRIGGER clean_restaurant_settings_trigger BEFORE INSERT OR UPDATE ON restaurant_settings FOR EACH ROW EXECUTE FUNCTION sanitize_text()",
+      "enabled": "O",
+      "name": "clean_restaurant_settings_trigger",
+      "schema": "public",
+      "table": "restaurant_settings"
+    },
+    {
+      "definition": "CREATE TRIGGER a_assign_service_ticket_tenant BEFORE INSERT OR UPDATE ON service_tickets FOR EACH ROW EXECUTE FUNCTION ting_private.assign_service_ticket_tenant()",
+      "enabled": "O",
+      "name": "a_assign_service_ticket_tenant",
+      "schema": "public",
+      "table": "service_tickets"
+    },
+    {
+      "definition": "CREATE TRIGGER clean_service_tickets_trigger BEFORE INSERT OR UPDATE ON service_tickets FOR EACH ROW EXECUTE FUNCTION sanitize_text()",
+      "enabled": "O",
+      "name": "clean_service_tickets_trigger",
+      "schema": "public",
+      "table": "service_tickets"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "database_settings": [
+    {
+      "role": "supabase_admin",
+      "settings": [
+        "search_path=\"$user\", public, auth, extensions"
+      ]
+    },
+    {
+      "role": "postgres",
+      "settings": [
+        "search_path=\"\\$user\", public, extensions"
+      ]
+    },
+    {
+      "role": "supabase_read_only_user",
+      "settings": []
+    },
+    {
+      "role": "anon",
+      "settings": []
+    },
+    {
+      "role": "authenticated",
+      "settings": []
+    },
+    {
+      "role": "authenticator",
+      "settings": []
+    },
+    {
+      "role": "supabase_auth_admin",
+      "settings": [
+        "search_path=auth"
+      ]
+    },
+    {
+      "role": "supabase_storage_admin",
+      "settings": [
+        "search_path=storage"
+      ]
+    },
+    {
+      "role": "ALL",
+      "settings": []
+    }
+  ],
+  "storage_acl": [
+    "supabase_storage_admin=a*r*w*d*D*x*t*m*/supabase_storage_admin",
+    "service_role=arwdDxtm/supabase_storage_admin",
+    "authenticated=arwdDxtm/supabase_storage_admin",
+    "anon=arwdDxtm/supabase_storage_admin",
+    "postgres=a*r*w*d*D*x*t*m*/supabase_storage_admin"
+  ]
+}

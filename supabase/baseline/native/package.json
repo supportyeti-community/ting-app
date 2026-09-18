@@ -1,0 +1,11 @@
+{
+  "name": "ting-native-restore-verification",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node run.mjs" },
+  "dependencies": {
+    "@supabase/supabase-js": "2.116.0",
+    "pg": "8.16.3",
+    "supabase": "2.117.0"
+  }
+}
