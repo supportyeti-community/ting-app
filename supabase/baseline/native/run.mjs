@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { verify } from './verify.mjs';
 import { historicalFiles, rehearseHistory } from './history.mjs';
+import { rehearseTing2 } from './ting2.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const cli = join(root, 'node_modules/.bin/supabase');
@@ -32,7 +33,12 @@ try {
   console.log('Starting disposable local Supabase services…');
   command(['start', '-x', 'studio,edge-runtime,logflare,vector,supavisor,postgres-meta']);
   const status = JSON.parse(command(['status', '-o', 'json']));
-  await verify(status, report, db => rehearseHistory(db,report,command,workdir));
+  if (process.env.TING_TEST_ISSUE === 'ting2') {
+    report.scope = 'TING-2 settings/table-link release rehearsal on disposable native Supabase';
+    await verify(status, report, null, db => rehearseTing2(db,status,report,command,workdir));
+  } else {
+    await verify(status, report, db => rehearseHistory(db,report,command,workdir));
+  }
   report.result = 'PASS';
 } catch (error) {
   report.result = 'FAIL';
