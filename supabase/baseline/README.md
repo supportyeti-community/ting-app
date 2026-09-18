@@ -101,11 +101,12 @@ Not included or not verified:
 
 This snapshot stays outside `supabase/migrations` intentionally. The remote
 database already has nine migration records; inserting a replacement baseline
-into that history or replaying it on production would be incorrect. The next
-TING-5 milestone is a native Supabase restore rehearsal, then an explicitly
-reviewed history/baseline adoption strategy and CLI-generated forward migration
-files. No history repair, squash, `db push`, or production application is part
-of this change. TING-5 remains In progress.
+into that history or replaying it on production would be incorrect. The original
+nine files are now recovered under `supabase/migrations` and fingerprint-checked.
+See `HISTORY-ADOPTION.md` for the arrangement and deployment runbook. The native
+harness rehearses local ledger restoration and CLI-generated forward probes.
+No production history repair, squash, push or application is part of this change.
+TING-5 remains In progress until the draft PR is reviewed.
 
 ## Known state carried forward
 

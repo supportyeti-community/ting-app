@@ -10,7 +10,7 @@ function check(condition, label) { if (!condition) throw new Error(label); }
 function same(a,b,label) { try { assert.deepEqual(a,b); } catch { throw new Error(label); } }
 function ok(result,label) { check(!result.error, `${label} failed (code ${String(result.error?.code ?? result.error?.status ?? 'unknown').replace(/[^a-zA-Z0-9_-]/g,'')})`); return result.data; }
 
-export async function verify(status, report) {
+export async function verify(status, report, historyRehearsal) {
   for (const key of ['API_URL','DB_URL']) {
     const url = new URL(status[key]);
     check(url.hostname === '127.0.0.1', 'Refusing non-loopback ' + key);
@@ -51,6 +51,12 @@ export async function verify(status, report) {
     try { await db.query(sql); throw new Error('Nonempty guard unexpectedly accepted'); }
     catch(e) { check(/nonempty application schemas/.test(e.message),'Nonempty target guard failed'); await db.query('ROLLBACK'); }
     pass('Nonempty target guard');
+    if(historyRehearsal) {
+      await historyRehearsal(db);
+      const after = (await db.query(read('capture.sql'))).rows[0].snapshot;
+      for(const section of sections) same(sorted(after[section]),sorted(actual[section]),'History rehearsal changed application catalogue: '+section);
+      pass('Application catalogue unchanged after forward-deployment rehearsal');
+    }
     await db.query("NOTIFY pgrst, 'reload schema'");
     // Wait for PostgREST's asynchronous schema-cache reload, bounded to 10 seconds.
     let ready = false;

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { verify } from './verify.mjs';
+import { historicalFiles, rehearseHistory } from './history.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const cli = join(root, 'node_modules/.bin/supabase');
@@ -21,6 +22,7 @@ function command(args) {
   return result.stdout;
 }
 try {
+  historicalFiles();
   report.cli = command(['--version']).trim();
   command(['init', '--yes']);
   const configPath = join(workdir, 'supabase/config.toml');
@@ -30,7 +32,7 @@ try {
   console.log('Starting disposable local Supabase services…');
   command(['start', '-x', 'studio,edge-runtime,logflare,vector,supavisor,postgres-meta']);
   const status = JSON.parse(command(['status', '-o', 'json']));
-  await verify(status, report);
+  await verify(status, report, db => rehearseHistory(db,report,command,workdir));
   report.result = 'PASS';
 } catch (error) {
   report.result = 'FAIL';

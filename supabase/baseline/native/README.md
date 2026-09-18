@@ -23,6 +23,12 @@ sanitization, ticket ownership and resolution, websocket delivery from a REST
 insert, and Storage upload/public download/delete with non-admin write denial.
 These are service smoke tests, not a complete tenant-isolation or browser test.
 
+Before service checks, the harness restores the exact nine historical migration
+ledger records locally and uses the real CLI to rehearse forward deployment,
+dry-run/no-op behavior, missing-history rejection, and transactional failure
+recovery. See [history adoption](../HISTORY-ADOPTION.md). Historical SQL is not
+replayed against the snapshot. Probe migrations are temporary and never shipped.
+
 The CLI supplies managed platform schemas. Conflicting pre-existing event
 triggers or catalogue differences fail the rehearsal for explicit inspection;
 the harness does not drop them or loosen comparison to get a pass. The exact

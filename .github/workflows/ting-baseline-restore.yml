@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'supabase/baseline/**'
+      - 'supabase/migrations/**'
       - '.github/workflows/ting-baseline-restore.yml'
   workflow_dispatch:
 
