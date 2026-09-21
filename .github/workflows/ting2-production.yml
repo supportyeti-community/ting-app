@@ -9,6 +9,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   preflight:
+    # One-time rollout completed in run 35556598132. Retired to prevent replay.
+    if: ${{ false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
