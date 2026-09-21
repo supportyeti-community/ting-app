@@ -1,0 +1,36 @@
+name: TING-2 settings and table isolation
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'admin.html'
+      - 'supabase/**'
+      - '.github/workflows/ting2-isolation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ting2-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  isolation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --prefix supabase/baseline/native
+      - run: node supabase/tests/ting2/frontend.mjs
+      - run: node supabase/baseline/native/run.mjs
+        env:
+          TING_TEST_ISSUE: ting2
+      - name: Sanitized result
+        if: always()
+        run: |
+          if test -f supabase/baseline/native/result.json; then
+            cat supabase/baseline/native/result.json >> "$GITHUB_STEP_SUMMARY"
+          fi

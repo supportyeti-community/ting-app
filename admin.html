@@ -115,9 +115,10 @@
     const MASTER_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rcndrbHVsd3JmbnJobmZmYndwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NjUyNzAsImV4cCI6MjA5NzE0MTI3MH0.hyXSxopMDh3nfcrVicgQxkTDKb11ChA8UDBb9h2tMVk";
     
     const URL_ROUTING_PARAMS = new URLSearchParams(window.location.search);
-    const clientSlug = URL_ROUTING_PARAMS.get('client') || 'the-bistro';
+    const clientSlug = URL_ROUTING_PARAMS.get('client')?.trim() || null;
 
     let adminChannel = null;
+    let tenantId = null;
     let supabaseInstance = null; 
     let tableMerges = {}; 
     let trackingCachedMenuItems = [];
@@ -129,6 +130,10 @@
     executeSecurePlatformBootloader();
 
     async function executeSecurePlatformBootloader() {
+        if (!clientSlug) {
+            document.getElementById('admin-app-root').textContent = 'Open the admin link for your restaurant to continue.';
+            return;
+        }
         try {
             const masterSupabase = supabase.createClient(MASTER_URL, MASTER_KEY);
             
@@ -147,10 +152,16 @@
                 return;
             }
 
-            supabaseInstance = supabase.createClient(config.supabase_url, config.supabase_anon_key);
+            supabaseInstance = supabase.createClient(config.supabase_url, config.supabase_anon_key, {
+                global: { headers: { 'x-client-slug': clientSlug } }
+            });
+            const { data: resolvedTenant, error: tenantError } = await supabaseInstance.rpc('request_tenant_id');
+            if (tenantError || !resolvedTenant) throw new Error('Tenant unavailable');
+            tenantId = resolvedTenant;
             initAdminAuth();
 
         } catch (err) {
+            document.getElementById('admin-app-root').textContent = 'Restaurant unavailable. Check your admin link and try again.';
             console.error("Bootloader system exception:", err);
         }
     }
@@ -188,7 +199,9 @@
         });
     }
 
+    let tableLinkPoll = null;
     async function initAdminAuth() {
+        clearInterval(tableLinkPoll);
         const { data: { session } } = await supabaseInstance.auth.getSession();
         if (!session) {
             renderAuthFormWindow();
@@ -199,6 +212,10 @@
 
         await syncTableMergesFromCloudDb();
         await syncServiceTicketsFromCloudDb();
+        tableLinkPoll = setInterval(async () => {
+            await syncTableMergesFromCloudDb();
+            await syncServiceTicketsFromCloudDb();
+        }, 10000);
 
         // Single source of truth — Expanded to track real-time changes across items and tickets seamlessly
         supabaseInstance.channel('dashboard-realtime-mutations')
@@ -210,10 +227,6 @@
                 }
                 syncServiceTicketsFromCloudDb();
                 refreshLiveAnalyticsMetrics();
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'table_configurations' }, async () => {
-                await syncTableMergesFromCloudDb();
-                syncServiceTicketsFromCloudDb();
             })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items' }, () => {
                 loadLiveMenuFromDatabase(); // FIXED: Keeps internal admin list synchronized when external mutations deploy
@@ -349,6 +362,8 @@
     }
 
     async function executeAdminLogout() {
+        clearInterval(tableLinkPoll);
+        await supabaseInstance.removeAllChannels();
         await supabaseInstance.auth.signOut();
         window.location.reload();
     }
@@ -598,10 +613,12 @@
         try {
             const { error } = await supabaseInstance
                 .from('table_configurations')
-                .upsert([{ source_table: source, target_table: target }]);
+                .upsert([{ tenant_id: tenantId, source_table: source, target_table: target }], { onConflict: 'tenant_id,source_table,target_table' });
 
             if (error) throw error;
 
+            await syncTableMergesFromCloudDb();
+            await syncServiceTicketsFromCloudDb();
             document.getElementById('mergeSource').value = '';
             document.getElementById('mergeTarget').value = '';
         } catch (err) {
@@ -614,7 +631,8 @@
         try {
             const { data: configs, error } = await supabaseInstance
                 .from('table_configurations')
-                .select('source_table, target_table');
+                .select('source_table, target_table')
+                .eq('tenant_id', tenantId);
 
             if (error) throw error;
 
@@ -625,6 +643,8 @@
 
             renderActiveMergesUI();
         } catch (err) {
+            tableMerges = {};
+            renderActiveMergesUI();
             console.error("Failed structural blueprint sync:", err);
         }
     }

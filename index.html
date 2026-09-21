@@ -186,6 +186,7 @@
     const tableNumber = urlParams.get('table') || 'Unknown';
     const clientSlug = urlParams.get('client')?.trim() || null;
 
+    let tenantId = null;
     let supabaseInstance = null;
     let fallbackReviewUrl = "https://search.google.com";
 
@@ -225,7 +226,12 @@
                 return;
             }
 
-            supabaseInstance = supabase.createClient(config.supabase_url, config.supabase_anon_key);
+            supabaseInstance = supabase.createClient(config.supabase_url, config.supabase_anon_key, {
+                global: { headers: { 'x-client-slug': clientSlug } }
+            });
+            const { data: resolvedTenant, error: tenantError } = await supabaseInstance.rpc('request_tenant_id');
+            if (tenantError || !resolvedTenant) throw new Error('Tenant unavailable');
+            tenantId = resolvedTenant;
 
             await Promise.all([
                 loadLiveMenuFromDatabase(),
@@ -255,7 +261,8 @@
             const { data: settings, error } = await supabaseInstance
                 .from('restaurant_settings')
                 .select('google_place_id, restaurant_name, logo_url')
-                .single();
+                .eq('tenant_id', tenantId)
+                .maybeSingle();
 
             if (!error && settings) {
                 if (settings.google_place_id) {

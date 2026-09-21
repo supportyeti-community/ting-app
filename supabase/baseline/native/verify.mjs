@@ -10,7 +10,7 @@ function check(condition, label) { if (!condition) throw new Error(label); }
 function same(a,b,label) { try { assert.deepEqual(a,b); } catch { throw new Error(label); } }
 function ok(result,label) { check(!result.error, `${label} failed (code ${String(result.error?.code ?? result.error?.status ?? 'unknown').replace(/[^a-zA-Z0-9_-]/g,'')})`); return result.data; }
 
-export async function verify(status, report, historyRehearsal) {
+export async function verify(status, report, historyRehearsal, releaseRehearsal) {
   for (const key of ['API_URL','DB_URL']) {
     const url = new URL(status[key]);
     check(url.hostname === '127.0.0.1', 'Refusing non-loopback ' + key);
@@ -123,6 +123,7 @@ export async function verify(status, report, historyRehearsal) {
     check((await ordinary.storage.from('menu-pictures').upload('denied.png',png,{contentType:'image/png'})).error,'Ordinary image upload accepted');
     ok(await admin.storage.from('menu-pictures').remove(['restore-test.png']),'Admin image deletion');
     pass('Real Storage upload, public byte-for-byte download, non-admin denial and deletion');
+    if (releaseRehearsal) await releaseRehearsal(db);
   } finally {
     await Promise.allSettled([admin.removeAllChannels(),ordinary.removeAllChannels(),visitor.removeAllChannels(),service.removeAllChannels()]);
     await db.end();
