@@ -123,14 +123,14 @@
 
     <div id="splash" class="splash-overlay">
         <img id="splashLogoImg" class="splash-logo" src="" alt="Restaurant Logo">
-        <h1 id="splashBrandNode" style="color: white; margin: 0 0 8px 0; font-size: 28px; font-weight: 800;">Loading...</h1>
+        <h1 id="splashBrandNode" style="color: white; margin: 0 0 8px 0; font-size: 28px; font-weight: 800;">TinG</h1>
         <p id="splashTableNode" style="color: #94a3b8; font-size: 15px; margin: 0 0 32px 0;">Table -- • Live Digital Portal Ready</p>
         <button class="page-btn" style="background: var(--accent); max-width: 280px;" onclick="unlockConcierge()">View Live Menu</button>
     </div>
 
     <div class="brand-header">
         <img id="headerLogoImg" class="brand-logo" src="" alt="Restaurant Logo" style="display:none;">
-        <h1 id="headerBrandNode" class="brand-name">...</h1>
+        <h1 id="headerBrandNode" class="brand-name">TinG</h1>
         <span id="labelTableNode" class="brand-table-badge">Table --</span>
     </div>
 
@@ -183,7 +183,8 @@
     const MASTER_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rcndrbHVsd3JmbnJobmZmYndwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NjUyNzAsImV4cCI6MjA5NzE0MTI3MH0.hyXSxopMDh3nfcrVicgQxkTDKb11ChA8UDBb9h2tMVk";
 
     const urlParams = new URLSearchParams(window.location.search);
-    const tableNumber = urlParams.get('table') || 'Unknown';
+    const tableIdentifier = urlParams.get('table')?.trim() || null;
+    const tableNumber = tableIdentifier || 'Unknown';
     const clientSlug = urlParams.get('client')?.trim() || null;
 
     let tenantId = null;
@@ -204,7 +205,7 @@
         if (!clientSlug) {
             document.getElementById('menu-wrapper').innerHTML = `
                 <div style="text-align:center; padding:40px; color:var(--accent); font-weight:700;">
-                    ⚠️ Menu unavailable. Please ask your server for assistance.
+                    ⚠️ Scan your table’s QR code to open its menu. If the link still fails, please ask a staff member for help.
                 </div>`;
             return;
         }
@@ -221,7 +222,7 @@
             if (error || !config) {
                 document.getElementById('menu-wrapper').innerHTML = `
                     <div style="text-align:center; padding:40px; color:var(--accent); font-weight:700;">
-                        ⚠️ Menu unavailable. Please ask your server for assistance.
+                        ⚠️ Scan your table’s QR code to open its menu. If the link still fails, please ask a staff member for help.
                     </div>`;
                 return;
             }
@@ -402,7 +403,20 @@
         logTelemetryAnalyticsEvent('filter_used', null, { active_filter: cat });
     }
 
+    function assistanceAvailable() {
+        if (!clientSlug || !tableIdentifier) {
+            showToastNotification('⚠️ Scan your table’s QR code before requesting assistance, or ask a staff member directly.');
+            return false;
+        }
+        if (!supabaseInstance || !tenantId) {
+            showToastNotification('⚠️ Venue connection unavailable. Please try again shortly or ask a staff member directly.');
+            return false;
+        }
+        return true;
+    }
+
     function toggleModal(open) {
+        if (open && !assistanceAvailable()) return;
         const modal = document.getElementById('pagerModal');
         const content = document.getElementById('modalContent');
         if (!modal || !content) return;
@@ -419,7 +433,7 @@
     }
 
     async function emitSignalWithRetry(requestType, requestId, retries = 3) {
-        if (!supabaseInstance) return false;
+        if (!assistanceAvailable()) return false;
         for (let i = 0; i < retries; i++) {
             try {
                 const { error } = await supabaseInstance.from('service_tickets').insert([{
