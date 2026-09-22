@@ -189,6 +189,7 @@
 
     let tenantId = null;
     let supabaseInstance = null;
+    let menuPoll = null;
     let fallbackReviewUrl = "https://search.google.com";
 
     document.getElementById('splashTableNode').innerText = `Table ${tableNumber} • Live Digital Portal Ready`;
@@ -239,14 +240,8 @@
                 pullRestaurantSettings()
             ]);
 
-            // Single source of truth — Postgres CDC
-            supabaseInstance.channel('menu-realtime-sync')
-                .on('postgres_changes', {
-                    event: '*',
-                    schema: 'public',
-                    table: 'menu_items'
-                }, () => loadLiveMenuFromDatabase())
-                .subscribe();
+            clearInterval(menuPoll);
+            menuPoll = setInterval(loadLiveMenuFromDatabase, 10000);
 
         } catch (err) {
             document.getElementById('menu-wrapper').innerHTML = `
@@ -312,6 +307,7 @@
             const { data: items, error } = await supabaseInstance
                 .from('menu_items')
                 .select('*')
+                .eq('tenant_id', tenantId)
                 .order('sort_order', { ascending: true });
 
             if (error) throw error;

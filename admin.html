@@ -215,9 +215,10 @@
         tableLinkPoll = setInterval(async () => {
             await syncTableMergesFromCloudDb();
             await syncServiceTicketsFromCloudDb();
+            await loadLiveMenuFromDatabase();
         }, 10000);
 
-        // Single source of truth — Expanded to track real-time changes across items and tickets seamlessly
+        // Ticket inserts remain real-time; tenant-scoped menu data is polled above.
         supabaseInstance.channel('dashboard-realtime-mutations')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'service_tickets' }, (payload) => {
                 if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
@@ -227,9 +228,6 @@
                 }
                 syncServiceTicketsFromCloudDb();
                 refreshLiveAnalyticsMetrics();
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items' }, () => {
-                loadLiveMenuFromDatabase(); // FIXED: Keeps internal admin list synchronized when external mutations deploy
             })
             .subscribe();
         
@@ -370,7 +368,7 @@
 
     async function loadLiveMenuFromDatabase() {
         if (!supabaseInstance) return;
-        const { data: items, error } = await supabaseInstance.from('menu_items').select('*').order('sort_order', { ascending: true });
+        const { data: items, error } = await supabaseInstance.from('menu_items').select('*').eq('tenant_id', tenantId).order('sort_order', { ascending: true });
         if (error) return console.error(error);
         
         trackingCachedMenuItems = items;
@@ -442,7 +440,8 @@
             return supabaseInstance
                 .from('menu_items')
                 .update({ sort_order: index })
-                .eq('id', item.id);
+                .eq('id', item.id)
+                .eq('tenant_id', tenantId);
         });
         
         try {
@@ -510,12 +509,12 @@
     async function updateDishFieldInline(itemId, field, value) {
         if (!supabaseInstance) return;
         let cleanValue = value.trim();
-        await supabaseInstance.from('menu_items').update({ [field]: cleanValue }).eq('id', itemId);
+        await supabaseInstance.from('menu_items').update({ [field]: cleanValue }).eq('id', itemId).eq('tenant_id', tenantId);
     }
 
     async function deleteDishPermanently(itemId) {
         if (!confirm("Are you sure you want to delete this dish permanently from the menu?")) return;
-        const { error } = await supabaseInstance.from('menu_items').delete().eq('id', itemId);
+        const { error } = await supabaseInstance.from('menu_items').delete().eq('id', itemId).eq('tenant_id', tenantId);
         if (error) return alert("Failed to delete item.");
         
         document.getElementById(`inv-card-${itemId}`)?.remove();
@@ -568,6 +567,7 @@
                 description, 
                 tags, 
                 image_url: finalImageUrl, 
+                tenant_id: tenantId,
                 client_slug: clientSlug,
                 sort_order: currentSortingTargetOrder 
             }]);
@@ -859,7 +859,7 @@
             return;
         }
 
-        await supabaseInstance.from('menu_items').update({ is_out_of_stock: isChecked }).eq('id', itemId);
+        await supabaseInstance.from('menu_items').update({ is_out_of_stock: isChecked }).eq('id', itemId).eq('tenant_id', tenantId);
     }
 
     async function broadcastPriceUpdate(itemId, targetPrice) {
@@ -867,7 +867,7 @@
         const cleanPrice = parseFloat(targetPrice.replace('$', '').trim());
         if(isNaN(cleanPrice)) return alert("Invalid price numeric format");
 
-        await supabaseInstance.from('menu_items').update({ price: cleanPrice }).eq('id', itemId);
+        await supabaseInstance.from('menu_items').update({ price: cleanPrice }).eq('id', itemId).eq('tenant_id', tenantId);
     }
 
     async function toggleHappyHour(itemId) {
@@ -876,7 +876,7 @@
         const nextState = !btn.classList.contains('active-deal');
         const promoBlock = document.getElementById(`promo-field-block-${itemId}`);
 
-        const { error } = await supabaseInstance.from('menu_items').update({ is_promo: nextState }).eq('id', itemId);
+        const { error } = await supabaseInstance.from('menu_items').update({ is_promo: nextState }).eq('id', itemId).eq('tenant_id', tenantId);
         if (error) return alert("Sync error");
 
         btn.classList.toggle('active-deal', nextState);
@@ -889,7 +889,7 @@
         const cleanPromoPrice = parseFloat(val.trim());
         if(isNaN(cleanPromoPrice)) return alert("Please specify a numeric pricing value");
 
-        await supabaseInstance.from('menu_items').update({ promo_price: cleanPromoPrice }).eq('id', itemId);
+        await supabaseInstance.from('menu_items').update({ promo_price: cleanPromoPrice }).eq('id', itemId).eq('tenant_id', tenantId);
     }
 </script>
 </body>
