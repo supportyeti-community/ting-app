@@ -78,7 +78,7 @@ const menuState = () => query(`
     (SELECT jsonb_agg(jsonb_build_object(
        'id',m.id,'tenant_id',m.tenant_id,'client_slug',m.client_slug
      ) ORDER BY m.id) FROM public.menu_items m) AS rows,
-    (SELECT array_agg(policyname ORDER BY policyname)
+    (SELECT jsonb_agg(policyname ORDER BY policyname)
        FROM pg_policies
       WHERE schemaname='public' AND tablename='menu_items') AS policies,
     (SELECT count(*)::int
