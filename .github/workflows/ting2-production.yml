@@ -1,4 +1,4 @@
-name: TING-2 menu isolation production preflight
+name: TING-2 menu isolation production rollout
 on:
   push:
     branches: ['ops/ting-2-menu-production-rollout']
@@ -25,10 +25,10 @@ jobs:
         with:
           node-version: '24'
       - run: npm ci --prefix release/supabase/baseline/native
-      - name: Check approved production target without writes
+      - name: Apply approved migration after guarded preflight
         run: node operations/ops/ting2-release.mjs
         env:
-          TING_RELEASE_MODE: dry-run
+          TING_RELEASE_MODE: apply
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
