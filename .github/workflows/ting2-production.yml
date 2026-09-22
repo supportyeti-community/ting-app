@@ -1,7 +1,7 @@
-name: TING-2 authorized production rollout
+name: TING-2 menu isolation production preflight
 on:
   push:
-    branches: ['ops/ting-2-production-rollout']
+    branches: ['ops/ting-2-menu-production-rollout']
 permissions:
   contents: read
 concurrency:
@@ -9,8 +9,6 @@ concurrency:
   cancel-in-progress: false
 jobs:
   preflight:
-    # One-time rollout completed in run 35556598132. Retired to prevent replay.
-    if: ${{ false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -20,17 +18,17 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: b2f91c47bd3b2800b324005bab163a0bf22f8b56
+          ref: 1f676de7d348ec4c65cfdf73264f21e02d00768b
           path: release
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
       - run: npm ci --prefix release/supabase/baseline/native
-      - name: Apply approved migration after guarded preflight
+      - name: Check approved production target without writes
         run: node operations/ops/ting2-release.mjs
         env:
-          TING_RELEASE_MODE: apply
+          TING_RELEASE_MODE: dry-run
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
