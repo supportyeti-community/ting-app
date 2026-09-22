@@ -5,6 +5,7 @@ import {randomUUID} from 'node:crypto';
 import {createClient} from '@supabase/supabase-js';
 import {historicalFiles} from './history.mjs';
 import {verifyIsolation,migration,migrationName,A,B} from '../../tests/ting2/verify.mjs';
+import {verifyMenuItems,menuMigration,menuMigrationName} from '../../tests/ting2/menu-items.mjs';
 export async function rehearseTing2(db,status,report,command,workdir) {
  const pass=label=>{report.checks.push(label);console.log('PASS: '+label);};
  const directory=join(workdir,'supabase/migrations');mkdirSync(directory,{recursive:true});
@@ -25,6 +26,18 @@ export async function rehearseTing2(db,status,report,command,workdir) {
   command(['db','push','--local','--skip-vault','--yes']);assert.deepEqual(await ledger(),applied);
   pass('Actual TING-2 migration: native CLI dry-run, apply once and repeated no-op; original history unchanged');
  });
+ await verifyMenuItems(db,pass,async()=>{
+  const beforeMenu=await ledger();
+  writeFileSync(join(directory,menuMigrationName),menuMigration);
+  command(['db','push','--local','--dry-run','--skip-vault','--yes']);
+  assert.deepEqual(await ledger(),beforeMenu);
+  assert.equal((await db.query("SELECT to_regprocedure('ting_private.prevent_menu_item_reassignment()') AS f")).rows[0].f,null);
+  command(['db','push','--local','--skip-vault','--yes']);
+  const applied=await ledger();assert.equal(applied.length,beforeMenu.length+1);assert.deepEqual(applied.slice(0,-1),beforeMenu);
+  assert.equal(applied.at(-1).version,menuMigrationName.split('_')[0]);
+  command(['db','push','--local','--skip-vault','--yes']);assert.deepEqual(await ledger(),applied);
+  pass('Actual menu-item migration: native CLI dry-run, apply once and repeated no-op; prior ledger unchanged');
+ });
  const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}};
  const service=createClient(status.API_URL,status.SERVICE_ROLE_KEY,options);
  const visitor=createClient(status.API_URL,status.ANON_KEY,{...options,global:{headers:{'x-client-slug':'test-a'}}});
@@ -38,6 +51,9 @@ export async function rehearseTing2(db,status,report,command,workdir) {
   assert.equal(ok(await missing.rpc('request_tenant_id'),'Missing route RPC'),null);
   assert.deepEqual(ok(await visitor.from('restaurant_settings').select('tenant_id'),'Public settings'),[{tenant_id:A}]);
   assert.equal(ok(await missing.from('restaurant_settings').select('*'),'Missing context settings').length,0);
+  const routedMenu=ok(await visitor.from('menu_items').select('tenant_id'),'Routed public menu');
+  assert(routedMenu.length>0 && routedMenu.every(row=>row.tenant_id===A));
+  assert.equal(ok(await missing.from('menu_items').select('*'),'Missing context menu').length,0);
   assert((await visitor.from('table_configurations').select('*')).error,'Anonymous table links blocked');
   const email='ting2-'+randomUUID()+'@example.com',password=randomUUID()+'Aa1!';
   const user=ok(await service.auth.admin.createUser({email,password,email_confirm:true}),'Create tenant admin').user;
@@ -50,8 +66,13 @@ export async function rehearseTing2(db,status,report,command,workdir) {
   assert.equal(ok(await admin.from('table_configurations').update({target_table:'19'}).eq('tenant_id',B).select(),'Foreign update').length,0);
   assert.equal(ok(await admin.from('table_configurations').delete().eq('tenant_id',B).select(),'Foreign delete').length,0);
   ok(await admin.from('table_configurations').delete().eq('tenant_id',A).eq('source_table','10'),'Own delete');
+  const ownMenu=ok(await admin.from('menu_items').insert({tenant_id:A,client_slug:'test-a',name:'REST own',price:3}).select('id').single(),'Own menu insert');
+  assert((await admin.from('menu_items').insert({tenant_id:B,client_slug:'test-b',name:'REST foreign',price:3})).error,'Foreign menu insert blocked');
+  assert.equal(ok(await admin.from('menu_items').update({name:'foreign'}).eq('tenant_id',B).select(),'Foreign menu update').length,0);
+  ok(await admin.from('menu_items').delete().eq('id',ownMenu.id).eq('tenant_id',A),'Own menu delete');
   await db.query('DELETE FROM public.tenant_memberships WHERE user_id=$1',[user.id]);
   assert.equal(ok(await admin.from('table_configurations').select('*'),'Revoked membership').length,0);
-  pass('Real Auth/REST: public route, missing route, private denial, composite upsert, forged-header denial and immediate revocation');
+  assert.equal(ok(await admin.from('menu_items').update({name:'revoked'}).eq('tenant_id',A).select(),'Revoked menu write').length,0);
+  pass('Real Auth/REST: routed settings and menu, missing-route denial, tenant CRUD, forged-header denial and immediate revocation');
  } finally {await Promise.allSettled([service.removeAllChannels(),visitor.removeAllChannels(),missing.removeAllChannels(),admin.removeAllChannels()]);}
 }

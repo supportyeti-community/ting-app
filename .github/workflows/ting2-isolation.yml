@@ -1,4 +1,4 @@
-name: TING-2 settings and table isolation
+name: TING-2 tenant isolation
 on:
   pull_request:
     paths:
@@ -25,6 +25,7 @@ jobs:
           node-version: '24'
       - run: npm ci --prefix supabase/baseline/native
       - run: node supabase/tests/ting2/frontend.mjs
+      - run: node supabase/tests/ting2/menu-frontend.mjs
       - run: node supabase/baseline/native/run.mjs
         env:
           TING_TEST_ISSUE: ting2
