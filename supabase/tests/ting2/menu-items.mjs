@@ -15,6 +15,9 @@ export async function verifyMenuItems(db,pass,apply=()=>db.query(menuMigration))
   } finally {await q('ROLLBACK');}
  };
  const denied=async fn=>{let error;try{await fn();}catch(e){error=e;}assert(error&&['42501','23514','23502'].includes(error.code),'Expected menu authorization/ownership rejection');};
+ // The native baseline includes a real seed menu row. This disposable test owns
+ // the table from here so its row-count assertions remain deterministic.
+ await q('DELETE FROM public.menu_items');
  await q(`INSERT INTO public.menu_items(tenant_id,client_slug,name,price,sort_order) VALUES
  ('${A}','test-a','A item',10,0),('${B}','test-b','B item',12,0)`);
  assert.equal((await as('anon',null,'{}','SELECT id FROM public.menu_items')).rows.length,2);
