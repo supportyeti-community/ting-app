@@ -8,7 +8,7 @@ for(const file of ['index.html','admin.html']) {
  const code=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(x=>x[1]).join('\n');
  new vm.Script(code);
  const boot=file==='index.html'?'executeSecureClientBootloader':'executeSecurePlatformBootloader';
- for(const scenario of ['missing','unknown','rpc-error','valid']) {
+ for(const scenario of ['missing','unknown','rpc-error','no-table','valid']) {
   const calls=[],nodes=new Map();let creations=0;
   const node=id=>{if(!nodes.has(id))nodes.set(id,{value:id==='mergeSource'?'1':'2',style:{},classList:{add(){},remove(){}},appendChild(){},addEventListener(){}});return nodes.get(id);};
   const builder=table=>{
@@ -16,10 +16,26 @@ for(const file of ['index.html','admin.html']) {
    const b=new Proxy({}, {get(_,key){if(key==='then')return(resolve)=>resolve(table==='restaurant_clients'?{data:scenario==='unknown'?null:{supabase_url:'http://127.0.0.1:54321',supabase_anon_key:'synthetic'},error:null}:{data:table==='restaurant_settings'?null:[],error:null});return(...args)=>{ops.push([key,...args]);calls.push({table,key,args});return b;};}});return b;
   };
   const client={from:builder,rpc:async name=>{calls.push({rpc:name});return {data:scenario==='rpc-error'?null:'tenant-a',error:scenario==='rpc-error'?{}:null};},channel:()=>({on(){return this;},subscribe(){return this;}})};
-  const context=vm.createContext({URLSearchParams,window:{location:{search:scenario==='missing'?'':'?client=test-a'}},document:{getElementById:node,createElement:()=>node('temporary'),createTextNode:s=>s},supabase:{createClient:(url,key,options)=>{calls.push({options});creations++;return client;}},console:{error(){}},setInterval:()=>1,clearInterval(){},alert:()=>{throw new Error('Unexpected alert');}});
+  const context=vm.createContext({URLSearchParams,window:{location:{search:scenario==='missing'?'':scenario==='no-table'?'?client=test-a':'?client=test-a&table=1'}},document:{getElementById:node,createElement:()=>node('temporary'),createTextNode:s=>s},supabase:{createClient:(url,key,options)=>{calls.push({options});creations++;return client;}},console:{error(){}},setTimeout:()=>1,setInterval:()=>1,clearInterval(){},alert:()=>{throw new Error('Unexpected alert');}});
   vm.runInContext(code.replace(new RegExp('    '+boot+'\\(\\);'),''),context);
   vm.runInContext('initAdminAuth=async()=>{}; loadLiveMenuFromDatabase=async()=>{};',context);
   await vm.runInContext(boot+'()',context);
+  if(file==='index.html') {
+   const before=calls.length;
+   const ready=await vm.runInContext("emitSignalWithRetry('test request','synthetic-id')",context);
+   assert.equal(ready,scenario==='valid');
+   const writes=calls.slice(before).filter(c=>c.table==='service_tickets'&&c.key==='insert');
+   assert.equal(writes.length,scenario==='valid'?1:0);
+   if(scenario!=='valid') {
+    assert.equal(node('toastHub').style.display,'block');
+    assert.match(node('toastHub').innerText,/QR code|connection unavailable/);
+    vm.runInContext('toggleModal(true)',context);
+    assert.notEqual(node('pagerModal').style.display,'flex');
+   } else {
+    assert.equal(writes[0].args[0][0].table_number,'1');
+    assert.equal(writes[0].args[0][0].client_slug,'test-a');
+   }
+  }
   if(scenario==='missing'){assert.equal(creations,0);continue;}
   if(scenario==='unknown'){assert.equal(creations,1);continue;}
   assert.equal(creations,2);assert.equal(calls[1]?.options,undefined); // routing query recorded between clients
