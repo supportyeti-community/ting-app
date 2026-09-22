@@ -6,6 +6,7 @@ import {createClient} from '@supabase/supabase-js';
 import {historicalFiles} from './history.mjs';
 import {verifyIsolation,migration,migrationName,A,B} from '../../tests/ting2/verify.mjs';
 import {verifyMenuItems,menuMigration,menuMigrationName} from '../../tests/ting2/menu-items.mjs';
+import {verifyMenuEvents,eventMigration,eventMigrationName} from '../../tests/ting2/menu-events.mjs';
 export async function rehearseTing2(db,status,report,command,workdir) {
  const pass=label=>{report.checks.push(label);console.log('PASS: '+label);};
  const directory=join(workdir,'supabase/migrations');mkdirSync(directory,{recursive:true});
@@ -37,6 +38,18 @@ export async function rehearseTing2(db,status,report,command,workdir) {
   assert.equal(applied.at(-1).version,menuMigrationName.split('_')[0]);
   command(['db','push','--local','--skip-vault','--yes']);assert.deepEqual(await ledger(),applied);
   pass('Actual menu-item migration: native CLI dry-run, apply once and repeated no-op; prior ledger unchanged');
+ });
+ await verifyMenuEvents(db,pass,async()=>{
+  const beforeEvents=await ledger();
+  writeFileSync(join(directory,eventMigrationName),eventMigration);
+  command(['db','push','--local','--dry-run','--skip-vault','--yes']);
+  assert.deepEqual(await ledger(),beforeEvents);
+  assert.equal((await db.query("SELECT is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='menu_events' AND column_name='tenant_id'")).rows[0].is_nullable,'YES');
+  command(['db','push','--local','--skip-vault','--yes']);
+  const applied=await ledger();assert.equal(applied.length,beforeEvents.length+1);assert.deepEqual(applied.slice(0,-1),beforeEvents);
+  assert.equal(applied.at(-1).version,eventMigrationName.split('_')[0]);
+  command(['db','push','--local','--skip-vault','--yes']);assert.deepEqual(await ledger(),applied);
+  pass('Actual menu-event migration: native CLI dry-run, apply once and repeated no-op; prior ledger unchanged');
  });
  const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}};
  const service=createClient(status.API_URL,status.SERVICE_ROLE_KEY,options);
@@ -70,9 +83,17 @@ export async function rehearseTing2(db,status,report,command,workdir) {
   assert((await admin.from('menu_items').insert({tenant_id:B,client_slug:'test-b',name:'REST foreign',price:3})).error,'Foreign menu insert blocked');
   assert.equal(ok(await admin.from('menu_items').update({name:'foreign'}).eq('tenant_id',B).select(),'Foreign menu update').length,0);
   ok(await admin.from('menu_items').delete().eq('id',ownMenu.id).eq('tenant_id',A),'Own menu delete');
+  const ownEventId=randomUUID();
+  ok(await visitor.from('menu_events').insert({id:ownEventId,tenant_id:A,client_slug:'test-a',event_type:'menu_view'}),'Routed event insert');
+  assert((await visitor.from('menu_events').select('id')).error,'Anonymous event read blocked');
+  assert((await visitor.from('menu_events').insert({tenant_id:B,client_slug:'test-b',event_type:'menu_view'})).error,'Foreign-route event insert blocked');
+  assert.equal(ok(await admin.from('menu_events').select('tenant_id'),'Member analytics').every(row=>row.tenant_id===A),true);
+  assert.equal(ok(await admin.from('menu_events').delete().eq('tenant_id',B).select(),'Foreign event delete').length,0);
+  ok(await admin.from('menu_events').delete().eq('id',ownEventId).eq('tenant_id',A),'Own event delete');
   await db.query('DELETE FROM public.tenant_memberships WHERE user_id=$1',[user.id]);
   assert.equal(ok(await admin.from('table_configurations').select('*'),'Revoked membership').length,0);
   assert.equal(ok(await admin.from('menu_items').update({name:'revoked'}).eq('tenant_id',A).select(),'Revoked menu write').length,0);
-  pass('Real Auth/REST: routed settings and menu, missing-route denial, tenant CRUD, forged-header denial and immediate revocation');
+  assert.equal(ok(await admin.from('menu_events').select('id'),'Revoked analytics read').length,0);
+  pass('Real Auth/REST: routed settings, menu and analytics; tenant CRUD, forged-route denial and immediate revocation');
  } finally {await Promise.allSettled([service.removeAllChannels(),visitor.removeAllChannels(),missing.removeAllChannels(),admin.removeAllChannels()]);}
 }
