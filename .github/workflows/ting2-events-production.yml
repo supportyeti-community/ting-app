@@ -1,4 +1,4 @@
-name: TING-2 analytics production preflight
+name: TING-2 analytics production rollout
 on:
   push:
     branches: ['ops/ting-2-events-production-rollout']
@@ -25,10 +25,10 @@ jobs:
         with:
           node-version: '24'
       - run: npm ci --prefix release/supabase/baseline/native
-      - name: Verify approved migration against production
+      - name: Apply approved migration after guarded preflight
         run: node operations/ops/ting2-events-release.mjs
         env:
-          TING_RELEASE_MODE: dry-run
+          TING_RELEASE_MODE: apply
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
