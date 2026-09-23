@@ -1,0 +1,29 @@
+name: TING-4 Storage listing
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/*ting4*'
+      - 'supabase/tests/ting4/**'
+      - 'supabase/baseline/native/**'
+      - '.github/workflows/ting4-storage-listing.yml'
+  workflow_dispatch:
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci --prefix supabase/baseline
+      - run: npm ci --prefix supabase/baseline/native
+      - run: node supabase/tests/ting4/storage-listing.mjs
+      - run: node supabase/baseline/native/run.mjs
+        env:
+          TING_TEST_ISSUE: ting4
+      - if: always()
+        run: |
+          if test -f supabase/baseline/native/result.json; then
+            cat supabase/baseline/native/result.json >> "$GITHUB_STEP_SUMMARY"
+          fi

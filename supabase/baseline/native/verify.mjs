@@ -123,7 +123,7 @@ export async function verify(status, report, historyRehearsal, releaseRehearsal)
     check((await ordinary.storage.from('menu-pictures').upload('denied.png',png,{contentType:'image/png'})).error,'Ordinary image upload accepted');
     ok(await admin.storage.from('menu-pictures').remove(['restore-test.png']),'Admin image deletion');
     pass('Real Storage upload, public byte-for-byte download, non-admin denial and deletion');
-    if (releaseRehearsal) await releaseRehearsal(db);
+    if (releaseRehearsal) await releaseRehearsal(db,{admin,ordinary,visitor,service});
   } finally {
     await Promise.allSettled([admin.removeAllChannels(),ordinary.removeAllChannels(),visitor.removeAllChannels(),service.removeAllChannels()]);
     await db.end();

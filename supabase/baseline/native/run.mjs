@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { verify } from './verify.mjs';
 import { historicalFiles, rehearseHistory } from './history.mjs';
 import { rehearseTing2 } from './ting2.mjs';
+import { rehearseTing4 } from './ting4.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const cli = join(root, 'node_modules/.bin/supabase');
@@ -36,6 +37,9 @@ try {
   if (process.env.TING_TEST_ISSUE === 'ting2') {
     report.scope = 'TING-2 settings/table-link release rehearsal on disposable native Supabase';
     await verify(status, report, null, db => rehearseTing2(db,status,report,command,workdir));
+  } else if (process.env.TING_TEST_ISSUE === 'ting4') {
+    report.scope = 'TING-4 Storage listing policy rehearsal on disposable native Supabase';
+    await verify(status, report, null, (db,clients) => rehearseTing4(db,clients,report,command,workdir,status));
   } else {
     await verify(status, report, db => rehearseHistory(db,report,command,workdir));
   }
