@@ -514,12 +514,13 @@
     }
 
     async function logTelemetryAnalyticsEvent(eventTypeStr, referenceItemId = null, metadataObj = {}) {
-        if (!supabaseInstance) return;
+        if (!supabaseInstance || !tenantId) return;
         try {
             const insertionPayload = {
                 event_type: eventTypeStr,
                 table_number: tableNumber.toString(),
-                client_slug: clientSlug, // FIXED: Explicitly appends client_slug payload property to fix admin 400 errors
+                client_slug: clientSlug,
+                tenant_id: tenantId,
                 metadata: metadataObj
             };
             

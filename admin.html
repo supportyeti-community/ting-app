@@ -460,19 +460,19 @@
             .from('menu_events')
             .select('*', { count: 'exact', head: true })
             .eq('event_type', 'menu_view')
-            .eq('client_slug', clientSlug);
+            .eq('tenant_id', tenantId);
             
         const { count: assistanceCount } = await supabaseInstance
             .from('menu_events')
             .select('*', { count: 'exact', head: true })
             .eq('event_type', 'assistance_requested')
-            .eq('client_slug', clientSlug);
+            .eq('tenant_id', tenantId);
             
         const { data: interactionRecords } = await supabaseInstance
             .from('menu_events')
             .select('item_id')
             .not('item_id', 'is', null)
-            .eq('client_slug', clientSlug);
+            .eq('tenant_id', tenantId);
 
         let elementClickFrequencies = {};
         let dominantItemRecord = "None";
