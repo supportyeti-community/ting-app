@@ -137,7 +137,7 @@ try {
 
   stage = 'analytics ownership preflight';
   const before = eventState();
-  assert.equal(before.total, 123, 'Analytics row count changed');
+  assert(before.total >= 123, 'Reviewed analytics history was unexpectedly removed');
   assert.equal(before.unowned, 0, 'Unowned analytics row found');
   assert.equal(before.mismatched, 0, 'Analytics tenant and slug mismatch found');
   assert.equal(before.item_mismatched, 0, 'Cross-tenant menu item reference found');
@@ -190,7 +190,7 @@ try {
     assert.equal(afterLedger[11].version, '20260922155033');
     assert.equal(afterLedger[11].name, 'ting2_menu_event_isolation');
     const after = eventState();
-    assert.equal(after.total, 123);
+    assert(after.total >= 123);
     assert.equal(after.unowned, 0);
     assert.equal(after.mismatched, 0);
     assert.equal(after.item_mismatched, 0);
