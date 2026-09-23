@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {G} from './verify.mjs';
 
-export const routeScopeMigrationName = '20260923130750_ting2_route_scope_registry.sql';
+export const routeScopeMigrationName = '20260923132307_ting2_route_scope_registry.sql';
 export const routeScopeMigration = readFileSync(new URL('../../migrations/'+routeScopeMigrationName,import.meta.url),'utf8');
 
 export async function verifyRoutingScope(db,pass,apply=()=>db.query(routeScopeMigration)) {
