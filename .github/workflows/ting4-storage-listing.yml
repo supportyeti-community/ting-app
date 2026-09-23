@@ -2,6 +2,7 @@ name: TING-4 Storage listing
 on:
   pull_request:
     paths:
+      - 'admin.html'
       - 'supabase/migrations/*ting4*'
       - 'supabase/tests/ting4/**'
       - 'supabase/baseline/native/**'
@@ -19,6 +20,7 @@ jobs:
       - run: npm ci --prefix supabase/baseline
       - run: npm ci --prefix supabase/baseline/native
       - run: node supabase/tests/ting4/storage-listing.mjs
+      - run: node supabase/tests/ting4/upload-path.mjs
       - name: Verify existing Bistro public image on PR 11
         if: github.event_name == 'pull_request' && github.event.pull_request.number == 11
         run: |

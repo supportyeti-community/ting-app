@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,readdirSync,mkdirSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {randomUUID} from 'node:crypto';
 import {historicalFiles} from './history.mjs';
 
 const migrations = fileURLToPath(new URL('../../migrations/',import.meta.url));
@@ -52,6 +53,17 @@ export async function rehearseTing4(db,{admin,ordinary,visitor},report,command,w
   assert.deepEqual(Buffer.from(await unchanged.arrayBuffer()),png);
   ok(await admin.storage.from('menu-pictures').upload('ting4-new-unique.png',png,{contentType:'image/png',upsert:false}),'New admin upload');
   assert((await ordinary.storage.from('menu-pictures').upload('ting4-denied.png',png,{contentType:'image/png',upsert:false})).error);
+  const auth=ok(await admin.auth.getUser(),'Existing admin identity').user;
+  const tenantId=randomUUID();
+  await db.query('INSERT INTO public.tenants(id,client_slug) VALUES ($1,$2)',[tenantId,'ting4-path-test']);
+  await db.query('INSERT INTO public.tenant_memberships(tenant_id,user_id,role) VALUES ($1,$2,$3)',[tenantId,auth.id,'owner']);
+  const prefixedPath=`${tenantId}/${randomUUID()}.png`;
+  ok(await admin.storage.from('menu-pictures').upload(prefixedPath,png,{contentType:'image/png',upsert:false}),'Prefixed admin upload');
+  const prefixedUrl=admin.storage.from('menu-pictures').getPublicUrl(prefixedPath).data.publicUrl;
+  const prefixedResponse=await fetch(prefixedUrl,{signal:AbortSignal.timeout(10000)});
+  assert(prefixedResponse.ok);
+  assert.deepEqual(Buffer.from(await prefixedResponse.arrayBuffer()),png);
+  assert.equal((await db.query('SELECT count(*)::int AS n FROM storage.objects WHERE bucket_id=$1 AND name=$2',['menu-pictures',prefixedPath])).rows[0].n,1);
   assert.equal((await db.query("SELECT public FROM storage.buckets WHERE id='menu-pictures'")).rows[0].public,true);
-  pass('Known public URL and unique admin upload still work; ordinary upload denied');
+  pass('Known public URL, unique and tenant-prefixed admin uploads work; ordinary upload denied');
 }

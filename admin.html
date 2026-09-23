@@ -175,6 +175,16 @@
         return div.innerHTML;
     }
 
+    function menuPicturePath(tenantUuid, mimeType) {
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(tenantUuid)) {
+            throw new Error('Tenant unavailable for image upload.');
+        }
+        if (mimeType !== 'image/png' && mimeType !== 'image/jpeg') {
+            throw new Error('Unsupported compressed image type.');
+        }
+        return `${tenantUuid}/${crypto.randomUUID()}.${mimeType === 'image/png' ? 'png' : 'jpg'}`;
+    }
+
     async function compressImage(file, maxWidthPx = 800, qualityLevel = 0.75) {
         return new Promise(resolve => {
             const reader = new FileReader();
@@ -557,16 +567,15 @@
 
             if (fileInput.files.length > 0) {
                 const compressedFile = await compressImage(fileInput.files[0]);
-                const fileExtension = compressedFile.name.split('.').pop();
-                const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExtension}`;
+                const picturePath = menuPicturePath(tenantId, compressedFile.type);
                 
                 const { data: uploadData, error: uploadError } = await supabaseInstance.storage
                     .from('menu-pictures')
-                    .upload(uniqueFileName, compressedFile, { cacheControl: '3600', upsert: false });
+                    .upload(picturePath, compressedFile, { cacheControl: '3600', upsert: false });
 
                 if (uploadError) throw new Error("Image bucket write handshake failed.");
 
-                const { data: publicUrlData } = supabaseInstance.storage.from('menu-pictures').getPublicUrl(uniqueFileName);
+                const { data: publicUrlData } = supabaseInstance.storage.from('menu-pictures').getPublicUrl(picturePath);
                 finalImageUrl = publicUrlData.publicUrl;
             }
 
