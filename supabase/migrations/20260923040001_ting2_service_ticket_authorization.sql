@@ -23,12 +23,16 @@ END $$;
 
 -- Four historical bootstrap tickets predate client_slug. Their tenant_id was
 -- already reviewed and backfilled by the foundation migrations; complete the
--- canonical ownership pair before making the routing field required.
+-- canonical ownership pair before making the routing field required. The
+-- existing invariant trigger blocks ownership-field updates, so suspend only
+-- that trigger for this guarded, transactional repair.
+ALTER TABLE public.service_tickets DISABLE TRIGGER a_assign_service_ticket_tenant;
 UPDATE public.service_tickets ticket
 SET client_slug = tenant.client_slug
 FROM public.tenants tenant
 WHERE tenant.id = ticket.tenant_id
   AND ticket.client_slug IS NULL;
+ALTER TABLE public.service_tickets ENABLE TRIGGER a_assign_service_ticket_tenant;
 
 ALTER TABLE public.service_tickets
   ALTER COLUMN tenant_id SET NOT NULL,
