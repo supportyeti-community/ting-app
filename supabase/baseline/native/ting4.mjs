@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {historicalFiles} from './history.mjs';
 
 const migrations = fileURLToPath(new URL('../../migrations/',import.meta.url));
-const target = '20260923194905_ting4_restrict_menu_picture_listing.sql';
+const target = '20260923200127_ting4_restrict_menu_picture_listing.sql';
 export async function rehearseTing4(db,{admin,ordinary,visitor},report,command,workdir,status) {
   const pass = label => { report.checks.push(label);console.log('PASS: '+label); };
   const ok = (r,label) => { assert(!r.error,`${label} failed`);return r.data; };

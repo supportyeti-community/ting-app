@@ -7,7 +7,7 @@ const read = path => readFileSync(new URL(path, import.meta.url), 'utf8');
 const db = new PGlite();
 const admin = '20000000-0000-4000-8000-000000000001';
 const ordinary = '20000000-0000-4000-8000-000000000002';
-const migration = read('../../migrations/20260923194905_ting4_restrict_menu_picture_listing.sql');
+const migration = read('../../migrations/20260923200127_ting4_restrict_menu_picture_listing.sql');
 const query = sql => db.query(sql);
 const policies = async () => (await query("SELECT policyname, cmd, roles, qual, with_check FROM pg_policies WHERE schemaname='storage' AND tablename='objects' ORDER BY policyname")).rows;
 const as = async (role, user, sql) => {
