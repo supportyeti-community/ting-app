@@ -9,6 +9,7 @@ import {verifyMenuItems,menuMigration,menuMigrationName} from '../../tests/ting2
 import {verifyMenuEvents,eventMigration,eventMigrationName} from '../../tests/ting2/menu-events.mjs';
 import {verifyServiceTickets,ticketMigration,ticketMigrationName} from '../../tests/ting2/service-tickets.mjs';
 import {verifyRoutingPreparation,routingMigration,routingMigrationName} from '../../tests/ting2/routing-prepare.mjs';
+import {verifyRoutingScope,routeScopeMigration,routeScopeMigrationName} from '../../tests/ting2/routing-scope.mjs';
 export async function rehearseTing2(db,status,report,command,workdir) {
  const pass=label=>{report.checks.push(label);console.log('PASS: '+label);};
  const directory=join(workdir,'supabase/migrations');mkdirSync(directory,{recursive:true});
@@ -76,6 +77,17 @@ export async function rehearseTing2(db,status,report,command,workdir) {
   command(['db','push','--local','--skip-vault','--yes']);assert.deepEqual(await ledger(),applied);
   pass('Actual routing migration: native CLI dry-run, apply once and repeated no-op; prior ledger unchanged');
  });
+ await verifyRoutingScope(db,pass,async()=>{
+  const beforeScope=await ledger();
+  writeFileSync(join(directory,routeScopeMigrationName),routeScopeMigration);
+  command(['db','push','--local','--dry-run','--skip-vault','--yes']);
+  assert.deepEqual(await ledger(),beforeScope);
+  command(['db','push','--local','--skip-vault','--yes']);
+  const applied=await ledger();assert.equal(applied.length,beforeScope.length+1);assert.deepEqual(applied.slice(0,-1),beforeScope);
+  assert.equal(applied.at(-1).version,routeScopeMigrationName.split('_')[0]);
+  command(['db','push','--local','--skip-vault','--yes']);assert.deepEqual(await ledger(),applied);
+  pass('Routing scope migration: native CLI dry-run, apply once, repeated no-op and prior ledger preserved');
+ });
  const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}};
  const service=createClient(status.API_URL,status.SERVICE_ROLE_KEY,options);
  const visitor=createClient(status.API_URL,status.ANON_KEY,{...options,global:{headers:{'x-client-slug':'test-a'}}});
@@ -87,8 +99,13 @@ export async function rehearseTing2(db,status,report,command,workdir) {
   for(let i=0;i<30;i++) {const r=await visitor.rpc('request_tenant_id');if(!r.error&&r.data===A){ready=true;break;}await new Promise(r=>setTimeout(r,500));}
   assert(ready,'PostgREST release schema cache ready');
   assert.equal(ok(await missing.rpc('request_tenant_id'),'Missing route RPC'),null);
-  assert.equal(ok(await missing.from('restaurant_clients').select('client_slug'),'Old bootstrap compatibility').length,1);
+  assert.deepEqual(ok(await missing.from('restaurant_clients').select('client_slug'),'Old bootstrap compatibility'),[{client_slug:'the-bistro'}]);
   assert.equal(ok(await visitor.from('restaurant_clients').select('client_slug').eq('client_slug','test-a'),'Routed master bootstrap').length,1);
+  const routeB=createClient(status.API_URL,status.ANON_KEY,{...options,global:{headers:{'x-client-slug':'test-b'}}});
+  const unknownRoute=createClient(status.API_URL,status.ANON_KEY,{...options,global:{headers:{'x-client-slug':'unknown'}}});
+  assert.deepEqual(ok(await routeB.from('restaurant_clients').select('client_slug'),'Forged known public route'),[{client_slug:'test-b'}]);
+  assert.equal(ok(await routeB.from('restaurant_clients').select('client_slug').eq('client_slug','the-bistro'),'Wrong header plus filter').length,0);
+  assert.equal(ok(await unknownRoute.from('restaurant_clients').select('client_slug'),'Unknown header').length,0);
   assert((await visitor.from('restaurant_clients').update({restaurant_name:'blocked'}).eq('client_slug','test-a')).error,'Public registry write denied');
   assert((await visitor.from('admin_users').select('user_id')).error,'Public legacy allowlist denied');
   assert.deepEqual(ok(await visitor.from('restaurant_settings').select('tenant_id'),'Public settings'),[{tenant_id:A}]);
@@ -101,6 +118,7 @@ export async function rehearseTing2(db,status,report,command,workdir) {
   const user=ok(await service.auth.admin.createUser({email,password,email_confirm:true}),'Create tenant admin').user;
   await db.query('INSERT INTO public.tenant_memberships(tenant_id,user_id,role) VALUES ($1,$2,$3)',[A,user.id,'owner']);
   ok(await admin.auth.signInWithPassword({email,password}),'Real tenant admin login');
+  assert.deepEqual(ok(await admin.from('restaurant_clients').select('client_slug'),'Authenticated public route'),[{client_slug:'test-b'}]);
   // Header deliberately points to B: authorization still derives from membership A.
   assert.deepEqual(ok(await admin.from('table_configurations').select('tenant_id'),'Member links'),[{tenant_id:A}]);
   for(let i=0;i<2;i++)ok(await admin.from('table_configurations').upsert({tenant_id:A,source_table:'10',target_table:'11'},{onConflict:'tenant_id,source_table,target_table'}),'Repeated REST upsert');
