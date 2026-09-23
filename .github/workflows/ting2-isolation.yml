@@ -27,6 +27,7 @@ jobs:
       - run: node supabase/tests/ting2/frontend.mjs
       - run: node supabase/tests/ting2/menu-frontend.mjs
       - run: node supabase/tests/ting2/menu-events-frontend.mjs
+      - run: node supabase/tests/ting2/service-tickets-frontend.mjs
       - run: node supabase/baseline/native/run.mjs
         env:
           TING_TEST_ISSUE: ting2
