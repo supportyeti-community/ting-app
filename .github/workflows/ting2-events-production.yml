@@ -1,0 +1,34 @@
+name: TING-2 analytics production preflight
+on:
+  push:
+    branches: ['ops/ting-2-events-production-rollout']
+permissions:
+  contents: read
+concurrency:
+  group: ting-production-database
+  cancel-in-progress: false
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          path: operations
+          persist-credentials: false
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 17854ed68ee0b718f1f4bbc77403155f1f4d729f
+          path: release
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --prefix release/supabase/baseline/native
+      - name: Verify approved migration against production
+        run: node operations/ops/ting2-events-release.mjs
+        env:
+          TING_RELEASE_MODE: dry-run
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
