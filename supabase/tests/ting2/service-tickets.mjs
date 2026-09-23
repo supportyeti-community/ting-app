@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {A,B,U,V,G} from './verify.mjs';
 
-export const ticketMigrationName='20260923040001_ting2_service_ticket_authorization.sql';
+export const ticketMigrationName='20260923101432_ting2_service_ticket_authorization.sql';
 export const ticketMigration=readFileSync(new URL('../../migrations/'+ticketMigrationName,import.meta.url),'utf8');
 
 export async function verifyServiceTickets(db,pass,apply=()=>db.query(ticketMigration)) {
