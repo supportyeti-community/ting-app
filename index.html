@@ -212,7 +212,9 @@
         }
 
         try {
-            const masterSupabase = supabase.createClient(MASTER_URL, MASTER_KEY);
+            const masterSupabase = supabase.createClient(MASTER_URL, MASTER_KEY, {
+                global: { headers: { 'x-client-slug': clientSlug } }
+            });
 
             const { data: config, error } = await masterSupabase
                 .from('restaurant_clients')

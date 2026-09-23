@@ -8,6 +8,7 @@ import {verifyIsolation,migration,migrationName,A,B} from '../../tests/ting2/ver
 import {verifyMenuItems,menuMigration,menuMigrationName} from '../../tests/ting2/menu-items.mjs';
 import {verifyMenuEvents,eventMigration,eventMigrationName} from '../../tests/ting2/menu-events.mjs';
 import {verifyServiceTickets,ticketMigration,ticketMigrationName} from '../../tests/ting2/service-tickets.mjs';
+import {verifyRoutingPreparation,routingMigration,routingMigrationName} from '../../tests/ting2/routing-prepare.mjs';
 export async function rehearseTing2(db,status,report,command,workdir) {
  const pass=label=>{report.checks.push(label);console.log('PASS: '+label);};
  const directory=join(workdir,'supabase/migrations');mkdirSync(directory,{recursive:true});
@@ -64,6 +65,17 @@ export async function rehearseTing2(db,status,report,command,workdir) {
   command(['db','push','--local','--skip-vault','--yes']);assert.deepEqual(await ledger(),applied);
   pass('Actual service-ticket migration: native CLI dry-run, apply once and repeated no-op; prior ledger unchanged');
  });
+ await verifyRoutingPreparation(db,pass,async()=>{
+  const beforeRouting=await ledger();
+  writeFileSync(join(directory,routingMigrationName),routingMigration);
+  command(['db','push','--local','--dry-run','--skip-vault','--yes']);
+  assert.deepEqual(await ledger(),beforeRouting);
+  command(['db','push','--local','--skip-vault','--yes']);
+  const applied=await ledger();assert.equal(applied.length,beforeRouting.length+1);assert.deepEqual(applied.slice(0,-1),beforeRouting);
+  assert.equal(applied.at(-1).version,routingMigrationName.split('_')[0]);
+  command(['db','push','--local','--skip-vault','--yes']);assert.deepEqual(await ledger(),applied);
+  pass('Actual routing migration: native CLI dry-run, apply once and repeated no-op; prior ledger unchanged');
+ });
  const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}};
  const service=createClient(status.API_URL,status.SERVICE_ROLE_KEY,options);
  const visitor=createClient(status.API_URL,status.ANON_KEY,{...options,global:{headers:{'x-client-slug':'test-a'}}});
@@ -75,6 +87,10 @@ export async function rehearseTing2(db,status,report,command,workdir) {
   for(let i=0;i<30;i++) {const r=await visitor.rpc('request_tenant_id');if(!r.error&&r.data===A){ready=true;break;}await new Promise(r=>setTimeout(r,500));}
   assert(ready,'PostgREST release schema cache ready');
   assert.equal(ok(await missing.rpc('request_tenant_id'),'Missing route RPC'),null);
+  assert.equal(ok(await missing.from('restaurant_clients').select('client_slug'),'Old bootstrap compatibility').length,1);
+  assert.equal(ok(await visitor.from('restaurant_clients').select('client_slug').eq('client_slug','test-a'),'Routed master bootstrap').length,1);
+  assert((await visitor.from('restaurant_clients').update({restaurant_name:'blocked'}).eq('client_slug','test-a')).error,'Public registry write denied');
+  assert((await visitor.from('admin_users').select('user_id')).error,'Public legacy allowlist denied');
   assert.deepEqual(ok(await visitor.from('restaurant_settings').select('tenant_id'),'Public settings'),[{tenant_id:A}]);
   assert.equal(ok(await missing.from('restaurant_settings').select('*'),'Missing context settings').length,0);
   const routedMenu=ok(await visitor.from('menu_items').select('tenant_id'),'Routed public menu');
