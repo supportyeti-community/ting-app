@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {G} from './verify.mjs';
 
-export const routingMigrationName = '20260923112038_ting2_routing_registry_prepare.sql';
+export const routingMigrationName = '20260923113515_ting2_routing_registry_prepare.sql';
 export const routingMigration = readFileSync(new URL('../../migrations/'+routingMigrationName,import.meta.url),'utf8');
 
 export async function verifyRoutingPreparation(db,pass,apply=()=>db.query(routingMigration)) {
