@@ -24,7 +24,7 @@ export async function verifyRoutingScope(db,pass,apply=()=>db.query(routeScopeMi
   assert.deepEqual(await rows(role,user,''),[{client_slug:'the-bistro'}]);
   assert.deepEqual(await rows(role,user,'{"x-client-slug":"the-bistro"}'),[{client_slug:'the-bistro'}]);
   assert.deepEqual(await rows(role,user,'{"x-client-slug":"test-b"}'),[{client_slug:'test-b'}]);
-  for(const headers of ['not-json','{"x-client-slug":"unknown"}','{"x-client-slug":""}','{"x-client-slug":null}','{"x-client-slug":" test-b"}'])
+  for(const headers of ['not-json','[]','null','{"x-client-slug":"unknown"}','{"x-client-slug":""}','{"x-client-slug":null}','{"x-client-slug":" test-b"}'])
    assert.deepEqual(await rows(role,user,headers),[]);
   assert.deepEqual(await as(role,user,'{"x-client-slug":"test-b"}',"SELECT client_slug FROM public.restaurant_clients WHERE client_slug = 'the-bistro'"),[]);
   // A forged known slug reveals only that public route; it gives no membership.

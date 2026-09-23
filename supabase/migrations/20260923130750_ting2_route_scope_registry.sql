@@ -27,7 +27,9 @@ BEGIN
     headers := nullif(current_setting('request.headers', true), '')::jsonb;
   EXCEPTION WHEN invalid_text_representation THEN RETURN NULL;
   END;
-  IF headers IS NULL OR NOT headers ? 'x-client-slug' THEN RETURN 'the-bistro'; END IF;
+  IF headers IS NULL THEN RETURN 'the-bistro'; END IF;
+  IF jsonb_typeof(headers) <> 'object' THEN RETURN NULL; END IF;
+  IF NOT headers ? 'x-client-slug' THEN RETURN 'the-bistro'; END IF;
   slug := headers ->> 'x-client-slug';
   IF slug IS NULL OR slug !~ '^[A-Za-z0-9_-]{1,80}$' THEN RETURN NULL; END IF;
   RETURN slug;
