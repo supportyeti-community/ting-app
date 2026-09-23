@@ -19,6 +19,19 @@ jobs:
       - run: npm ci --prefix supabase/baseline
       - run: npm ci --prefix supabase/baseline/native
       - run: node supabase/tests/ting4/storage-listing.mjs
+      - name: Verify existing Bistro public image on PR 11
+        if: github.event_name == 'pull_request' && github.event.pull_request.number == 11
+        run: |
+          node --input-type=module <<'JS'
+          const url = 'https://okrwklulwrfnrhnffbwp.supabase.co/storage/v1/object/public/menu-pictures/1785747462201-tiag1.jpg';
+          const response = await fetch(url, {signal: AbortSignal.timeout(15000)});
+          if (!response.ok || !response.headers.get('content-type')?.startsWith('image/')) {
+            throw new Error(`Existing public image unavailable: HTTP ${response.status}`);
+          }
+          const bytes = (await response.arrayBuffer()).byteLength;
+          if (bytes === 0) throw new Error('Existing public image is empty');
+          console.log(`PASS: existing public image, HTTP ${response.status}, ${bytes} bytes`);
+          JS
       - run: node supabase/baseline/native/run.mjs
         env:
           TING_TEST_ISSUE: ting4
