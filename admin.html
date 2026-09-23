@@ -218,14 +218,29 @@
             await loadLiveMenuFromDatabase();
         }, 10000);
 
-        // Ticket inserts remain real-time; tenant-scoped menu data is polled above.
+        // New and resolved tickets remain real-time. DELETE is intentionally not
+        // subscribed because Postgres Changes cannot tenant-filter delete events.
         supabaseInstance.channel('dashboard-realtime-mutations')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'service_tickets' }, (payload) => {
-                if (payload.eventType === 'INSERT' && payload.new.status === 'pending') {
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'service_tickets',
+                filter: `tenant_id=eq.${tenantId}`
+            }, (payload) => {
+                if (payload.new.status === 'pending') {
                     const row = payload.new;
                     let displayTable = tableMerges[row.table_number.toString()] || row.table_number.toString();
                     triggerHardenedAcousticFeedback(displayTable, row.request_type);
                 }
+                syncServiceTicketsFromCloudDb();
+                refreshLiveAnalyticsMetrics();
+            })
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'service_tickets',
+                filter: `tenant_id=eq.${tenantId}`
+            }, () => {
                 syncServiceTicketsFromCloudDb();
                 refreshLiveAnalyticsMetrics();
             })
@@ -710,6 +725,7 @@
             const { data: tickets, error } = await supabaseInstance
                 .from('service_tickets')
                 .select('*')
+                .eq('tenant_id', tenantId)
                 .eq('status', 'pending')
                 .order('created_at', { ascending: true });
 
@@ -777,6 +793,7 @@
             const { error } = await supabaseInstance
                 .from('service_tickets')
                 .update({ status: 'resolved' })
+                .eq('tenant_id', tenantId)
                 .in('id', targetIdsArray);
 
             if (error) throw error;

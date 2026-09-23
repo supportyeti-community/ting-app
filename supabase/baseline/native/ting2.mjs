@@ -7,6 +7,7 @@ import {historicalFiles} from './history.mjs';
 import {verifyIsolation,migration,migrationName,A,B} from '../../tests/ting2/verify.mjs';
 import {verifyMenuItems,menuMigration,menuMigrationName} from '../../tests/ting2/menu-items.mjs';
 import {verifyMenuEvents,eventMigration,eventMigrationName} from '../../tests/ting2/menu-events.mjs';
+import {verifyServiceTickets,ticketMigration,ticketMigrationName} from '../../tests/ting2/service-tickets.mjs';
 export async function rehearseTing2(db,status,report,command,workdir) {
  const pass=label=>{report.checks.push(label);console.log('PASS: '+label);};
  const directory=join(workdir,'supabase/migrations');mkdirSync(directory,{recursive:true});
@@ -51,6 +52,18 @@ export async function rehearseTing2(db,status,report,command,workdir) {
   command(['db','push','--local','--skip-vault','--yes']);assert.deepEqual(await ledger(),applied);
   pass('Actual menu-event migration: native CLI dry-run, apply once and repeated no-op; prior ledger unchanged');
  });
+ await verifyServiceTickets(db,pass,async()=>{
+  const beforeTickets=await ledger();
+  writeFileSync(join(directory,ticketMigrationName),ticketMigration);
+  command(['db','push','--local','--dry-run','--skip-vault','--yes']);
+  assert.deepEqual(await ledger(),beforeTickets);
+  assert.equal((await db.query("SELECT is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='service_tickets' AND column_name='client_slug'")).rows[0].is_nullable,'YES');
+  command(['db','push','--local','--skip-vault','--yes']);
+  const applied=await ledger();assert.equal(applied.length,beforeTickets.length+1);assert.deepEqual(applied.slice(0,-1),beforeTickets);
+  assert.equal(applied.at(-1).version,ticketMigrationName.split('_')[0]);
+  command(['db','push','--local','--skip-vault','--yes']);assert.deepEqual(await ledger(),applied);
+  pass('Actual service-ticket migration: native CLI dry-run, apply once and repeated no-op; prior ledger unchanged');
+ });
  const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}};
  const service=createClient(status.API_URL,status.SERVICE_ROLE_KEY,options);
  const visitor=createClient(status.API_URL,status.ANON_KEY,{...options,global:{headers:{'x-client-slug':'test-a'}}});
@@ -90,10 +103,20 @@ export async function rehearseTing2(db,status,report,command,workdir) {
   assert.equal(ok(await admin.from('menu_events').select('tenant_id'),'Member analytics').every(row=>row.tenant_id===A),true);
   assert.equal(ok(await admin.from('menu_events').delete().eq('tenant_id',B).select(),'Foreign event delete').length,0);
   ok(await admin.from('menu_events').delete().eq('id',ownEventId).eq('tenant_id',A),'Own event delete');
+  const ownTicketId=randomUUID();
+  ok(await visitor.from('service_tickets').insert({id:ownTicketId,table_number:'7',request_type:'REST assistance'}),'Routed ticket insert');
+  const ownTicket=(await db.query('SELECT tenant_id,client_slug FROM public.service_tickets WHERE id=$1',[ownTicketId])).rows[0];
+  assert.equal(ownTicket.tenant_id,A);assert.equal(ownTicket.client_slug,'test-a');
+  assert((await visitor.from('service_tickets').select('id')).error,'Anonymous ticket read blocked');
+  assert.equal(ok(await admin.from('service_tickets').select('tenant_id'),'Member tickets').every(row=>row.tenant_id===A),true);
+  ok(await admin.from('service_tickets').update({status:'resolved'}).eq('id',ownTicketId).eq('tenant_id',A),'Own ticket resolve');
+  assert.equal(ok(await admin.from('service_tickets').update({status:'resolved'}).eq('tenant_id',B).select(),'Foreign ticket update').length,0);
+  assert((await admin.from('service_tickets').delete().eq('id',ownTicketId)).error,'Client ticket delete blocked');
   await db.query('DELETE FROM public.tenant_memberships WHERE user_id=$1',[user.id]);
   assert.equal(ok(await admin.from('table_configurations').select('*'),'Revoked membership').length,0);
   assert.equal(ok(await admin.from('menu_items').update({name:'revoked'}).eq('tenant_id',A).select(),'Revoked menu write').length,0);
   assert.equal(ok(await admin.from('menu_events').select('id'),'Revoked analytics read').length,0);
-  pass('Real Auth/REST: routed settings, menu and analytics; tenant CRUD, forged-route denial and immediate revocation');
+  assert.equal(ok(await admin.from('service_tickets').select('id'),'Revoked ticket read').length,0);
+  pass('Real Auth/REST: routed settings, menu, analytics and tickets; tenant operations, forged-route denial and immediate revocation');
  } finally {await Promise.allSettled([service.removeAllChannels(),visitor.removeAllChannels(),missing.removeAllChannels(),admin.removeAllChannels()]);}
 }
