@@ -216,7 +216,7 @@ try {
   report.result = 'FAIL';
   report.stage = stage;
   report.reason = error.code === 'ERR_ASSERTION'
-    ? 'Release precondition or verification assertion failed'
+    ? error.message
     : error instanceof SyntaxError
       ? 'CLI did not return expected JSON'
       : error.message;
