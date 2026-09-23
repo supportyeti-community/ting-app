@@ -38,8 +38,11 @@ for(const file of ['index.html','admin.html']) {
   }
   if(scenario==='missing'){assert.equal(creations,0);continue;}
   if(scenario==='unknown'){assert.equal(creations,1);continue;}
-  assert.equal(creations,2);assert.equal(calls[1]?.options,undefined); // routing query recorded between clients
-  assert(calls.some(c=>c.options?.global?.headers['x-client-slug']==='test-a'));
+  assert.equal(creations,2);
+  const clientOptions=calls.filter(c=>Object.hasOwn(c,'options')).map(c=>c.options);
+  assert.equal(clientOptions.length,2);
+  assert.equal(clientOptions[0].global.headers['x-client-slug'],'test-a'); // master routing lookup
+  assert.equal(clientOptions[1].global.headers['x-client-slug'],'test-a'); // tenant client
   if(scenario==='rpc-error'){assert.equal(vm.runInContext('tenantId',context),null);continue;}
   assert.equal(vm.runInContext('tenantId',context),'tenant-a');
   if(file==='admin.html') {
