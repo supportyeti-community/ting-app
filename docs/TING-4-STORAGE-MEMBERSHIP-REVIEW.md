@@ -16,10 +16,14 @@ supported, consistent with the deployed `upsert:false` uploader.
 ## Production preflight (read only)
 
 2026-09-24: one tenant (`the-bistro`, UUID pinned in the migration preflight),
-one owner membership, five flat objects and zero prefixed objects. Four current
-Storage policies use `is_admin()`; public bucket is true. No production object
-was created for this review. A real admin upload through the deployed UI has
-**not** yet been verified.
+one owner membership, five flat objects and one prefixed object. Four current
+Storage policies use `is_admin()`; public bucket is true. Through the deployed
+admin UI, the owner published the user-approved `Thakali Set` item at $25 with
+the supplied JPEG. The browser uploaded a 94,402-byte JPEG under
+`d8e68393-70de-4e77-8c07-51992f2b64a6/e0a69779-3f79-42e9-8377-d549fdd7f0b8.jpg`.
+The item and photo appear on Bistro's public menu, and the stored menu-item URL
+points to this prefixed object. This verifies the current uploader before the
+policy cutover; it does not exercise the new production policy yet.
 
 The migration aborts if a policy name/command/expression changes, or if the
 existing membership helper is absent, is no longer security definer, cannot
@@ -35,15 +39,15 @@ owner/admin membership, as checked in the private helper body.
 2. Cutover decision (2026-09-24): keep the strict policy with **no flat-upload
    fallback**. Require admins to reload open dashboard tabs at release. An old
    tab may fail an upload until refreshed; communicate and monitor this explicitly.
-3. Live upload decision (2026-09-24): defer changing Bistro's only menu image
-   until a real image and target are approved. No synthetic production object or
-   menu item will be created solely to clear this gate.
+3. Live upload completed with the approved Bistro dish and photo. Do not create
+   another production item solely for repeated checks. After the cutover,
+   verify owner listing of the prefixed and legacy objects and public rendering
+   of both images using the existing records.
 4. Before any production apply, verify the live policy fingerprints, bucket,
    Bistro UUID/membership, object counts, and live UI uploader version again.
-   Apply only after explicit release review and a planned live Bistro upload
-   and public URL verification, plus tenant A/B and revocation checks on the disposable
-   stack. Keep TING-4 open until this is complete, and keep TING-8's second-tenant
-   onboarding block independent.
+   Apply only after explicit release review and tenant A/B and revocation checks
+   on the disposable stack. Keep TING-4 open until post-cutover checks are
+   complete, and keep TING-8's second-tenant onboarding block independent.
 
 Rollback requires a reviewed reverse policy migration. Reverting the frontend
 alone after this strict policy would make uploads fail; no automatic broad
