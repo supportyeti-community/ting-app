@@ -23,16 +23,18 @@ was created for this review. A real admin upload through the deployed UI has
 
 ## Release gate
 
-1. Review disposable PGlite and native Storage/Auth checks. The native runner
-   requires Docker and runs in CI; Docker is unavailable in this workspace.
-2. Decide the cached-admin-page cutover. This strict migration rejects flat
-   uploads from older open admin tabs. Either require a reload/window and accept
-   that failure mode, or revise the migration with a time-limited,
-   Bistro-only membership-and-platform-admin fallback, then rehearse it.
-3. Before any production apply, verify the live policy fingerprints, bucket,
+1. Disposable PGlite and native Storage/Auth checks passed in PR #13 CI.
+   The native runner requires Docker, which is unavailable in this workspace.
+2. Cutover decision (2026-09-24): keep the strict policy with **no flat-upload
+   fallback**. Require admins to reload open dashboard tabs at release. An old
+   tab may fail an upload until refreshed; communicate and monitor this explicitly.
+3. Live upload decision (2026-09-24): defer changing Bistro's only menu image
+   until a real image and target are approved. No synthetic production object or
+   menu item will be created solely to clear this gate.
+4. Before any production apply, verify the live policy fingerprints, bucket,
    Bistro UUID/membership, object counts, and live UI uploader version again.
-   Apply only after explicit release review; exercise a new Bistro upload and
-   public URL afterward, plus tenant A/B and revocation checks on the disposable
+   Apply only after explicit release review and a planned live Bistro upload
+   and public URL verification, plus tenant A/B and revocation checks on the disposable
    stack. Keep TING-4 open until this is complete, and keep TING-8's second-tenant
    onboarding block independent.
 
