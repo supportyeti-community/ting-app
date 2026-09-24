@@ -61,6 +61,11 @@ try {
   await assert.rejects(db.exec(migration),/preflight drift/);
   await db.exec('ROLLBACK');
   await db.exec('ALTER POLICY "Admins can upload menu pictures" ON storage.objects WITH CHECK (bucket_id = \'menu-pictures\' AND public.is_admin())');
+  await db.exec('GRANT EXECUTE ON FUNCTION ting_private.can_manage_tenant(uuid) TO anon');
+  await assert.rejects(db.exec(migration),/preflight drift/);
+  await db.exec('ROLLBACK');
+  await db.exec('REVOKE EXECUTE ON FUNCTION ting_private.can_manage_tenant(uuid) FROM anon');
+  console.log('PASS: changed policy and helper grant reject atomically');
   await db.exec(migration);
   assert.equal(await count('authenticated',admin,`name='legacy.jpg'`),1);
   assert.equal(await count('authenticated',admin,`name='${a}/${name}'`),1);

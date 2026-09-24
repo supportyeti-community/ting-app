@@ -21,6 +21,13 @@ Storage policies use `is_admin()`; public bucket is true. No production object
 was created for this review. A real admin upload through the deployed UI has
 **not** yet been verified.
 
+The migration aborts if a policy name/command/expression changes, or if the
+existing membership helper is absent, is no longer security definer, cannot
+be executed by `authenticated`, or can be executed by `anon`. Read-only live
+inspection on 2026-09-24 found the expected four policies and helper grants;
+repeat this immediately before the release. Its caller still needs a valid
+owner/admin membership, as checked in the private helper body.
+
 ## Release gate
 
 1. Disposable PGlite and native Storage/Auth checks passed in PR #13 CI.

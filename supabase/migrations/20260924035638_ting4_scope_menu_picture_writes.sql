@@ -9,24 +9,30 @@ BEGIN
   IF (SELECT count(*) FROM pg_policies WHERE schemaname='storage' AND tablename='objects') <> 4
      OR (SELECT count(*) FROM pg_policies
          WHERE schemaname='storage' AND tablename='objects'
-           AND policyname IN ('Admins can delete menu pictures',
-                              'Admins can list menu pictures',
-                              'Admins can update menu pictures',
-                              'Admins can upload menu pictures')
+           AND (policyname,cmd) IN
+               (('Admins can delete menu pictures','DELETE'),
+                ('Admins can list menu pictures','SELECT'),
+                ('Admins can update menu pictures','UPDATE'))
            AND roles=ARRAY['authenticated']::name[]
            AND permissive='PERMISSIVE'
            AND qual='((bucket_id = ''menu-pictures''::text) AND is_admin())'
-           AND (cmd <> 'UPDATE' OR with_check=qual)
-           AND (cmd <> 'INSERT' OR with_check=qual)) <> 3
+           AND (cmd = 'UPDATE' AND with_check=qual
+                OR cmd IN ('DELETE','SELECT') AND with_check IS NULL)) <> 3
      OR NOT EXISTS (SELECT 1 FROM pg_policies
          WHERE schemaname='storage' AND tablename='objects'
            AND policyname='Admins can upload menu pictures' AND cmd='INSERT'
-           AND roles=ARRAY['authenticated']::name[] AND qual IS NULL
+           AND roles=ARRAY['authenticated']::name[]
+           AND permissive='PERMISSIVE' AND qual IS NULL
            AND with_check='((bucket_id = ''menu-pictures''::text) AND is_admin())')
      OR (SELECT public FROM storage.buckets WHERE id='menu-pictures') IS DISTINCT FROM true
      OR (SELECT id FROM public.tenants WHERE client_slug='the-bistro')
           IS DISTINCT FROM 'd8e68393-70de-4e77-8c07-51992f2b64a6'::uuid
      OR to_regprocedure('ting_private.can_manage_tenant(uuid)') IS NULL
+     OR NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+         WHERE n.nspname='ting_private' AND p.proname='can_manage_tenant'
+           AND p.prosecdef
+           AND has_function_privilege('authenticated',p.oid,'EXECUTE')
+           AND NOT has_function_privilege('anon',p.oid,'EXECUTE'))
   THEN RAISE EXCEPTION 'TING-4 membership policy preflight drift';
   END IF;
 END $preflight$;
