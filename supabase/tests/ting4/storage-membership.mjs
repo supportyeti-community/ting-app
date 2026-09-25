@@ -56,7 +56,7 @@ try {
       ('menu-pictures','legacy.jpg'),('menu-pictures','${a}/${name}'),('menu-pictures','${b}/${name}');
   `);
   await db.exec(read('../../migrations/20260923200127_ting4_restrict_menu_picture_listing.sql'));
-  const migration=read('../../migrations/20260924035638_ting4_scope_menu_picture_writes.sql');
+  const migration=read('../../migrations/20260925013625_ting4_scope_menu_picture_writes.sql');
   await db.exec('ALTER POLICY "Admins can upload menu pictures" ON storage.objects WITH CHECK (true)');
   await assert.rejects(db.exec(migration),/preflight drift/);
   await db.exec('ROLLBACK');
