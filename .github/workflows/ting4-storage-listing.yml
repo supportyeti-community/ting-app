@@ -21,6 +21,7 @@ jobs:
       - run: npm ci --prefix supabase/baseline/native
       - run: node supabase/tests/ting4/storage-listing.mjs
       - run: node supabase/tests/ting4/upload-path.mjs
+      - run: node supabase/tests/ting4/storage-membership.mjs
       - name: Verify existing Bistro public image on PR 11
         if: github.event_name == 'pull_request' && github.event.pull_request.number == 11
         run: |
@@ -36,7 +37,7 @@ jobs:
           JS
       - run: node supabase/baseline/native/run.mjs
         env:
-          TING_TEST_ISSUE: ting4
+          TING_TEST_ISSUE: ting4membership
       - if: always()
         run: |
           if test -f supabase/baseline/native/result.json; then
