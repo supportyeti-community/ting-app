@@ -13,7 +13,7 @@ export async function rehearseTing4(db,{admin,ordinary,visitor},report,command,w
   const ok = (r,label) => { assert(!r.error,`${label} failed`);return r.data; };
   const files = readdirSync(migrations).filter(name=>/^\d+_.*\.sql$/.test(name) && name!==target && name!==memberTarget).sort();
   historicalFiles();
-  assert.equal(files.length,15,'Unexpected source migration count');
+  assert.equal(files.length,16,'Unexpected source migration count');
   const directory = join(workdir,'supabase/migrations');mkdirSync(directory,{recursive:true});
   for (const file of files) writeFileSync(join(directory,file),readFileSync(join(migrations,file)));
   command(['migration','repair',...files.map(file=>file.split('_')[0]),'--local','--status','applied']);
