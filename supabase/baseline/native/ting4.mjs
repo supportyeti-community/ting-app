@@ -8,12 +8,13 @@ import {historicalFiles} from './history.mjs';
 const migrations = fileURLToPath(new URL('../../migrations/',import.meta.url));
 const target = '20260923200127_ting4_restrict_menu_picture_listing.sql';
 const memberTarget = '20260925013625_ting4_scope_menu_picture_writes.sql';
+const postTing4Target = '20260925093356_ting8_admin_membership_gate.sql';
 export async function rehearseTing4(db,{admin,ordinary,visitor},report,command,workdir,status) {
   const pass = label => { report.checks.push(label);console.log('PASS: '+label); };
   const ok = (r,label) => { assert(!r.error,`${label} failed`);return r.data; };
-  const files = readdirSync(migrations).filter(name=>/^\d+_.*\.sql$/.test(name) && name!==target && name!==memberTarget).sort();
+  const files = readdirSync(migrations).filter(name=>/^\d+_.*\.sql$/.test(name) && name!==target && name!==memberTarget && name!==postTing4Target).sort();
   historicalFiles();
-  assert.equal(files.length,16,'Unexpected source migration count');
+  assert.equal(files.length,15,'Unexpected source migration count');
   const directory = join(workdir,'supabase/migrations');mkdirSync(directory,{recursive:true});
   for (const file of files) writeFileSync(join(directory,file),readFileSync(join(migrations,file)));
   command(['migration','repair',...files.map(file=>file.split('_')[0]),'--local','--status','applied']);
