@@ -220,6 +220,22 @@
             return;
         }
         
+        const { data: canManageTenant, error: membershipError } = await supabaseInstance.rpc('can_manage_current_tenant');
+
+        
+        if (membershipError || canManageTenant !== true) {
+
+        
+            renderTenantAccessDenied();
+
+        
+            return;
+
+        
+        }
+
+
+        
         renderMainWorkspaceShellMarkup();
 
         await syncTableMergesFromCloudDb();
@@ -259,6 +275,15 @@
             .subscribe();
         
         loadLiveMenuFromDatabase();
+    }
+
+    function renderTenantAccessDenied() {
+        document.getElementById('admin-app-root').innerHTML = `
+            <div style="max-width: 440px; margin: 100px auto; padding: 32px; background: var(--card-bg); border: 1px solid var(--danger); border-radius: 12px; text-align: center;">
+                <h3 style="color: var(--danger); margin-top: 0;">Access denied</h3>
+                <p style="font-size: 14px; color: #cbd5e1;">This account is not authorized to manage this restaurant.</p>
+                <button class="logout-btn" onclick="executeAdminLogout()" style="margin-top: 12px;">Sign Out</button>
+            </div>`;
     }
 
     function renderMainWorkspaceShellMarkup() {
