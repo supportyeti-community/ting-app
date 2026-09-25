@@ -1,0 +1,27 @@
+name: TING-8 second-tenant gate
+on:
+  pull_request:
+    paths:
+      - 'admin.html'
+      - 'supabase/migrations/20260925093356_ting8_admin_membership_gate.sql'
+      - 'supabase/tests/ting8/**'
+      - '.github/workflows/ting8-second-tenant.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ting8-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  membership-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: node supabase/tests/ting8/admin-membership-gate.mjs
+      - run: node supabase/tests/ting2/frontend.mjs
