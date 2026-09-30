@@ -1,0 +1,29 @@
+name: TING-6 sanitize search path
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20260930030209_ting6_harden_sanitize_text_search_path.sql'
+      - 'supabase/tests/ting6/**'
+      - 'supabase/baseline/schema.sql'
+      - '.github/workflows/ting6-sanitize-search-path.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ting6-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sanitize-search-path:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: node supabase/tests/ting6/sanitize-search-path.mjs
