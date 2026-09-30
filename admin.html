@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FOH Command, Inventory & Pricing Control</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.102.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { 
@@ -392,6 +392,7 @@
                         <input type="password" id="authPassword" required style="width: 100%; padding: 12px; background: var(--dark-bg); border: 1px solid var(--border-clr); color: white; border-radius: 8px; box-sizing: border-box; outline:none;">
                     </div>
                     <button type="submit" style="background: var(--accent); color: white; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size:14px; margin-top:8px;">Sign In to Dashboard</button>
+                    <button type="button" onclick="executeForgotPassword()" style="background:none; border:none; color:#93c5fd; cursor:pointer; font-size:13px; font-weight:700;">Forgot password?</button>
                 </form>
                 <div id="authErrorDisplay" style="color: var(--danger); margin-top: 14px; text-align: center; font-size: 13px; font-weight:600;"></div>
             </div>
@@ -409,6 +410,31 @@
                 window.location.reload();
             }
         });
+    }
+
+    async function executeForgotPassword() {
+        const emailInput = document.getElementById('authEmail');
+        const errDiv = document.getElementById('authErrorDisplay');
+        const email = emailInput?.value.trim();
+
+        if (!email) {
+            errDiv.innerText = 'Enter your email address first.';
+            return;
+        }
+
+        const recoveryUrl = new URL('/reset-password.html', window.location.origin);
+        recoveryUrl.searchParams.set('client', clientSlug);
+
+        const { error } = await supabaseInstance.auth.resetPasswordForEmail(email, {
+            redirectTo: recoveryUrl.toString()
+        });
+
+        if (error) {
+            console.error('Password recovery request failed:', error);
+        }
+
+        errDiv.style.color = '#10b981';
+        errDiv.innerText = 'If an account exists for that email, password reset instructions have been sent.';
     }
 
     async function executeAdminLogout() {
