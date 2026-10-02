@@ -428,6 +428,14 @@
         const recoveryUrl = new URL('/reset-password.html', window.location.origin);
         recoveryUrl.searchParams.set('client', clientSlug);
 
+        // Preview-only: if this admin page was opened through a temporary
+        // Vercel share link, carry that bypass into the recovery redirect so
+        // the email handoff is not intercepted by Deployment Protection.
+        const vercelShareToken = URL_ROUTING_PARAMS.get('_vercel_share')?.trim();
+        if (vercelShareToken) {
+            recoveryUrl.searchParams.set('_vercel_share', vercelShareToken);
+        }
+
         const { error } = await supabaseInstance.auth.resetPasswordForEmail(email, {
             redirectTo: recoveryUrl.toString()
         });
