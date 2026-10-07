@@ -1,0 +1,57 @@
+name: TING-10 one-shot recovery proof hardening
+
+on:
+  push:
+    branches: [ting10-password-lifecycle]
+    paths:
+      - '.github/workflows/ting10-recovery-proof-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ting10-password-lifecycle
+          persist-credentials: true
+      - name: Patch recovery proof and tests
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          reset_path = Path('reset-password.html')
+          reset = reset_path.read_text()
+
+          old = """  let supabaseInstance = null;\n  let recoveryAuthorized = false;\n\n  bootRecovery();\n"""
+          new = """  let supabaseInstance = null;\n  let recoveryAuthorized = false;\n  const recoveryFragment = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));\n  const recoveryType = recoveryFragment.get('type');\n  const recoveryAccessToken = recoveryFragment.get('access_token');\n\n  bootRecovery();\n"""
+          if old not in reset:
+              raise SystemExit('reset prelude target not found')
+          reset = reset.replace(old, new, 1)
+
+          old = """      supabaseInstance.auth.onAuthStateChange((event, session) => {\n        if (event === 'PASSWORD_RECOVERY' && session) authorizeRecovery();\n      });\n\n      const { error:initError } = await supabaseInstance.auth.initialize();\n      if (initError) {\n        console.error('Recovery initialization failed:', initError);\n        return failClosed('This recovery link is invalid or expired. Request a new password reset.');\n      }\n\n      // Deliberately do not infer recovery authorization from URL parameters or\n      // an ordinary authenticated session. Only Supabase's PASSWORD_RECOVERY\n      // auth event may unlock this form.\n      setTimeout(() => {\n        if (!recoveryAuthorized) failClosed('This recovery link is invalid or expired. Request a new password reset.');\n      }, 2500);\n"""
+          new = """      // Capture recovery evidence before initialize() consumes the URL fragment.\n      // A normal authenticated session is insufficient: the fragment must be a\n      // recovery redirect with an access token, and the initialized Supabase\n      // session must contain that exact same token.\n      const { data:initData, error:initError } = await supabaseInstance.auth.initialize();\n      if (initError) {\n        console.error('Recovery initialization failed:', initError);\n        return failClosed('This recovery link is invalid or expired. Request a new password reset.');\n      }\n\n      const initializedSession = initData?.session || null;\n      const hasVerifiedRecoveryProof =\n        recoveryType === 'recovery' &&\n        Boolean(recoveryAccessToken) &&\n        Boolean(initializedSession?.access_token) &&\n        initializedSession.access_token === recoveryAccessToken;\n\n      if (!hasVerifiedRecoveryProof) {\n        return failClosed('This recovery link is invalid or expired. Request a new password reset.');\n      }\n\n      authorizeRecovery();\n"""
+          if old not in reset:
+              raise SystemExit('recovery authorization block target not found')
+          reset = reset.replace(old, new, 1)
+          reset_path.write_text(reset)
+
+          test_path = Path('tests/ting10-password-lifecycle.mjs')
+          test = test_path.read_text()
+          old = """// Recovery must be authorized by Supabase auth state, never URL/session inference.\nmustContain(reset, \"auth:{ skipAutoInitialize:true }\", 'controlled auth initialization');\nmustContain(reset, \"event === 'PASSWORD_RECOVERY'\", 'PASSWORD_RECOVERY gate');\nmustContain(reset, 'await supabaseInstance.auth.initialize()', 'listener-before-initialize ordering');\nmustContain(reset, 'if (!recoveryAuthorized || !supabaseInstance)', 'fail-closed submit guard');\nmustNotContain(reset, 'hasRecoveryEvidence', 'URL-based recovery authorization');\nmustNotContain(reset, 'session &&', 'ordinary session recovery authorization');\n"""
+          new = """// Recovery must be proven by the actual recovery redirect token, not by an ordinary session.\nmustContain(reset, \"auth:{ skipAutoInitialize:true }\", 'controlled auth initialization');\nmustContain(reset, \"recoveryFragment.get('type')\", 'recovery type capture');\nmustContain(reset, \"recoveryFragment.get('access_token')\", 'recovery token capture');\nmustContain(reset, 'const { data:initData, error:initError } = await supabaseInstance.auth.initialize()', 'controlled recovery initialization');\nmustContain(reset, \"recoveryType === 'recovery'\", 'recovery type proof');\nmustContain(reset, 'initializedSession.access_token === recoveryAccessToken', 'exact recovery token/session match');\nmustContain(reset, 'if (!hasVerifiedRecoveryProof)', 'fail-closed recovery proof');\nmustContain(reset, 'if (!recoveryAuthorized || !supabaseInstance)', 'fail-closed submit guard');\nmustNotContain(reset, \"event === 'PASSWORD_RECOVERY'\", 'event-only recovery authorization');\n"""
+          if old not in test:
+              raise SystemExit('test recovery block target not found')
+          test = test.replace(old, new, 1)
+          test_path.write_text(test)
+          PY
+
+          rm .github/workflows/ting10-recovery-proof-once.yml
+
+          git config user.name "supportyeti-community"
+          git config user.email "supportyeti.community@gmail.com"
+          git add reset-password.html tests/ting10-password-lifecycle.mjs .github/workflows/ting10-recovery-proof-once.yml
+          git commit -m "TING-10: require verified recovery token proof"
+          git push origin HEAD:ting10-password-lifecycle
