@@ -50,8 +50,11 @@ mustNotContain(authFallback, 'admin-app-root', 'admin workspace on neutral fallb
 
 // Password replacement and authenticated password change.
 mustContain(reset, 'auth.updateUser({ password })', 'recovery password update');
-mustContain(admin, 'auth.updateUser({ password, currentPassword })', 'current-password verification');
-mustNotContain(admin, 'current_password: currentPassword', 'incorrect current-password option spelling');
+// This branch is pinned to supabase-js 2.102.0. The tagged auth-js UserAttributes
+// for that exact release uses current_password, which the Auth server validates
+// when "Require current password when updating" is enabled.
+mustContain(admin, 'auth.updateUser({ password, current_password: currentPassword })', 'pinned current-password verification');
+mustNotContain(admin, 'auth.updateUser({ password, currentPassword })', 'unsupported current-password option for pinned client');
 
 // TING-8 authorization gate must remain in front of the admin workspace.
 mustContain(admin, "rpc('can_manage_current_tenant')", 'tenant membership RPC');
