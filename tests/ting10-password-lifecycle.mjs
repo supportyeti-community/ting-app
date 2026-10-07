@@ -18,6 +18,9 @@ mustContain(reset, '@supabase/supabase-js@2.102.0', 'pinned supabase-js in recov
 mustContain(admin, 'If an account exists for that email', 'generic recovery response');
 mustContain(admin, 'resetPasswordForEmail(email', 'Supabase password reset call');
 mustContain(admin, "recoveryUrl.searchParams.set('client', clientSlug)", 'tenant route preservation');
+mustContain(admin, "fragment.get('type') !== 'recovery'", 'admin recovery-fragment guard');
+mustContain(admin, "window.location.replace(recoveryUrl.toString())", 'admin recovery redirect');
+mustContain(admin, "auth: { detectSessionInUrl: false }", 'admin refuses auth URL session consumption');
 // Temporary preview bypasses must never ship or return to this flow.
 mustNotContain(admin, '_vercel_share', 'temporary Vercel recovery bypass');
 
