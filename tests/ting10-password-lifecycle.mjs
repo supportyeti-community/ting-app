@@ -18,6 +18,7 @@ mustContain(reset, '@supabase/supabase-js@2.102.0', 'pinned supabase-js in recov
 mustContain(admin, 'If an account exists for that email', 'generic recovery response');
 mustContain(admin, 'resetPasswordForEmail(email', 'Supabase password reset call');
 mustContain(admin, "recoveryUrl.searchParams.set('client', clientSlug)", 'tenant route preservation');
+mustContain(admin, "(window.location.hash || '').replace(/^#/, '')", 'missing-hash-safe recovery parsing');
 mustContain(admin, "fragment.get('type') !== 'recovery'", 'admin recovery-fragment guard');
 mustContain(admin, "recoveryUrl.hash = window.location.hash", 'recovery token preservation');
 mustContain(admin, "window.location.replace(recoveryUrl.toString())", 'admin recovery redirect');
