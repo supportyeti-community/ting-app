@@ -26,13 +26,16 @@ mustContain(admin, "auth: { detectSessionInUrl: false }", 'admin refuses auth UR
 // Temporary preview bypasses must never ship or return to this flow.
 mustNotContain(admin, '_vercel_share', 'temporary Vercel recovery bypass');
 
-// Recovery must be authorized by Supabase auth state, never URL/session inference.
+// Recovery must be proven by the actual recovery redirect token, not by an ordinary session.
 mustContain(reset, "auth:{ skipAutoInitialize:true }", 'controlled auth initialization');
-mustContain(reset, "event === 'PASSWORD_RECOVERY'", 'PASSWORD_RECOVERY gate');
-mustContain(reset, 'await supabaseInstance.auth.initialize()', 'listener-before-initialize ordering');
+mustContain(reset, "recoveryFragment.get('type')", 'recovery type capture');
+mustContain(reset, "recoveryFragment.get('access_token')", 'recovery token capture');
+mustContain(reset, 'const { data:initData, error:initError } = await supabaseInstance.auth.initialize()', 'controlled recovery initialization');
+mustContain(reset, "recoveryType === 'recovery'", 'recovery type proof');
+mustContain(reset, 'initializedSession.access_token === recoveryAccessToken', 'exact recovery token/session match');
+mustContain(reset, 'if (!hasVerifiedRecoveryProof)', 'fail-closed recovery proof');
 mustContain(reset, 'if (!recoveryAuthorized || !supabaseInstance)', 'fail-closed submit guard');
-mustNotContain(reset, 'hasRecoveryEvidence', 'URL-based recovery authorization');
-mustNotContain(reset, 'session &&', 'ordinary session recovery authorization');
+mustNotContain(reset, "event === 'PASSWORD_RECOVERY'", 'event-only recovery authorization');
 
 // Password replacement and authenticated password change.
 mustContain(reset, 'auth.updateUser({ password })', 'recovery password update');
