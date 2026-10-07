@@ -1,11 +1,9 @@
-name: TING-10 one-shot recovery session read fix
+name: TING-10 recovery session read fix
 
 on:
   push:
-    branches:
-      - ting10-password-lifecycle
-    paths:
-      - .github/workflows/ting10-fix-recovery-session-read.yml
+    branches: [ting10-password-lifecycle]
+    paths: [.github/workflows/ting10-fix-recovery-session-read.yml]
 
 permissions:
   contents: write
@@ -18,13 +16,12 @@ jobs:
         with:
           ref: ting10-password-lifecycle
           fetch-depth: 0
-
       - name: Patch reset recovery session read
-        shell: python
         run: |
+          python - <<'PY'
           from pathlib import Path
-          path = Path('reset-password.html')
-          text = path.read_text()
+          p = Path('reset-password.html')
+          s = p.read_text()
           old = """      const { data:initData, error:initError } = await supabaseInstance.auth.initialize();
       if (initError) {
         console.error('Recovery initialization failed:', initError);
@@ -47,16 +44,14 @@ jobs:
 
       const initializedSession = sessionData?.session || null;
 """
-          if old not in text:
-              raise SystemExit('Expected recovery initialization block not found')
-          path.write_text(text.replace(old, new, 1))
-
-      - name: Commit patch and self-delete workflow
+          if old not in s:
+              raise SystemExit('expected block not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Commit patch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add reset-password.html
           git commit -m "TING-10: read recovery session after initialization"
-          git rm .github/workflows/ting10-fix-recovery-session-read.yml
-          git commit -m "TING-10: remove one-shot recovery session fixer"
           git push origin HEAD:ting10-password-lifecycle
