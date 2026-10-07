@@ -20,7 +20,9 @@ mustContain(admin, 'resetPasswordForEmail(email', 'Supabase password reset call'
 mustContain(admin, "recoveryUrl.searchParams.set('client', clientSlug)", 'tenant route preservation');
 
 // Recovery must be authorized by Supabase auth state, never URL/session inference.
+mustContain(reset, "auth:{ skipAutoInitialize:true }", 'controlled auth initialization');
 mustContain(reset, "event === 'PASSWORD_RECOVERY'", 'PASSWORD_RECOVERY gate');
+mustContain(reset, 'await supabaseInstance.auth.initialize()', 'listener-before-initialize ordering');
 mustContain(reset, 'if (!recoveryAuthorized || !supabaseInstance)', 'fail-closed submit guard');
 mustNotContain(reset, 'hasRecoveryEvidence', 'URL-based recovery authorization');
 mustNotContain(reset, 'session &&', 'ordinary session recovery authorization');
