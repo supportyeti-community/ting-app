@@ -11,7 +11,7 @@ const mustNotContain = (source, needle, label) => {
   if (source.includes(needle)) throw new Error(`Unexpected ${label}: ${needle}`);
 };
 
-// Dependency pinning: current_password support is tied to supabase-js >= 2.102.0.
+// Dependency pinning for the authenticated password-change behavior used here.
 mustContain(admin, '@supabase/supabase-js@2.102.0', 'pinned supabase-js in admin');
 mustContain(reset, '@supabase/supabase-js@2.102.0', 'pinned supabase-js in recovery page');
 
