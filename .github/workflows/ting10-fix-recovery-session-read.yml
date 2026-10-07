@@ -1,0 +1,62 @@
+name: TING-10 one-shot recovery session read fix
+
+on:
+  push:
+    branches:
+      - ting10-password-lifecycle
+    paths:
+      - .github/workflows/ting10-fix-recovery-session-read.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ting10-password-lifecycle
+          fetch-depth: 0
+
+      - name: Patch reset recovery session read
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('reset-password.html')
+          text = path.read_text()
+          old = """      const { data:initData, error:initError } = await supabaseInstance.auth.initialize();
+      if (initError) {
+        console.error('Recovery initialization failed:', initError);
+        return failClosed('This recovery link is invalid or expired. Request a new password reset.');
+      }
+
+      const initializedSession = initData?.session || null;
+"""
+          new = """      const { error:initError } = await supabaseInstance.auth.initialize();
+      if (initError) {
+        console.error('Recovery initialization failed:', initError);
+        return failClosed('This recovery link is invalid or expired. Request a new password reset.');
+      }
+
+      const { data:sessionData, error:sessionError } = await supabaseInstance.auth.getSession();
+      if (sessionError) {
+        console.error('Recovery session read failed:', sessionError);
+        return failClosed('This recovery link is invalid or expired. Request a new password reset.');
+      }
+
+      const initializedSession = sessionData?.session || null;
+"""
+          if old not in text:
+              raise SystemExit('Expected recovery initialization block not found')
+          path.write_text(text.replace(old, new, 1))
+
+      - name: Commit patch and self-delete workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reset-password.html
+          git commit -m "TING-10: read recovery session after initialization"
+          git rm .github/workflows/ting10-fix-recovery-session-read.yml
+          git commit -m "TING-10: remove one-shot recovery session fixer"
+          git push origin HEAD:ting10-password-lifecycle
