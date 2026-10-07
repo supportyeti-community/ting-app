@@ -32,6 +32,8 @@ mustContain(reset, "recoveryFragment.get('type')", 'recovery type capture');
 mustContain(reset, "recoveryFragment.get('access_token')", 'recovery token capture');
 mustContain(reset, 'const { data:initData, error:initError } = await supabaseInstance.auth.initialize()', 'controlled recovery initialization');
 mustContain(reset, "recoveryType === 'recovery'", 'recovery type proof');
+mustContain(reset, 'Boolean(recoveryAccessToken)', 'non-empty recovery token proof');
+mustContain(reset, 'Boolean(initializedSession?.access_token)', 'initialized session token proof');
 mustContain(reset, 'initializedSession.access_token === recoveryAccessToken', 'exact recovery token/session match');
 mustContain(reset, 'if (!hasVerifiedRecoveryProof)', 'fail-closed recovery proof');
 mustContain(reset, 'if (!recoveryAuthorized || !supabaseInstance)', 'fail-closed submit guard');
