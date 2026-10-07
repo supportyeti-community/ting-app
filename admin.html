@@ -491,7 +491,7 @@
         if (password !== confirm) { message.style.color=varColor('--danger'); message.innerText='Passwords do not match.'; return; }
         if (password === currentPassword) { message.style.color=varColor('--danger'); message.innerText='Choose a password different from your current password.'; return; }
 
-        const { error } = await supabaseInstance.auth.updateUser({ password, currentPassword });
+        const { error } = await supabaseInstance.auth.updateUser({ password, current_password: currentPassword });
         if (error) { message.style.color=varColor('--danger'); message.innerText=error.message; return; }
 
         message.style.color=varColor('--success');
