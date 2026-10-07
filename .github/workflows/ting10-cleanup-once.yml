@@ -1,0 +1,37 @@
+name: TING-10 one-shot cleanup
+
+on:
+  push:
+    branches:
+      - ting10-password-lifecycle
+    paths:
+      - '.github/workflows/ting10-cleanup-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ting10-password-lifecycle
+      - name: Remove obsolete preview bypass
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('admin.html')
+          text = path.read_text()
+          old = """        // TING-10 preview certification only. This short-lived Vercel share\n        // token lets the recovery email reach the protected preview. Remove\n        // this before merging TING-10 to main.\n        recoveryUrl.searchParams.set('_vercel_share', 'TvgKTDa5VPZtzcUM7GQCkwrfn9FsycKe');\n\n"""
+          if old not in text:
+              raise SystemExit('Expected preview bypass block not found')
+          path.write_text(text.replace(old, '', 1))
+      - name: Commit cleanup and remove one-shot workflow
+        run: |
+          git config user.name "supportyeti-community"
+          git config user.email "supportyeti.community@gmail.com"
+          git rm .github/workflows/ting10-cleanup-once.yml
+          git add admin.html
+          git commit -m "TING-10: remove obsolete preview recovery bypass"
+          git push origin HEAD:ting10-password-lifecycle
