@@ -18,6 +18,7 @@ mustContain(reset, '@supabase/supabase-js@2.102.0', 'pinned supabase-js in recov
 mustContain(admin, 'If an account exists for that email', 'generic recovery response');
 mustContain(admin, 'resetPasswordForEmail(email', 'Supabase password reset call');
 mustContain(admin, "recoveryUrl.searchParams.set('client', clientSlug)", 'tenant route preservation');
+mustNotContain(admin, '_vercel_share', 'temporary Vercel recovery bypass');
 
 // Recovery must be authorized by Supabase auth state, never URL/session inference.
 mustContain(reset, "auth:{ skipAutoInitialize:true }", 'controlled auth initialization');
