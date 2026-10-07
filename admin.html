@@ -118,7 +118,7 @@
     const clientSlug = URL_ROUTING_PARAMS.get('client')?.trim() || null;
 
     function redirectRecoveryAwayFromAdmin() {
-        const fragment = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const fragment = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
         if (fragment.get('type') !== 'recovery') return false;
 
         const recoveryUrl = new URL('/reset-password.html', window.location.origin);
