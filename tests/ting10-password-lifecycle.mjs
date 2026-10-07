@@ -2,6 +2,7 @@ import fs from 'node:fs';
 
 const admin = fs.readFileSync('admin.html', 'utf8');
 const reset = fs.readFileSync('reset-password.html', 'utf8');
+const authFallback = fs.readFileSync('auth.html', 'utf8');
 
 const mustContain = (source, needle, label) => {
   if (!source.includes(needle)) throw new Error(`Missing ${label}: ${needle}`);
@@ -38,6 +39,12 @@ mustContain(reset, 'initializedSession.access_token === recoveryAccessToken', 'e
 mustContain(reset, 'if (!hasVerifiedRecoveryProof)', 'fail-closed recovery proof');
 mustContain(reset, 'if (!recoveryAuthorized || !supabaseInstance)', 'fail-closed submit guard');
 mustNotContain(reset, "event === 'PASSWORD_RECOVERY'", 'event-only recovery authorization');
+
+// The eventual Supabase Site URL fallback must be neutral and non-admin.
+mustContain(authFallback, 'This authentication link cannot open a restaurant workspace directly.', 'neutral auth fallback warning');
+mustNotContain(authFallback, 'can_manage_current_tenant', 'tenant workspace authorization on neutral fallback');
+mustNotContain(authFallback, 'supabase.createClient', 'Supabase session consumption on neutral fallback');
+mustNotContain(authFallback, 'admin-app-root', 'admin workspace on neutral fallback');
 
 // Password replacement and authenticated password change.
 mustContain(reset, 'auth.updateUser({ password })', 'recovery password update');
