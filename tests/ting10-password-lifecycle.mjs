@@ -50,7 +50,8 @@ mustNotContain(authFallback, 'admin-app-root', 'admin workspace on neutral fallb
 
 // Password replacement and authenticated password change.
 mustContain(reset, 'auth.updateUser({ password })', 'recovery password update');
-mustContain(admin, 'current_password: currentPassword', 'current-password verification');
+mustContain(admin, 'auth.updateUser({ password, currentPassword })', 'current-password verification');
+mustNotContain(admin, 'current_password: currentPassword', 'incorrect current-password option spelling');
 
 // TING-8 authorization gate must remain in front of the admin workspace.
 mustContain(admin, "rpc('can_manage_current_tenant')", 'tenant membership RPC');
