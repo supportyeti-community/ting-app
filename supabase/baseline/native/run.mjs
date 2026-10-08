@@ -9,6 +9,7 @@ import { historicalFiles, rehearseHistory } from './history.mjs';
 import { rehearseTing2 } from './ting2.mjs';
 import { rehearseTing4, rehearseTing4Membership } from './ting4.mjs';
 import { rehearseTing11 } from './ting11.mjs';
+import { rehearsePay1 } from './pay1.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const cli = join(root, 'node_modules/.bin/supabase');
@@ -47,6 +48,9 @@ try {
   } else if (process.env.TING_TEST_ISSUE === 'ting11') {
     report.scope = 'TING-11 Ordering v1 behavior and tenant-isolation rehearsal on disposable native Supabase';
     await verify(status, report, null, db => rehearseTing11(db,status,report,command,workdir));
+  } else if (process.env.TING_TEST_ISSUE === 'pay1') {
+    report.scope = 'PAY-1 split-aware payment behavior and tenant-isolation rehearsal on disposable native Supabase';
+    await verify(status, report, null, db => rehearsePay1(db,status,report,command,workdir));
   } else {
     await verify(status, report, db => rehearseHistory(db,report,command,workdir));
   }
