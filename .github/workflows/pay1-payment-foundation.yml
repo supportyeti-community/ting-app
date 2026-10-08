@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - 'docs/PAYMENTS-V1-DESIGN.md'
-      - 'supabase/migrations/20261008110500_pay1_payment_foundation.sql'
+      - 'supabase/migrations/*pay1*.sql'
       - 'supabase/baseline/native/pay1.mjs'
       - 'supabase/baseline/native/run.mjs'
       - 'tests/pay1/**'
@@ -23,7 +23,9 @@ jobs:
         with:
           node-version: '24'
       - name: Payment foundation contract
-        run: node tests/pay1/payment-foundation-contract.mjs
+        run: |
+          node tests/pay1/payment-foundation-contract.mjs
+          node tests/pay1/payment-hardening-contract.mjs
 
   payment-native-rehearsal:
     runs-on: ubuntu-24.04
