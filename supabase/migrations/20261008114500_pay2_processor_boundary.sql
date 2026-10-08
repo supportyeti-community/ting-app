@@ -234,7 +234,10 @@ BEGIN
     RAISE EXCEPTION 'payment provider reference mismatch' USING errcode='23514';
   END IF;
 
-  IF attempt.status = normalized_status THEN
+  -- Stripe can emit payment_failed followed by canceled after the server
+  -- cancels the failed PaymentIntent. Any already-released terminal state is a
+  -- harmless replay as long as the canonical provider reference still matches.
+  IF attempt.status IN ('failed','cancelled','expired') THEN
     RETURN attempt;
   END IF;
 
