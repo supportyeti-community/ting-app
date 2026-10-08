@@ -5,6 +5,8 @@ on:
     paths:
       - 'docs/PAYMENTS-V1-DESIGN.md'
       - 'supabase/migrations/20261008110500_pay1_payment_foundation.sql'
+      - 'supabase/baseline/native/pay1.mjs'
+      - 'supabase/baseline/native/run.mjs'
       - 'tests/pay1/**'
       - '.github/workflows/pay1-payment-foundation.yml'
   workflow_dispatch:
@@ -22,3 +24,29 @@ jobs:
           node-version: '24'
       - name: Payment foundation contract
         run: node tests/pay1/payment-foundation-contract.mjs
+
+  payment-native-rehearsal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install pinned native verification dependencies
+        run: npm ci --prefix supabase/baseline/native
+      - name: Rehearse PAY-1 on disposable native Supabase
+        env:
+          TING_TEST_ISSUE: pay1
+        run: node supabase/baseline/native/run.mjs
+      - name: Publish sanitized rehearsal summary
+        if: always()
+        shell: bash
+        run: |
+          if test -f supabase/baseline/native/result.json; then
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            cat supabase/baseline/native/result.json >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
