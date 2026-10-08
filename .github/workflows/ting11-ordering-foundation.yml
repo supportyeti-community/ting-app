@@ -1,0 +1,28 @@
+name: TING-11 ordering foundation
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261008074200_ting11_ordering_foundation.sql'
+      - 'supabase/tests/ting11/**'
+      - '.github/workflows/ting11-ordering-foundation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ting11-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ordering-foundation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: node supabase/tests/ting11/ordering-foundation.mjs
