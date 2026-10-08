@@ -1,0 +1,46 @@
+name: TING-11 ordering foundation
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/*ting11*'
+      - 'supabase/tests/ting11/**'
+      - 'supabase/baseline/native/ting11.mjs'
+      - 'supabase/baseline/native/run.mjs'
+      - '.github/workflows/ting11-ordering-foundation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ting11-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ordering-foundation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Static ordering contracts
+        run: |
+          for test in supabase/tests/ting11/*.mjs; do
+            node "$test"
+          done
+      - name: Install pinned native verification dependencies
+        run: npm ci --prefix supabase/baseline/native
+      - name: Disposable Supabase ordering rehearsal
+        run: node supabase/baseline/native/run.mjs
+        env:
+          TING_TEST_ISSUE: ting11
+      - name: Sanitized result
+        if: always()
+        run: |
+          if test -f supabase/baseline/native/result.json; then
+            cat supabase/baseline/native/result.json >> "$GITHUB_STEP_SUMMARY"
+          fi
