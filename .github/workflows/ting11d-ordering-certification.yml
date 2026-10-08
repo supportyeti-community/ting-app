@@ -1,0 +1,29 @@
+name: TING-11D ordering certification
+
+on:
+  pull_request:
+    paths:
+      - 'ting11b-cart.js'
+      - 'ting11c-order-board.js'
+      - 'supabase/baseline/native/ting11.mjs'
+      - 'tests/ting11d/**'
+      - '.github/workflows/ting11d-ordering-certification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ordering-certification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Customer cart syntax
+        run: node --check ting11b-cart.js
+      - name: Restaurant order board syntax
+        run: node --check ting11c-order-board.js
+      - name: Cross-layer Ordering v1 certification contracts
+        run: node tests/ting11d/ordering-certification-contract.mjs
