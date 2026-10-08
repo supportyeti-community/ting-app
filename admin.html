@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FOH Command, Inventory & Pricing Control</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.102.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { 
@@ -117,6 +117,21 @@
     const URL_ROUTING_PARAMS = new URLSearchParams(window.location.search);
     const clientSlug = URL_ROUTING_PARAMS.get('client')?.trim() || null;
 
+    function redirectRecoveryAwayFromAdmin() {
+        const fragment = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+        if (fragment.get('type') !== 'recovery') return false;
+
+        const recoveryUrl = new URL('/reset-password.html', window.location.origin);
+        if (clientSlug) recoveryUrl.searchParams.set('client', clientSlug);
+        recoveryUrl.hash = window.location.hash;
+        window.location.replace(recoveryUrl.toString());
+        return true;
+    }
+
+    if (redirectRecoveryAwayFromAdmin()) {
+        throw new Error('Recovery flow redirected away from admin workspace.');
+    }
+
     let adminChannel = null;
     let tenantId = null;
     let supabaseInstance = null; 
@@ -155,7 +170,8 @@
             }
 
             supabaseInstance = supabase.createClient(config.supabase_url, config.supabase_anon_key, {
-                global: { headers: { 'x-client-slug': clientSlug } }
+                global: { headers: { 'x-client-slug': clientSlug } },
+                auth: { detectSessionInUrl: false }
             });
             const { data: resolvedTenant, error: tenantError } = await supabaseInstance.rpc('request_tenant_id');
             if (tenantError || !resolvedTenant) throw new Error('Tenant unavailable');
@@ -290,7 +306,10 @@
         document.getElementById('admin-app-root').innerHTML = `
             <div class="top-search-bar">
                 <input type="text" class="search-input" id="menuSearch" placeholder="🔍 Type food name to filter controls..." onkeyup="executeDashboardLiveSearch(this.value)">
-                <button class="logout-btn" onclick="executeAdminLogout()">Sign Out</button>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button class="logout-btn" onclick="renderChangePasswordDialog()" style="border-color:#64748b; color:#cbd5e1; background:rgba(100,116,139,.12);">Account</button>
+                    <button class="logout-btn" onclick="executeAdminLogout()">Sign Out</button>
+                </div>
             </div>
 
             <div class="workspace-container">
@@ -392,6 +411,7 @@
                         <input type="password" id="authPassword" required style="width: 100%; padding: 12px; background: var(--dark-bg); border: 1px solid var(--border-clr); color: white; border-radius: 8px; box-sizing: border-box; outline:none;">
                     </div>
                     <button type="submit" style="background: var(--accent); color: white; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size:14px; margin-top:8px;">Sign In to Dashboard</button>
+                    <button type="button" onclick="executeForgotPassword()" style="background:none; border:none; color:#93c5fd; cursor:pointer; font-size:13px; font-weight:700;">Forgot password?</button>
                 </form>
                 <div id="authErrorDisplay" style="color: var(--danger); margin-top: 14px; text-align: center; font-size: 13px; font-weight:600;"></div>
             </div>
@@ -409,6 +429,78 @@
                 window.location.reload();
             }
         });
+    }
+
+    async function executeForgotPassword() {
+        const emailInput = document.getElementById('authEmail');
+        const errDiv = document.getElementById('authErrorDisplay');
+        const email = emailInput?.value.trim();
+
+        if (!email) {
+            errDiv.innerText = 'Enter your email address first.';
+            return;
+        }
+
+        const recoveryUrl = new URL('/reset-password.html', window.location.origin);
+        recoveryUrl.searchParams.set('client', clientSlug);
+
+        const { error } = await supabaseInstance.auth.resetPasswordForEmail(email, {
+            redirectTo: recoveryUrl.toString()
+        });
+
+        if (error) {
+            console.error('Password recovery request failed:', error);
+        }
+
+        errDiv.style.color = '#10b981';
+        errDiv.innerText = 'If an account exists for that email, password reset instructions have been sent.';
+    }
+
+    function renderChangePasswordDialog() {
+        const existing = document.getElementById('passwordChangeOverlay');
+        if (existing) existing.remove();
+
+        document.body.insertAdjacentHTML('beforeend', `
+            <div id="passwordChangeOverlay" style="position:fixed; inset:0; z-index:9999; background:rgba(2,6,23,.82); display:grid; place-items:center; padding:24px;">
+                <div style="width:min(400px,100%); padding:28px; background:var(--card-bg); border:1px solid var(--border-clr); border-radius:14px;">
+                    <h3 style="margin:0 0 8px;">Change password</h3>
+                    <p style="margin:0 0 20px; color:#94a3b8; font-size:13px;">Confirm your current password, then choose a new one.</p>
+                    <form id="passwordChangeForm" style="display:flex; flex-direction:column; gap:12px;">
+                        <input id="currentPassword" type="password" autocomplete="current-password" placeholder="Current password" required style="padding:12px; background:var(--dark-bg); border:1px solid var(--border-clr); color:white; border-radius:8px;">
+                        <input id="newAccountPassword" type="password" minlength="8" autocomplete="new-password" placeholder="New password" required style="padding:12px; background:var(--dark-bg); border:1px solid var(--border-clr); color:white; border-radius:8px;">
+                        <input id="confirmAccountPassword" type="password" minlength="8" autocomplete="new-password" placeholder="Confirm new password" required style="padding:12px; background:var(--dark-bg); border:1px solid var(--border-clr); color:white; border-radius:8px;">
+                        <div id="passwordChangeMessage" style="font-size:13px; font-weight:600;"></div>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" onclick="document.getElementById('passwordChangeOverlay').remove()" style="flex:1; padding:12px; border-radius:8px; border:1px solid var(--border-clr); background:transparent; color:#cbd5e1; cursor:pointer;">Cancel</button>
+                            <button type="submit" style="flex:1; padding:12px; border-radius:8px; border:0; background:var(--accent); color:white; font-weight:700; cursor:pointer;">Update password</button>
+                        </div>
+                    </form>
+                </div>
+            </div>`);
+        document.getElementById('passwordChangeForm').addEventListener('submit', executeAuthenticatedPasswordChange);
+    }
+
+    async function executeAuthenticatedPasswordChange(event) {
+        event.preventDefault();
+        const message = document.getElementById('passwordChangeMessage');
+        const currentPassword = document.getElementById('currentPassword').value;
+        const password = document.getElementById('newAccountPassword').value;
+        const confirm = document.getElementById('confirmAccountPassword').value;
+
+        if (password.length < 8) { message.style.color=varColor('--danger'); message.innerText='Use at least 8 characters.'; return; }
+        if (password !== confirm) { message.style.color=varColor('--danger'); message.innerText='Passwords do not match.'; return; }
+        if (password === currentPassword) { message.style.color=varColor('--danger'); message.innerText='Choose a password different from your current password.'; return; }
+
+        const { error } = await supabaseInstance.auth.updateUser({ password, current_password: currentPassword });
+        if (error) { message.style.color=varColor('--danger'); message.innerText=error.message; return; }
+
+        message.style.color=varColor('--success');
+        message.innerText='Password updated successfully.';
+        document.getElementById('passwordChangeForm').reset();
+    }
+
+    function varColor(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     }
 
     async function executeAdminLogout() {
