@@ -1,0 +1,64 @@
+name: PAY-2 Stripe sandbox
+
+on:
+  pull_request:
+    paths:
+      - 'api/payments/**'
+      - 'lib/payments-server.js'
+      - 'package.json'
+      - 'docs/PAY-2-DESIGN.md'
+      - 'supabase/migrations/*pay2*.sql'
+      - 'supabase/baseline/native/pay2.mjs'
+      - 'supabase/baseline/native/run.mjs'
+      - 'tests/pay2/**'
+      - '.github/workflows/pay2-stripe-sandbox.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pay2-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install pinned server dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Syntax check payment functions
+        run: |
+          node --check api/payments/create-intent.js
+          node --check api/payments/stripe-webhook.js
+          node --check lib/payments-server.js
+      - name: PAY-2 cross-layer contract
+        run: node tests/pay2/stripe-sandbox-contract.mjs
+
+  pay2-native-rehearsal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install pinned native verification dependencies
+        run: npm ci --prefix supabase/baseline/native
+      - name: Rehearse PAY-2 on disposable native Supabase
+        env:
+          TING_TEST_ISSUE: pay2
+        run: node supabase/baseline/native/run.mjs
+      - name: Publish sanitized rehearsal summary
+        if: always()
+        shell: bash
+        run: |
+          if test -f supabase/baseline/native/result.json; then
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            cat supabase/baseline/native/result.json >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
