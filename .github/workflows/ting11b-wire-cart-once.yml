@@ -28,8 +28,7 @@ jobs:
               marker = b'</body>'
               if source.count(marker) != 1:
                   raise SystemExit('Expected exactly one </body> marker')
-              newline = b'\r\n' if b'\r\n' in source else b'\n'
-              source = source.replace(marker, b'    ' + tag + newline + marker, 1)
+              source = source.replace(marker, b'    ' + tag + b'\n' + marker, 1)
               path.write_bytes(source)
           PY
       - name: Remove one-time wiring workflow
