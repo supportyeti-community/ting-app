@@ -1,6 +1,7 @@
 import getRawBody from 'raw-body';
 import {
   confirmAttemptFromStripe,
+  isStripeAccountId,
   isUuid,
   releaseAttempt,
   stripeClient,
@@ -13,9 +14,9 @@ export const config = {
   },
 };
 
-async function cancelFailedIntent(stripe, intent) {
+async function cancelFailedIntent(stripe, intent, connectedAccountId) {
   if (intent.status === 'canceled' || intent.status === 'succeeded') return intent;
-  return stripe.paymentIntents.cancel(intent.id);
+  return stripe.paymentIntents.cancel(intent.id, {}, { stripeAccount: connectedAccountId });
 }
 
 export default async function handler(request, response) {
@@ -32,6 +33,11 @@ export default async function handler(request, response) {
 
     if (event.livemode) return response.status(400).json({ error: 'Live Stripe events are disabled during PAY-2 sandbox' });
 
+    const connectedAccountId = event.account;
+    if (!isStripeAccountId(connectedAccountId)) {
+      throw new Error('Stripe Connect event missing connected account id');
+    }
+
     const intent = event.data?.object;
     if (!intent || intent.object !== 'payment_intent') return response.status(200).json({ received: true, ignored: true });
 
@@ -40,14 +46,15 @@ export default async function handler(request, response) {
 
     switch (event.type) {
       case 'payment_intent.succeeded':
-        await confirmAttemptFromStripe(intent);
+        await confirmAttemptFromStripe(intent, connectedAccountId);
         break;
 
       case 'payment_intent.payment_failed': {
-        const cancelled = await cancelFailedIntent(stripe, intent);
+        const cancelled = await cancelFailedIntent(stripe, intent, connectedAccountId);
         if (cancelled.status !== 'canceled') throw new Error('Failed PaymentIntent could not be cancelled before releasing TinG reservation');
         await releaseAttempt({
           attemptId,
+          providerAccountId: connectedAccountId,
           providerPaymentId: intent.id,
           terminalStatus: 'failed',
           failureCode: intent.last_payment_error?.code || 'payment_failed',
@@ -59,6 +66,7 @@ export default async function handler(request, response) {
       case 'payment_intent.canceled':
         await releaseAttempt({
           attemptId,
+          providerAccountId: connectedAccountId,
           providerPaymentId: intent.id,
           terminalStatus: 'cancelled',
           failureCode: intent.cancellation_reason || 'processor_cancelled',
@@ -72,7 +80,11 @@ export default async function handler(request, response) {
 
     return response.status(200).json({ received: true });
   } catch (error) {
-    console.error('PAY-2 Stripe webhook rejected', { message: error.message, eventType: event?.type || null });
+    console.error('PAY-2 Stripe webhook rejected', {
+      message: error.message,
+      eventType: event?.type || null,
+      connectedAccountId: event?.account || null,
+    });
     return response.status(400).json({ error: 'Webhook rejected' });
   }
 }
