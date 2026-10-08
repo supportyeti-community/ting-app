@@ -6,6 +6,7 @@ import {
   moneyToMinorUnits,
   oneRow,
   releaseAttempt,
+  resolveStripeConnectedAccount,
   stripeClient,
   supabaseRpc,
 } from '../../lib/payments-server.js';
@@ -29,6 +30,7 @@ export default async function handler(request, response) {
 
   let attempt = null;
   let intent = null;
+  let connectedAccountId = null;
 
   try {
     const stripe = stripeClient();
@@ -49,19 +51,38 @@ export default async function handler(request, response) {
     const canonicalCents = moneyToMinorUnits(attempt.requested_amount);
     if (canonicalCents !== requestedCents) throw new Error('Canonical payment amount mismatch');
 
+    try {
+      connectedAccountId = await resolveStripeConnectedAccount(attempt.tenant_id);
+    } catch (error) {
+      if (attempt.status === 'created') {
+        await abortCreatedAttempt({
+          attemptId: attempt.id,
+          failureCode: 'stripe_account_unavailable',
+          failureMessage: error.message,
+        });
+      }
+      throw error;
+    }
+
     if (attempt.status === 'pending') {
       if (attempt.provider !== 'stripe' || !attempt.provider_payment_id) throw new Error('Existing pending payment uses an unexpected provider binding');
-      const existingIntent = await stripe.paymentIntents.retrieve(attempt.provider_payment_id);
+      if (attempt.provider_account_id !== connectedAccountId) throw new Error('Existing pending payment uses an unexpected connected account');
+      const existingIntent = await stripe.paymentIntents.retrieve(
+        attempt.provider_payment_id,
+        {},
+        { stripeAccount: connectedAccountId },
+      );
       if (existingIntent.livemode) throw new Error('Live Stripe PaymentIntent encountered during PAY-2 sandbox');
       if (existingIntent.amount !== canonicalCents || existingIntent.currency !== 'aud') throw new Error('Existing Stripe PaymentIntent amount/currency mismatch');
 
       if (existingIntent.status === 'succeeded') {
-        await confirmAttemptFromStripe(existingIntent);
+        await confirmAttemptFromStripe(existingIntent, connectedAccountId);
         return response.status(409).json({ error: 'Payment already succeeded' });
       }
       if (existingIntent.status === 'canceled') {
         await releaseAttempt({
           attemptId: attempt.id,
+          providerAccountId: connectedAccountId,
           providerPaymentId: existingIntent.id,
           terminalStatus: 'cancelled',
           failureCode: existingIntent.cancellation_reason || 'processor_cancelled',
@@ -72,6 +93,7 @@ export default async function handler(request, response) {
 
       return response.status(200).json({
         payment_attempt_id: attempt.id,
+        connected_account_id: connectedAccountId,
         client_secret: existingIntent.client_secret,
         amount: attempt.requested_amount,
         currency: attempt.currency,
@@ -92,6 +114,7 @@ export default async function handler(request, response) {
           ting_tenant_id: attempt.tenant_id,
         },
       }, {
+        stripeAccount: connectedAccountId,
         idempotencyKey: `ting-attempt-${attempt.id}`,
       });
     } catch (error) {
@@ -104,7 +127,7 @@ export default async function handler(request, response) {
     }
 
     if (intent.livemode) {
-      try { await stripe.paymentIntents.cancel(intent.id); } catch {}
+      try { await stripe.paymentIntents.cancel(intent.id, {}, { stripeAccount: connectedAccountId }); } catch {}
       await abortCreatedAttempt({
         attemptId: attempt.id,
         failureCode: 'live_mode_rejected',
@@ -120,13 +143,14 @@ export default async function handler(request, response) {
         body: {
           p_attempt_id: attempt.id,
           p_provider: 'stripe',
+          p_provider_account_id: connectedAccountId,
           p_provider_payment_id: intent.id,
         },
       }));
     } catch (error) {
       let cancelled = false;
       try {
-        const result = await stripe.paymentIntents.cancel(intent.id);
+        const result = await stripe.paymentIntents.cancel(intent.id, {}, { stripeAccount: connectedAccountId });
         cancelled = result.status === 'canceled';
       } catch {}
       if (cancelled) {
@@ -141,13 +165,20 @@ export default async function handler(request, response) {
 
     return response.status(200).json({
       payment_attempt_id: bound.id,
+      connected_account_id: connectedAccountId,
       client_secret: intent.client_secret,
       amount: bound.requested_amount,
       currency: bound.currency,
       reused: false,
     });
   } catch (error) {
-    console.error('PAY-2 create-intent failed', { message: error.message, status: error.status || null, attemptId: attempt?.id || null, intentId: intent?.id || null });
+    console.error('PAY-2 create-intent failed', {
+      message: error.message,
+      status: error.status || null,
+      attemptId: attempt?.id || null,
+      intentId: intent?.id || null,
+      connectedAccountId,
+    });
     return response.status(error.status && error.status < 500 ? error.status : 500).json({ error: 'Unable to start payment' });
   }
 }
