@@ -287,12 +287,18 @@
     }
 
     function init() {
-        injectStyles();
-        injectCartUi();
-        startMenuObserver();
-        renderCartState();
+        try {
+            injectStyles();
+            injectCartUi();
+            startMenuObserver();
+            renderCartState();
+            window.ting11bCartReady = true;
+        } catch (error) {
+            window.ting11bCartReady = false;
+            console.error('TING-11B cart initialization failed safely:', error);
+        }
     }
 
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
-    else init();
+    if (document.readyState === 'complete') init();
+    else window.addEventListener('load', init, { once: true });
 })();
