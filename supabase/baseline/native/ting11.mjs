@@ -47,17 +47,25 @@ export async function rehearseTing11(db, status, report, command, workdir) {
   const ledger = async () => (await db.query(
     "SELECT version,name FROM supabase_migrations.schema_migrations ORDER BY version"
   )).rows;
-  const before = await ledger();
+  let currentLedger = await ledger();
 
-  for (const name of releaseFiles) writeFileSync(join(directory, name), sourceSql(name));
-  command(['db', 'push', '--local', '--dry-run', '--skip-vault', '--yes']);
-  assert.deepEqual(await ledger(), before, 'dry-run changed migration history');
+  for (const name of releaseFiles) {
+    writeFileSync(join(directory, name), sourceSql(name));
+    command(['db', 'push', '--local', '--dry-run', '--skip-vault', '--yes']);
+    assert.deepEqual(await ledger(), currentLedger, 'dry-run changed migration history before ' + name);
+    try {
+      command(['db', 'push', '--local', '--skip-vault', '--yes']);
+    } catch {
+      throw new Error('Release migration failed: ' + name);
+    }
+    const applied = await ledger();
+    assert.equal(applied.length, currentLedger.length + 1, 'unexpected ledger growth after ' + name);
+    assert.equal(applied.at(-1).version, name.split('_')[0], 'wrong migration recorded for ' + name);
+    currentLedger = applied;
+  }
   command(['db', 'push', '--local', '--skip-vault', '--yes']);
-  const after = await ledger();
-  assert.equal(after.length, before.length + releaseFiles.length, 'unexpected TING-11 migration count');
-  command(['db', 'push', '--local', '--skip-vault', '--yes']);
-  assert.deepEqual(await ledger(), after, 'second TING-11 push was not a no-op');
-  pass('Current release chain + TING-11 migrations dry-run, apply once, and repeated no-op');
+  assert.deepEqual(await ledger(), currentLedger, 'second TING-11 release-chain push was not a no-op');
+  pass('Current release chain + TING-11 migrations dry-run/apply individually and repeated no-op');
 
   await db.query(
     `INSERT INTO public.tenants(id,client_slug) VALUES ($1,'order-a'),($2,'order-b')`,
