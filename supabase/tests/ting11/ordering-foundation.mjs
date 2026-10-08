@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 
 const migration = readFileSync(
-  new URL('../../migrations/20261008074200_ting11_ordering_foundation.sql', import.meta.url),
+  new URL('../../migrations/20261008082142_ting11_ordering_foundation.sql', import.meta.url),
   'utf8'
 );
 

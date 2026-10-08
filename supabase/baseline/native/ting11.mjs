@@ -17,7 +17,7 @@ const releaseFiles=[
  '20260923113515_ting2_routing_registry_prepare.sql',ROUTE_SCOPE,
  '20260923200127_ting4_restrict_menu_picture_listing.sql',MEMBER_SCOPE,
  '20260925093356_ting8_admin_membership_gate.sql','20260930030209_ting6_harden_sanitize_text_search_path.sql',
- '20261008074200_ting11_ordering_foundation.sql','20261008075500_ting11_order_item_tenant_coupling.sql'
+ '20261008082142_ting11_ordering_foundation.sql','20261008082156_ting11_order_item_tenant_coupling.sql'
 ];
 const sourceSql=name=>readFileSync(new URL('../../migrations/'+name,import.meta.url),'utf8');
 
