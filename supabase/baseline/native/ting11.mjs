@@ -8,12 +8,14 @@ import { historicalFiles } from './history.mjs';
 const A='10000000-0000-4000-8000-000000000011', B='10000000-0000-4000-8000-000000000012';
 const ITEM_A='30000000-0000-4000-8000-000000000011', ITEM_PROMO='30000000-0000-4000-8000-000000000012';
 const ITEM_OUT='30000000-0000-4000-8000-000000000013', ITEM_B='30000000-0000-4000-8000-000000000014';
+const BISTRO='d8e68393-70de-4e77-8c07-51992f2b64a6';
 const ROUTE_SCOPE='20260923132307_ting2_route_scope_registry.sql';
+const MEMBER_SCOPE='20260925013625_ting4_scope_menu_picture_writes.sql';
 const releaseFiles=[
  '20260918144301_ting2_settings_table_isolation.sql','20260922054639_ting2_menu_item_isolation.sql',
  '20260922155033_ting2_menu_event_isolation.sql','20260923101432_ting2_service_ticket_authorization.sql',
  '20260923113515_ting2_routing_registry_prepare.sql',ROUTE_SCOPE,
- '20260923200127_ting4_restrict_menu_picture_listing.sql','20260925013625_ting4_scope_menu_picture_writes.sql',
+ '20260923200127_ting4_restrict_menu_picture_listing.sql',MEMBER_SCOPE,
  '20260925093356_ting8_admin_membership_gate.sql','20260930030209_ting6_harden_sanitize_text_search_path.sql',
  '20261008074200_ting11_ordering_foundation.sql','20261008075500_ting11_order_item_tenant_coupling.sql'
 ];
@@ -32,6 +34,10 @@ export async function rehearseTing11(db,status,report,command,workdir){
   if(name===ROUTE_SCOPE){
    const n=(await db.query("SELECT count(*)::int AS n FROM public.restaurant_clients WHERE client_slug='the-bistro'")).rows[0].n;
    if(n===0)await db.query("INSERT INTO public.restaurant_clients(client_slug,supabase_url,supabase_anon_key,restaurant_name) VALUES ('the-bistro','http://127.0.0.1:54321','local-public-key','Bistro')");
+  }
+  if(name===MEMBER_SCOPE){
+   const n=(await db.query('SELECT count(*)::int AS n FROM public.tenants WHERE id=$1',[BISTRO])).rows[0].n;
+   if(n===0)await db.query("INSERT INTO public.tenants(id,client_slug) VALUES ($1,'the-bistro')",[BISTRO]);
   }
   writeFileSync(join(directory,name),sourceSql(name));
   command(['db','push','--local','--dry-run','--skip-vault','--yes']);
