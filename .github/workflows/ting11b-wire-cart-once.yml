@@ -1,0 +1,43 @@
+name: TING-11B wire cart once
+on:
+  push:
+    branches:
+      - ting11b-customer-cart
+    paths:
+      - '.github/workflows/ting11b-wire-cart-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  wire:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ting11b-customer-cart
+          fetch-depth: 0
+      - name: Add cart module include
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('index.html')
+          source = path.read_text()
+          tag = '<script src="ting11b-cart.js"></script>'
+          if tag not in source:
+              marker = '</body>'
+              if source.count(marker) != 1:
+                  raise SystemExit('Expected exactly one </body> marker')
+              source = source.replace(marker, f'    {tag}\n{marker}')
+              path.write_text(source)
+          PY
+      - name: Remove one-time wiring workflow
+        run: rm .github/workflows/ting11b-wire-cart-once.yml
+      - name: Commit exact integration edit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .github/workflows/ting11b-wire-cart-once.yml
+          git diff --cached --check
+          git commit -m "TING-11B: load customer cart module"
+          git push origin HEAD:ting11b-customer-cart
