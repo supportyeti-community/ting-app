@@ -17,19 +17,20 @@ jobs:
         with:
           ref: ting11b-customer-cart
           fetch-depth: 0
-      - name: Add cart module include
+      - name: Add cart module include without normalizing existing bytes
         run: |
           python - <<'PY'
           from pathlib import Path
           path = Path('index.html')
-          source = path.read_text()
-          tag = '<script src="ting11b-cart.js"></script>'
+          source = path.read_bytes()
+          tag = b'<script src="ting11b-cart.js"></script>'
           if tag not in source:
-              marker = '</body>'
+              marker = b'</body>'
               if source.count(marker) != 1:
                   raise SystemExit('Expected exactly one </body> marker')
-              source = source.replace(marker, f'    {tag}\n{marker}')
-              path.write_text(source)
+              newline = b'\r\n' if b'\r\n' in source else b'\n'
+              source = source.replace(marker, b'    ' + tag + newline + marker, 1)
+              path.write_bytes(source)
           PY
       - name: Remove one-time wiring workflow
         run: rm .github/workflows/ting11b-wire-cart-once.yml
