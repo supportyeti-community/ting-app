@@ -1,0 +1,32 @@
+name: TING-11B customer ordering
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'ting11b-cart.js'
+      - 'tests/ting11b/**'
+      - '.github/workflows/ting11b-customer-ordering.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ting11b-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  customer-ordering:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Cart bundle syntax
+        run: node --check ting11b-cart.js
+      - name: Customer ordering contracts
+        run: node tests/ting11b/customer-ordering-contract.mjs
