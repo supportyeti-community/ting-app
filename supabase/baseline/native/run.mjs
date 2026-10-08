@@ -8,6 +8,7 @@ import { verify } from './verify.mjs';
 import { historicalFiles, rehearseHistory } from './history.mjs';
 import { rehearseTing2 } from './ting2.mjs';
 import { rehearseTing4, rehearseTing4Membership } from './ting4.mjs';
+import { rehearseTing11 } from './ting11.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const cli = join(root, 'node_modules/.bin/supabase');
@@ -43,6 +44,9 @@ try {
   } else if (process.env.TING_TEST_ISSUE === 'ting4membership') {
     report.scope = 'TING-4 tenant-member Storage policy rehearsal on disposable native Supabase';
     await verify(status, report, null, (db,clients) => rehearseTing4Membership(db,clients,report,command,workdir,status));
+  } else if (process.env.TING_TEST_ISSUE === 'ting11') {
+    report.scope = 'TING-11 Ordering v1 behavior and tenant-isolation rehearsal on disposable native Supabase';
+    await verify(status, report, null, db => rehearseTing11(db,status,report,command,workdir));
   } else {
     await verify(status, report, db => rehearseHistory(db,report,command,workdir));
   }
