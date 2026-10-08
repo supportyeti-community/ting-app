@@ -20,5 +20,7 @@ assert(source.includes("String(error.code || '').startsWith('23')"), 'database v
 assert(source.includes('const requestId = crypto.randomUUID();'), 'each checkout attempt must create one idempotency key');
 assert(source.includes("logTelemetryAnalyticsEvent('order_submitted'"), 'successful order submission should emit telemetry');
 assert(source.includes('Final pricing and availability are revalidated by TinG'), 'UI must communicate that cart totals are estimates');
+assert(source.includes('observer.observe(wrapper, { childList: true });'), 'menu observer must watch only direct menu replacement mutations');
+assert(!source.includes('subtree: true'), 'cart observer must not recursively observe its own card-control mutations');
 
-console.log('PASS: TING-11B customer page loads a cart that submits only menu ids/quantities through the route-bound idempotent order RPC');
+console.log('PASS: TING-11B customer page loads a non-recursive cart that submits only menu ids/quantities through the route-bound idempotent order RPC');
