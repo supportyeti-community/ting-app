@@ -282,7 +282,7 @@
         const wrapper = document.getElementById('menu-wrapper');
         if (!wrapper) return;
         const observer = new MutationObserver(() => decorateMenuCards());
-        observer.observe(wrapper, { childList: true, subtree: true });
+        observer.observe(wrapper, { childList: true });
         decorateMenuCards();
     }
 
