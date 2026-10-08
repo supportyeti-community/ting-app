@@ -2,7 +2,7 @@ name: TING-11 ordering foundation
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/20261008074200_ting11_ordering_foundation.sql'
+      - 'supabase/migrations/*ting11*'
       - 'supabase/tests/ting11/**'
       - '.github/workflows/ting11-ordering-foundation.yml'
   workflow_dispatch:
@@ -25,4 +25,7 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
-      - run: node supabase/tests/ting11/ordering-foundation.mjs
+      - run: |
+          for test in supabase/tests/ting11/*.mjs; do
+            node "$test"
+          done
