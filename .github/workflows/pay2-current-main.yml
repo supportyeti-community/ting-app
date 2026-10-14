@@ -1,0 +1,31 @@
+name: PAY-2 current-main recovery
+
+on:
+  pull_request:
+    paths:
+      - 'api/payments/**'
+      - 'lib/payments-server.js'
+      - 'package.json'
+      - 'supabase/migrations/*pay2*'
+      - 'tests/pay2/**'
+      - '.github/workflows/pay2-current-main.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pay2-current-main-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax check payment server files
+        run: |
+          node --check lib/payments-server.js
+          node --check api/payments/create-intent.js
+          node --check api/payments/stripe-webhook.js
+      - name: Run PAY-2 hardened contract
+        run: node tests/pay2/current-main-contract.mjs
