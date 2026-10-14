@@ -395,3 +395,68 @@
     if (document.readyState === 'complete') init();
     else window.addEventListener('load', init, { once: true });
 })();
+
+(() => {
+    'use strict';
+
+    const CELIAC_GUIDANCE_COPY = '⚠️ Dietary guidance only: items shown are venue-tagged options. TinG does not guarantee zero gluten or cross-contact. If you have coeliac disease or a medical allergy, use Medical Allergy Inquiry and confirm with venue staff before ordering.';
+
+    function enforceAllergenSafetyCopy() {
+        const disclaimer = document.getElementById('disclaimer');
+        if (disclaimer) {
+            disclaimer.textContent = CELIAC_GUIDANCE_COPY;
+        }
+
+        const celiacButton = [...document.querySelectorAll('.filter-btn')]
+            .find(button => String(button.getAttribute('onclick') || '').includes("filterMenu('celiac'"));
+        if (celiacButton) {
+            celiacButton.innerHTML = '<span>🌾</span>Celiac / Allergy Info';
+        }
+
+        document.querySelectorAll('.tag-celiac').forEach(tag => {
+            tag.textContent = 'Ask About Celiac';
+        });
+    }
+
+    function safeFilterMenu(cat, btn) {
+        document.querySelectorAll('.filter-btn').forEach(button => button.classList.remove('active', 'celiac-active'));
+        const disclaimer = document.getElementById('disclaimer');
+
+        if (cat === 'celiac') {
+            btn.classList.add('celiac-active');
+            if (disclaimer) disclaimer.style.display = 'block';
+        } else {
+            btn.classList.add('active');
+            if (disclaimer) disclaimer.style.display = 'none';
+        }
+
+        document.querySelectorAll('.menu-card').forEach(card => {
+            if (card.style.opacity === '0.25') return;
+            const tags = String(card.getAttribute('data-tags') || '').split(' ').filter(Boolean);
+            if (cat === 'all') card.style.display = 'flex';
+            else if (cat === 'celiac') card.style.display = tags.includes('celiac') ? 'flex' : 'none';
+            else card.style.display = tags.includes(cat) ? 'flex' : 'none';
+        });
+
+        if (typeof logTelemetryAnalyticsEvent === 'function') {
+            logTelemetryAnalyticsEvent('filter_used', null, { active_filter: cat });
+        }
+    }
+
+    function installAllergenSafetyContract() {
+        window.filterMenu = safeFilterMenu;
+        enforceAllergenSafetyCopy();
+
+        const wrapper = document.getElementById('menu-wrapper');
+        if (wrapper) {
+            const observer = new MutationObserver(() => enforceAllergenSafetyCopy());
+            observer.observe(wrapper, { childList: true, subtree: true });
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', installAllergenSafetyContract, { once: true });
+    } else {
+        installAllergenSafetyContract();
+    }
+})();
