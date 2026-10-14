@@ -22,10 +22,18 @@ jobs:
   pay2-current-main-contract:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install locked payment runtime dependencies
+        run: npm ci --ignore-scripts
+      - name: Audit production dependency graph
+        run: npm audit --omit=dev --audit-level=high
       - name: Syntax check payment server files
         run: |
           node --check lib/payments-server.js
@@ -34,20 +42,15 @@ jobs:
           node --check supabase/baseline/native/pay2.mjs
       - name: Run PAY-2 hardened contract
         run: node tests/pay2/current-main-contract.mjs
-      - name: Generate candidate root lockfile from pinned direct dependencies
-        run: |
-          npm install --package-lock-only --ignore-scripts
-          npm audit --omit=dev --audit-level=high
-          printf 'PAY2_ROOT_LOCK_B64='
-          base64 -w0 package-lock.json
-          printf '\n'
 
   pay2-native-rehearsal:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
           cache: npm
