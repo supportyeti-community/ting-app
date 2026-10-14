@@ -66,6 +66,55 @@
         return true;
     }
 
+    function securedAssistanceAvailable() {
+        if (!clientSlug || !tableIdentifier) {
+            showToastNotification('⚠️ Scan your table’s QR/NFC tag before requesting assistance.');
+            return false;
+        }
+        if (!tableAccessToken) {
+            showToastNotification('⚠️ This table link is not authorized for assistance. Scan this table’s QR/NFC tag again.');
+            return false;
+        }
+        if (!supabaseInstance || !tenantId) {
+            showToastNotification('⚠️ Venue connection unavailable. Please try again shortly or ask a staff member directly.');
+            return false;
+        }
+        return true;
+    }
+
+    async function submitServiceTicketWithRetry(requestType, requestId, retries = 3) {
+        if (!securedAssistanceAvailable()) return false;
+        for (let attempt = 0; attempt < retries; attempt++) {
+            try {
+                const { error } = await supabaseInstance.rpc('submit_service_ticket', {
+                    p_id: requestId,
+                    p_table_number: tableNumber,
+                    p_request_type: requestType,
+                    p_table_token: tableAccessToken
+                });
+                if (!error) return true;
+                if (String(error.code || '') === '42501') {
+                    showToastNotification('⚠️ This table link is no longer authorized. Scan the table QR/NFC tag again.');
+                    return false;
+                }
+                if (String(error.code || '').startsWith('23')) throw error;
+                if (attempt === retries - 1) throw error;
+            } catch (error) {
+                if (attempt === retries - 1 || String(error?.code || '').startsWith('23')) {
+                    showToastNotification('⚠️ Connection lost. Please grab the nearest staff member directly.');
+                    return false;
+                }
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        }
+        return false;
+    }
+
+    function installSecuredAssistanceBridge() {
+        window.assistanceAvailable = securedAssistanceAvailable;
+        window.emitSignalWithRetry = submitServiceTicketWithRetry;
+    }
+
     function cartCount() {
         let count = 0;
         for (const item of cart.values()) count += item.quantity;
@@ -331,6 +380,7 @@
     function init() {
         try {
             tableAccessToken = hydrateTableAccessToken();
+            installSecuredAssistanceBridge();
             injectStyles();
             injectCartUi();
             startMenuObserver();
