@@ -18,7 +18,7 @@ const releaseFiles=[
  '20260923200127_ting4_restrict_menu_picture_listing.sql',MEMBER_SCOPE,
  '20260925093356_ting8_admin_membership_gate.sql','20260930030209_ting6_harden_sanitize_text_search_path.sql',
  '20261008082142_ting11_ordering_foundation.sql','20261008082156_ting11_order_item_tenant_coupling.sql',
- '20261015000000_ting11_table_access_context.sql'
+ '20261015000000_ting11_table_access_context.sql','20261015010000_ting11_service_ticket_table_context.sql'
 ];
 const sourceSql=name=>readFileSync(new URL('../../migrations/'+name,import.meta.url),'utf8');
 
@@ -82,6 +82,18 @@ export async function rehearseTing11(db,status,report,command,workdir){
   await denied(adminSpoofA.rpc('issue_table_access_context',{p_table_number:'2'}),'spoofed route capability issue');
   await denied(visitorA.rpc('submit_order',{p_table_number:'13',p_client_request_id:randomUUID(),p_items:[{menu_item_id:ITEM_A,quantity:1}],p_table_token:issued.token}),'cross-table capability replay');
   pass('Only a tenant manager can issue a capability, and the capability is bound to its tenant/table');
+
+  assert((await visitorA.from('service_tickets').insert({id:randomUUID(),table_number:'12',request_type:'Water',status:'pending'})).error);
+  await denied(visitorA.rpc('submit_service_ticket',{p_id:randomUUID(),p_table_number:'12',p_request_type:'Water'}),'assistance missing table capability');
+  await denied(visitorA.rpc('submit_service_ticket',{p_id:randomUUID(),p_table_number:'12',p_request_type:'Water',p_table_token:'f'.repeat(64)}),'assistance unknown table capability');
+  await denied(visitorA.rpc('submit_service_ticket',{p_id:randomUUID(),p_table_number:'13',p_request_type:'Water',p_table_token:issued.token}),'assistance cross-table capability replay');
+  const ticketId=randomUUID();
+  const ticket=row(ok(await visitorA.rpc('submit_service_ticket',{p_id:ticketId,p_table_number:'12',p_request_type:'Water Refill',p_table_token:issued.token}),'submit secured assistance'));
+  assert.equal(ticket.id,ticketId);assert.equal(ticket.tenant_id,A);assert.equal(ticket.table_number,'12');assert.equal(ticket.status,'pending');assert.equal(ticket.request_type,'Water Refill');
+  const ticketRetry=row(ok(await visitorA.rpc('submit_service_ticket',{p_id:ticketId,p_table_number:'12',p_request_type:'Water Refill',p_table_token:issued.token}),'retry secured assistance'));
+  assert.equal(ticketRetry.id,ticketId);assert.equal((await db.query('SELECT count(*)::int n FROM public.service_tickets WHERE id=$1',[ticketId])).rows[0].n,1);
+  await denied(visitorB.rpc('submit_service_ticket',{p_id:randomUUID(),p_table_number:'12',p_request_type:'Water Refill',p_table_token:issued.token}),'cross-tenant assistance capability replay');
+  pass('Guest assistance is RPC-only, capability-bound, idempotent, and rejects cross-table/cross-tenant replay');
 
   const requestId=randomUUID();
   const submitted=row(ok(await visitorA.rpc('submit_order',{p_table_number:' 12 ',p_client_request_id:requestId,p_items:[{menu_item_id:ITEM_A,quantity:2,price:.01,total:.02,tenant_id:B,name:'forged'},{menu_item_id:ITEM_PROMO,quantity:1,price:.01}],p_table_token:issued.token}),'submit capability-bound routed order'));
