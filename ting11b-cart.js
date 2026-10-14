@@ -6,6 +6,41 @@
     let cartBar = null;
     let cartButton = null;
     let submitting = false;
+    let tableAccessToken = null;
+
+    function tableContextStorageKey() {
+        if (typeof clientSlug === 'undefined' || !clientSlug || typeof tableIdentifier === 'undefined' || !tableIdentifier) return null;
+        return `ting:table-context:${clientSlug}:${tableIdentifier}`;
+    }
+
+    function hydrateTableAccessToken() {
+        const storageKey = tableContextStorageKey();
+        if (!storageKey) return null;
+
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('ctx')) {
+            const candidate = String(params.get('ctx') || '').trim().toLowerCase();
+            params.delete('ctx');
+            const nextQuery = params.toString();
+            const cleanedUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash || ''}`;
+            window.history.replaceState({}, document.title, cleanedUrl);
+
+            if (!/^[0-9a-f]{64}$/.test(candidate)) {
+                try { sessionStorage.removeItem(storageKey); } catch {}
+                return null;
+            }
+
+            try { sessionStorage.setItem(storageKey, candidate); } catch {}
+            return candidate;
+        }
+
+        try {
+            const stored = String(sessionStorage.getItem(storageKey) || '').trim().toLowerCase();
+            return /^[0-9a-f]{64}$/.test(stored) ? stored : null;
+        } catch {
+            return null;
+        }
+    }
 
     function money(value) {
         return `$${Number(value || 0).toFixed(2)}`;
@@ -18,6 +53,10 @@
     function orderContextAvailable() {
         if (!clientSlug || !tableIdentifier) {
             showToastNotification('⚠️ Scan your table’s QR code before placing an order.');
+            return false;
+        }
+        if (!tableAccessToken) {
+            showToastNotification('⚠️ This menu is not authorized for table ordering. Scan this table’s QR/NFC tag again.');
             return false;
         }
         if (!supabaseInstance || !tenantId) {
@@ -219,10 +258,11 @@
             const { data, error } = await supabaseInstance.rpc('submit_order', {
                 p_table_number: tableNumber,
                 p_client_request_id: requestId,
-                p_items: orderItems
+                p_items: orderItems,
+                p_table_token: tableAccessToken
             });
             if (!error) return { data: Array.isArray(data) ? data[0] : data, error: null };
-            if (String(error.code || '').startsWith('23') || attempt === retries - 1) return { data: null, error };
+            if (String(error.code || '').startsWith('23') || String(error.code || '') === '42501' || attempt === retries - 1) return { data: null, error };
             await new Promise(resolve => setTimeout(resolve, 700 * (attempt + 1)));
         }
         return { data: null, error: new Error('Order submission failed') };
@@ -245,7 +285,9 @@
             renderCartSheet();
             const message = error?.message?.includes('out of stock')
                 ? '⚠️ One of your items is now out of stock. Please review your cart.'
-                : '⚠️ We could not place the order. Your cart is still here—please try again.';
+                : error?.message?.includes('table access context')
+                    ? '⚠️ This table link is no longer authorized. Scan the table QR/NFC tag again.'
+                    : '⚠️ We could not place the order. Your cart is still here—please try again.';
             showToastNotification(message);
             return;
         }
@@ -288,6 +330,7 @@
 
     function init() {
         try {
+            tableAccessToken = hydrateTableAccessToken();
             injectStyles();
             injectCartUi();
             startMenuObserver();
