@@ -7,6 +7,8 @@ on:
       - 'lib/payments-server.js'
       - 'package.json'
       - 'supabase/migrations/*pay2*'
+      - 'supabase/baseline/native/pay2.mjs'
+      - 'supabase/baseline/native/run.mjs'
       - 'tests/pay2/**'
       - '.github/workflows/pay2-current-main.yml'
   workflow_dispatch:
@@ -27,5 +29,25 @@ jobs:
           node --check lib/payments-server.js
           node --check api/payments/create-intent.js
           node --check api/payments/stripe-webhook.js
+          node --check supabase/baseline/native/pay2.mjs
       - name: Run PAY-2 hardened contract
         run: node tests/pay2/current-main-contract.mjs
+
+  pay2-native-rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: supabase/baseline/native/package-lock.json
+      - name: Install pinned native verification dependencies
+        working-directory: supabase/baseline/native
+        run: npm ci
+      - name: Run PAY-2 disposable Supabase rehearsal
+        working-directory: supabase/baseline/native
+        env:
+          TING_TEST_ISSUE: pay2
+        run: npm test
