@@ -11,7 +11,10 @@ const STRIPE_A='acct_ting_test_a';
 const STRIPE_WRONG='acct_ting_wrong';
 const PAY2='20261015020000_pay2_current_main_recovery.sql';
 const TOKEN_A='a'.repeat(64);
-const TOKEN_B='b'.repeat(64);
+// TING-11 already uses 'b'.repeat(64) for Tenant B in the shared rehearsal.
+// Keep PAY-2's Tenant-B capability distinct so the fixture respects the
+// production UNIQUE (tenant_id, token_hash) invariant rather than weakening it.
+const TOKEN_B='d'.repeat(64);
 const TOKEN_WRONG='c'.repeat(64);
 const sourceSql=()=>readFileSync(new URL('../../migrations/'+PAY2,import.meta.url),'utf8');
 
