@@ -30,7 +30,11 @@ jobs:
           tmp_file="$(mktemp)"
           trap 'rm -f "$tmp_file"' EXIT
 
-          git ls-files -z '*.js' '*.mjs' > "$tmp_file"
+          if ! git ls-files -z '*.js' '*.mjs' > "$tmp_file"; then
+            echo "Failed to enumerate tracked JavaScript files." >&2
+            exit 1
+          fi
+
           mapfile -d '' -t files < "$tmp_file"
 
           if [ "${#files[@]}" -eq 0 ]; then
