@@ -28,7 +28,14 @@ Typical examples: copy, icons, spacing, non-functional presentation changes.
 Required pre-merge evidence:
 - internal code review;
 - automated checks relevant to the changed files;
-- preview verification.
+- preview verification;
+- a security-impact assessment confirming whether dedicated security review is required.
+
+Low risk does **not** mean security review is categorically exempt. If the security-impact assessment identifies any effect on trust boundaries, data authority, tenant resolution, authentication, authorization, persistence, ordering, payments, migrations, secrets, or exposed configuration, the change must be reclassified and the appropriate security review performed.
+
+Required post-release evidence:
+- verify the affected production path or rendered surface after deployment when the change reaches production;
+- if verification fails, contain, roll back, or apply a reviewed forward-fix appropriate to the blast radius.
 
 A low-risk change must be reclassified if it touches data authority, tenant resolution, authentication, authorization, persistence, ordering, payments, or migrations.
 
@@ -43,6 +50,10 @@ Required pre-merge evidence:
 - CodeRabbit review;
 - preview smoke test;
 - rollback path understood.
+
+Required post-release evidence:
+- production smoke test of the affected path;
+- if verification fails, contain, roll back, or apply a reviewed forward-fix according to the documented recovery path.
 
 ### High
 
@@ -86,6 +97,8 @@ Review correctness, edge cases, failure handling, maintainability, duplication, 
 ### 2. Security review
 
 Answer: **Does the change preserve TinG's security invariants and fail closed?**
+
+Every PR records a security-impact assessment. Low-risk PRs may mark dedicated security review **N/A** only when the assessment concludes that no relevant security boundary is touched and the rationale is recorded in the PR. Medium- and High-risk PRs require the security review defined by their risk class.
 
 At minimum review, when relevant:
 - canonical `tenant_id` ownership and cross-tenant isolation;
@@ -169,11 +182,14 @@ A non-blocking finding may be accepted only with a short rationale recorded in t
 
 - **Built** — implementation complete.
 - **Reviewed** — internal code review passed.
-- **Secured** — required security review passed.
+- **Secured** — required security review passed, or a Low-risk security-impact assessment recorded why dedicated review is N/A.
 - **Verified** — required automation and independent review passed.
 - **Staged** — required preview/staging verification passed.
 - **Prod Green** — all required pre-merge gates for the current risk class have passed; no blocking finding remains; recovery is understood; safe to merge/deploy within the stated blast radius.
-- **Released** — production deployment and required production smoke test passed.
+- **Released** — production deployment and required production verification passed.
+- **Contained** — post-release verification found an issue and the affected behavior was safely disabled, isolated, or otherwise limited.
+- **Rolled Back** — the deployment was reverted to the last known-good state.
+- **Forward Fixed** — a reviewed corrective change restored the affected production path without rollback.
 - **Stable** — no material release-related issue observed after verification.
 
 ## Prod Green
