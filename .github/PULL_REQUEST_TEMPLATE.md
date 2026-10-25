@@ -19,6 +19,8 @@
 - Risk: **Low / Medium / High**
 - Maximum plausible blast radius: **Local / Flow / Tenant / Platform**
 - Security-sensitive: **No / Yes — explain:**
+- Security-impact assessment:
+- If dedicated security review is N/A, rationale:
 - Prod Green gates required by `RELEASE_POLICY.md`:
 
 ## Security and tenant impact
@@ -65,6 +67,7 @@
 
 ### Security review
 - Status: **N/A / Pending / Pass / Blocked**
+- Security-impact assessment/rationale:
 - Security invariants/negative paths checked:
 - Material findings:
 
@@ -81,7 +84,7 @@
 
 ### Production smoke test
 <!-- Complete after release when required. -->
-- Status: **N/A / Pending / Pass / Rollback triggered**
+- Status: **N/A / Pending / Pass / Contained / Rollback triggered / Forward fixed**
 - Evidence/notes:
 
 ## Acceptance gaps / unresolved risk
@@ -92,6 +95,7 @@
 
 - [ ] Scope matches the canonical work item/product decision.
 - [ ] Risk and blast radius are classified correctly.
+- [ ] Security-impact assessment is recorded; any N/A dedicated security review has rationale.
 - [ ] Required automated checks pass at the current PR head.
 - [ ] Internal code review passes.
 - [ ] Required security review passes and relevant TinG security invariants remain true.
@@ -107,4 +111,7 @@
 
 ## Post-merge / release work
 
--
+- Production verification required: **No / Yes — describe:**
+- If verification fails: **Contain / Roll back / Reviewed forward-fix**
+- Final production status: **Not deployed / Released / Contained / Rolled Back / Forward Fixed / Stable**
+- Evidence / follow-up:
