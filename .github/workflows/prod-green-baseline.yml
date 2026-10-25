@@ -24,7 +24,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t files < <(git ls-files '*.js' '*.mjs')
+
+          tmp_file="$(mktemp)"
+          trap 'rm -f "$tmp_file"' EXIT
+
+          git ls-files -z '*.js' '*.mjs' > "$tmp_file"
+          mapfile -d '' -t files < "$tmp_file"
+
           if [ "${#files[@]}" -eq 0 ]; then
             echo "No tracked JavaScript files found."
             exit 0
