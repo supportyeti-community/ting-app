@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TinG treats production release as a controlled engineering decision, not the end of coding. A change is **Prod Green** only when the required evidence for its risk level is complete and there are no unresolved blocking findings.
+TinG treats production release as a controlled engineering decision, not the end of coding. A change is **Prod Green** only when the required **pre-merge / pre-release** evidence for its risk level is complete and there are no unresolved blocking findings. Post-release production verification is a separate obligation used to determine whether a deployed change is **Released** and then **Stable**.
 
 ## Core release path
 
@@ -14,9 +14,10 @@ TinG treats production release as a controlled engineering decision, not the end
 6. Perform a security review.
 7. Obtain an independent CodeRabbit review when required.
 8. Verify the deployed preview/staging path.
-9. Merge only when the required gates are green.
-10. Verify the affected production path after deployment.
-11. If production behavior is abnormal, contain or roll back before attempting broad live repair.
+9. Merge only when the required pre-merge gates are green and the PR is Prod Green.
+10. Deploy to production.
+11. Verify the affected production path after deployment.
+12. If production behavior is abnormal, contain or roll back before attempting broad live repair.
 
 ## Risk classes
 
@@ -24,7 +25,7 @@ TinG treats production release as a controlled engineering decision, not the end
 
 Typical examples: copy, icons, spacing, non-functional presentation changes.
 
-Required evidence:
+Required pre-merge evidence:
 - internal code review;
 - automated checks relevant to the changed files;
 - preview verification.
@@ -35,7 +36,7 @@ A low-risk change must be reclassified if it touches data authority, tenant reso
 
 Typical examples: component behavior, dashboard logic, guest-flow logic, API consumption, order-state UI behavior.
 
-Required evidence:
+Required pre-merge evidence:
 - internal code review;
 - security-impact review;
 - automated checks;
@@ -47,7 +48,7 @@ Required evidence:
 
 Typical examples: tenant isolation, RLS/policies, authentication, authorization, privileged actions, database migrations, ordering write paths, payments, vouchers/entitlements, service-role boundaries, production configuration with security impact.
 
-Required evidence:
+Required pre-merge evidence:
 - internal code review;
 - dedicated security review;
 - automated checks and relevant regression tests;
@@ -55,8 +56,13 @@ Required evidence:
 - preview/staging smoke test;
 - adversarial negative-path test;
 - explicit blast-radius assessment;
-- explicit rollback or forward-fix plan;
-- production smoke test after release.
+- explicit rollback or forward-fix plan.
+
+Required post-release evidence:
+- production smoke test of the affected path;
+- immediate containment or rollback if the production verification fails.
+
+A High-risk PR may become **Prod Green** before production deployment when all required pre-merge evidence is complete. It becomes **Released** only after the required production smoke test passes.
 
 ## Blast radius
 
@@ -110,6 +116,10 @@ A material code change after review invalidates any affected approval and requir
 
 Test the actual affected journey, not only isolated functions. For ordering-related changes this normally includes the guest path and venue/admin path. High-risk tenant work must include a negative cross-tenant assertion.
 
+### 6. Production verification
+
+Production verification happens **after deployment** and is not a pre-merge Prod Green gate. It confirms that the deployed change behaves correctly in the live environment and determines whether the deployment can be called **Released**. Failure triggers containment, rollback, or a reviewed forward-fix according to the documented recovery plan.
+
 ## TinG security invariants
 
 These must remain true unless an explicitly approved architecture decision changes them:
@@ -162,11 +172,14 @@ A non-blocking finding may be accepted only with a short rationale recorded in t
 - **Secured** — required security review passed.
 - **Verified** — required automation and independent review passed.
 - **Staged** — required preview/staging verification passed.
-- **Released** — production deployment and production smoke test passed.
+- **Prod Green** — all required pre-merge gates for the current risk class have passed; no blocking finding remains; recovery is understood; safe to merge/deploy within the stated blast radius.
+- **Released** — production deployment and required production smoke test passed.
 - **Stable** — no material release-related issue observed after verification.
 
 ## Prod Green
 
-**Prod Green** means the change has satisfied every gate required by its risk class at the current PR head, there is no unresolved blocking finding, the recovery path is understood, and the change is safe to release within the stated blast radius.
+**Prod Green** means the change has satisfied every **pre-merge** gate required by its risk class at the current PR head, there is no unresolved blocking finding, the recovery path is understood, and the change is safe to release within the stated blast radius.
+
+Post-release production smoke testing is deliberately excluded from the Prod Green pre-merge definition. It is required to move a deployment from **Prod Green** to **Released** when the change's risk class requires it.
 
 "Code complete", "CI green", or "CodeRabbit approved" alone never means Prod Green.
