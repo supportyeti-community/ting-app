@@ -1,0 +1,36 @@
+name: Prod Green baseline
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  javascript-syntax:
+    name: JavaScript syntax baseline
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+
+      - name: Check tracked JavaScript modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(git ls-files '*.js' '*.mjs')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No tracked JavaScript files found."
+            exit 0
+          fi
+
+          printf 'Checking %s JavaScript files...\n' "${#files[@]}"
+          for file in "${files[@]}"; do
+            node --check "$file"
+          done
