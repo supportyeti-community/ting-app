@@ -8,10 +8,14 @@
     preparing: { next: 'ready', label: 'Mark Ready' },
     ready: { next: 'completed', label: 'Complete Order' }
   };
+  const RECONCILE_INTERVAL_MS = 15000;
 
   let orderBoardChannel = null;
   let boardInitialized = false;
   let refreshInFlight = false;
+  let pollingTimer = null;
+  let lastSuccessfulRefreshAt = 0;
+  let realtimeState = 'connecting';
 
   function money(value) {
     const amount = Number(value || 0);
@@ -128,6 +132,15 @@
     return `${hours}h ${minutes % 60}m ago`;
   }
 
+  function setBoardHealth(state) {
+    const health = document.getElementById('tingOrdersHealth');
+    if (!health) return;
+    const stale = !lastSuccessfulRefreshAt || Date.now() - lastSuccessfulRefreshAt > RECONCILE_INTERVAL_MS * 2;
+    const degraded = state === 'degraded' || stale;
+    health.dataset.state = degraded ? 'degraded' : state;
+    health.textContent = degraded ? 'Degraded' : state === 'live' ? 'Live' : 'Reconnecting';
+  }
+
   function injectStyles() {
     if (document.getElementById('ting11c-order-board-style')) return;
     document.head.insertAdjacentHTML('beforeend', `
@@ -135,6 +148,10 @@
         .ting-orders-section { margin: 0 0 26px; padding: 18px; background: #10172a; border: 1px solid var(--border-clr); border-radius: 14px; }
         .ting-orders-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
         .ting-orders-heading h2 { margin:0; font-size:17px; font-weight:800; }
+        .ting-orders-heading-status { display:flex; align-items:center; gap:8px; }
+        .ting-orders-health { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:#86efac; border:1px solid #166534; background:rgba(22,101,52,.16); padding:4px 8px; border-radius:999px; }
+        .ting-orders-health[data-state="reconnecting"] { color:#fde68a; border-color:#a16207; background:rgba(161,98,7,.16); }
+        .ting-orders-health[data-state="degraded"] { color:#fecaca; border-color:#b91c1c; background:rgba(185,28,28,.16); }
         .ting-orders-count { font-size:11px; font-weight:800; color:#fdba74; border:1px solid #c2410c; background:rgba(194,65,12,.16); padding:4px 9px; border-radius:999px; }
         .ting-orders-grid { display:grid; grid-template-columns:1fr; gap:12px; }
         .ting-order-card { border:1px solid #334155; border-left:5px solid var(--accent); background:#131d36; border-radius:12px; padding:14px; }
@@ -172,7 +189,10 @@
             <h2>Restaurant Orders</h2>
             <div style="font-size:11px;color:#94a3b8;margin-top:3px;">Live kitchen / FOH order queue</div>
           </div>
-          <div id="tingOrdersCount" class="ting-orders-count">0 ACTIVE</div>
+          <div class="ting-orders-heading-status">
+            <div id="tingOrdersHealth" class="ting-orders-health" data-state="reconnecting">Reconnecting</div>
+            <div id="tingOrdersCount" class="ting-orders-count">0 ACTIVE</div>
+          </div>
         </div>
         <div id="tingOrdersGrid" class="ting-orders-grid">
           <div class="ting-orders-empty">Loading orders…</div>
@@ -255,10 +275,15 @@
     try {
       const orders = await fetchActiveOrders();
       renderOrders(orders);
+      lastSuccessfulRefreshAt = Date.now();
+      setBoardHealth(realtimeState === 'subscribed' ? 'live' : 'reconnecting');
     } catch (error) {
       console.error('TING-11C order board refresh failed:', error);
+      setBoardHealth('degraded');
       const grid = document.getElementById('tingOrdersGrid');
-      if (grid) grid.innerHTML = '<div class="ting-orders-error">Orders could not be loaded. Refresh the dashboard or try again.</div>';
+      if (grid && !lastSuccessfulRefreshAt) {
+        grid.innerHTML = '<div class="ting-orders-error">Orders could not be loaded. Refresh the dashboard or try again.</div>';
+      }
     } finally {
       refreshInFlight = false;
     }
@@ -295,8 +320,26 @@
     });
   }
 
+  function handleVisibilityChange() {
+    if (document.visibilityState === 'visible') refreshOrderBoard();
+  }
+
+  function handleOnline() {
+    setBoardHealth('reconnecting');
+    refreshOrderBoard();
+  }
+
+  function startReconciliation() {
+    if (pollingTimer) clearInterval(pollingTimer);
+    pollingTimer = setInterval(refreshOrderBoard, RECONCILE_INTERVAL_MS);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+  }
+
   function subscribeToOrders() {
     if (orderBoardChannel) supabaseInstance.removeChannel(orderBoardChannel);
+    realtimeState = 'connecting';
+    setBoardHealth('reconnecting');
     orderBoardChannel = supabaseInstance
       .channel(`orders:${tenantId}`)
       .on('postgres_changes', {
@@ -311,7 +354,11 @@
         table: 'orders',
         filter: `tenant_id=eq.${tenantId}`
       }, refreshOrderBoard)
-      .subscribe();
+      .subscribe(status => {
+        realtimeState = status === 'SUBSCRIBED' ? 'subscribed' : 'connecting';
+        setBoardHealth(status === 'SUBSCRIBED' ? 'live' : 'reconnecting');
+        if (status === 'SUBSCRIBED') refreshOrderBoard();
+      });
   }
 
   async function initOrderBoard() {
@@ -322,6 +369,7 @@
     boardInitialized = true;
     injectStyles();
     bindBoardEvents();
+    startReconciliation();
     subscribeToOrders();
     await refreshOrderBoard();
   }
@@ -346,6 +394,9 @@
   }, 250);
 
   window.addEventListener('beforeunload', () => {
+    if (pollingTimer) clearInterval(pollingTimer);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.removeEventListener('online', handleOnline);
     if (orderBoardChannel && typeof supabaseInstance !== 'undefined' && supabaseInstance) {
       supabaseInstance.removeChannel(orderBoardChannel);
     }
