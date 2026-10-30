@@ -22,5 +22,17 @@ assert(source.includes(".in('status', ACTIVE_STATUSES)"), 'board should only sho
 assert(source.includes('item_name_snapshot'), 'board must display immutable item snapshots');
 assert(source.includes('line_total'), 'board must display stored line totals');
 assert(source.includes('boardInitialized'), 'module must guard against duplicate initialization');
+assert(source.includes('const RECONCILE_INTERVAL_MS = 15000'), 'order board must reconcile from the database every 15 seconds');
+assert(source.includes("document.addEventListener('visibilitychange', handleVisibilityChange)"), 'order board must reconcile when the dashboard becomes visible');
+assert(source.includes("window.addEventListener('online', handleOnline)"), 'order board must reconcile when connectivity returns');
+assert(source.includes("document.visibilityState === 'visible'"), 'visibility reconciliation must only run when the document becomes visible');
+assert(source.includes('.subscribe(status =>'), 'order board must inspect realtime subscription state');
+assert(source.includes("status === 'SUBSCRIBED'"), 'realtime subscription success must be detected');
+assert(source.includes("if (status === 'SUBSCRIBED') refreshOrderBoard()"), 'realtime reconnect must reconcile from authoritative database state');
+assert(source.includes("setBoardHealth('degraded')"), 'failed authoritative refreshes must expose degraded state');
+assert(source.includes('lastSuccessfulRefreshAt'), 'board must track the last successful authoritative refresh');
+assert(source.includes("document.removeEventListener('visibilitychange', handleVisibilityChange)"), 'visibility listener must be cleaned up');
+assert(source.includes("window.removeEventListener('online', handleOnline)"), 'online listener must be cleaned up');
+assert(source.includes('clearInterval(pollingTimer)'), 'polling timer must be cleaned up');
 
-console.log('PASS: TING-11C admin order board is tenant-scoped, realtime, snapshot-based, and advances status only through the guarded RPC');
+console.log('PASS: TING-11C admin order board is tenant-scoped, realtime-assisted, reconciles every 15 seconds and on reconnect/visibility/online, exposes degraded state, and advances status only through the guarded RPC');
