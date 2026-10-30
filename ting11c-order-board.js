@@ -284,7 +284,7 @@
       const matchingButton = Array.from(grid.querySelectorAll('[data-order-action]')).find(button =>
         button.dataset.orderId === focused.orderId && button.dataset.nextStatus === focused.nextStatus
       );
-      matchingButton?.focus();
+      matchingButton?.focus({ preventScroll: true });
     }
   }
 
