@@ -335,7 +335,7 @@
                             <h4 style="margin:0 0 6px 0; font-size:11px; color:var(--info); text-transform:uppercase;">📱 Get Table QR Code</h4>
                             <div style="display: flex; gap: 6px;">
                                 <input type="text" id="qrTargetTable" placeholder="Table #" style="width: 40%; padding: 8px; background: var(--dark-bg); border: 1px solid var(--border-clr); color: white; border-radius: 6px; font-weight: 700; text-align: center; outline:none; font-size:13px;">
-                                <button onclick="generateTableQrCodeCanvas()" style="width: 60%; background: var(--info); color: white; border: none; padding: 8px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size:12px;">Generate QR</button>
+                                <button onclick="generateTableQrCodeCanvas()" style="width: 60%; background: var(--info); color: white; border: none; padding: 8px; border-radius: 6px; font-weight: 700; cursor:pointer; font-size:12px;">Generate QR</button>
                             </div>
                             <div id="qrContainerWrapper" style="display:none; text-align:center; margin-top:10px;">
                                 <div id="qrCodeTargetArea" class="qr-wrapper"></div>
@@ -521,52 +521,152 @@
         const pricingContainer = document.getElementById('dynamicPricingContainer');
         if (!inventoryContainer || !pricingContainer) return;
 
-        inventoryContainer.innerHTML = '';
-        pricingContainer.innerHTML = '';
+        inventoryContainer.replaceChildren();
+        pricingContainer.replaceChildren();
 
         items.forEach((dish, idx) => {
-            const safeName = sanitize(dish.name);
-            const safeDesc = sanitize(dish.description);
-            const isPromoActive = dish.is_promo;
+            const dishName = dish.name || '';
+            const dishDescription = dish.description || '';
+            const dishId = dish.id.toString();
+            const isPromoActive = Boolean(dish.is_promo);
 
-            inventoryContainer.insertAdjacentHTML('beforeend', `
-                <div class="inv-item" id="inv-card-${dish.id}" data-id="${dish.id}" data-search-name="${safeName.toLowerCase()}">
-                    <div class="inv-row-top">
-                        <div style="display:flex; gap:4px; align-items:center;">
-                            <button class="sort-handle-btn" onclick="shiftElementOrderWeights(${idx}, -1)">▲</button>
-                            <button class="sort-handle-btn" onclick="shiftElementOrderWeights(${idx}, 1)">▼</button>
-                        </div>
-                        <input type="text" value="${safeName}" class="inline-input-text" style="width:55%;" onblur="updateDishFieldInline('${dish.id}', 'name', this.value)">
-                        <label class="switch">
-                            <input type="checkbox" ${dish.is_out_of_stock ? 'checked' : ''} onchange="toggleItemStock('${dish.id}', '${safeName}', this.checked)">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <textarea class="inline-textarea" placeholder="No description added" onblur="updateDishFieldInline('${dish.id}', 'description', this.value)">${safeDesc}</textarea>
-                    <div style="display:flex; justify-content:flex-end; width:100%; margin-top:-4px;">
-                        <button class="trash-btn" onclick="deleteDishPermanently('${dish.id}')">🗑️ Delete Dish</button>
-                    </div>
-                </div>
-            `);
-            
-            pricingContainer.insertAdjacentHTML('beforeend', `
-                <div class="price-card" id="price-card-${dish.id}" data-search-name="${safeName.toLowerCase()}">
-                    <div style="font-weight:700; font-size:14px; color:#f8fafc;">${safeName}</div>
-                    <div class="price-row">
-                        <div style="display:flex; flex-direction:column; gap:2px;">
-                            <label style="font-size:10px; color:#94a3b8; font-weight:700;">BASE PRICE</label>
-                            <input type="text" class="price-input" id="price-${dish.id}" value="$${parseFloat(dish.price).toFixed(2)}" onchange="broadcastPriceUpdate('${dish.id}', this.value)">
-                        </div>
-                        <button class="deal-btn ${isPromoActive ? 'active-deal' : ''}" id="deal-${dish.id}" onclick="toggleHappyHour('${dish.id}')">
-                            ${isPromoActive ? '🔥 Promo On' : 'Promo Off'}
-                        </button>
-                    </div>
-                    <div id="promo-field-block-${dish.id}" style="display: ${isPromoActive ? 'block' : 'none'}; border-top:1px dashed var(--border-clr); padding-top:8px;">
-                        <label style="font-size:10px; color: var(--warning); font-weight:700;">PROMO PRICE ($)</label>
-                        <input type="text" class="promo-price-input" id="promo-price-field-${dish.id}" value="${dish.promo_price ? dish.promo_price : ''}" placeholder="e.g. 12.50" onchange="updatePromoPriceValue('${dish.id}', this.value)">
-                    </div>
-                </div>
-            `);
+            const inventoryCard = document.createElement('div');
+            inventoryCard.className = 'inv-item';
+            inventoryCard.id = `inv-card-${dishId}`;
+            inventoryCard.dataset.id = dishId;
+            inventoryCard.dataset.searchName = dishName.toLowerCase();
+
+            const inventoryTopRow = document.createElement('div');
+            inventoryTopRow.className = 'inv-row-top';
+
+            const sortControls = document.createElement('div');
+            sortControls.style.display = 'flex';
+            sortControls.style.gap = '4px';
+            sortControls.style.alignItems = 'center';
+
+            const moveUpButton = document.createElement('button');
+            moveUpButton.className = 'sort-handle-btn';
+            moveUpButton.type = 'button';
+            moveUpButton.textContent = '▲';
+            moveUpButton.addEventListener('click', () => shiftElementOrderWeights(idx, -1));
+
+            const moveDownButton = document.createElement('button');
+            moveDownButton.className = 'sort-handle-btn';
+            moveDownButton.type = 'button';
+            moveDownButton.textContent = '▼';
+            moveDownButton.addEventListener('click', () => shiftElementOrderWeights(idx, 1));
+
+            sortControls.append(moveUpButton, moveDownButton);
+
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.className = 'inline-input-text';
+            nameInput.style.width = '55%';
+            nameInput.value = dishName;
+            nameInput.addEventListener('blur', () => updateDishFieldInline(dishId, 'name', nameInput.value));
+
+            const stockSwitch = document.createElement('label');
+            stockSwitch.className = 'switch';
+
+            const stockCheckbox = document.createElement('input');
+            stockCheckbox.type = 'checkbox';
+            stockCheckbox.checked = Boolean(dish.is_out_of_stock);
+            stockCheckbox.addEventListener('change', () => toggleItemStock(dishId, dishName, stockCheckbox.checked));
+
+            const stockSlider = document.createElement('span');
+            stockSlider.className = 'slider';
+            stockSwitch.append(stockCheckbox, stockSlider);
+
+            inventoryTopRow.append(sortControls, nameInput, stockSwitch);
+
+            const descriptionTextarea = document.createElement('textarea');
+            descriptionTextarea.className = 'inline-textarea';
+            descriptionTextarea.placeholder = 'No description added';
+            descriptionTextarea.value = dishDescription;
+            descriptionTextarea.addEventListener('blur', () => updateDishFieldInline(dishId, 'description', descriptionTextarea.value));
+
+            const deleteRow = document.createElement('div');
+            deleteRow.style.display = 'flex';
+            deleteRow.style.justifyContent = 'flex-end';
+            deleteRow.style.width = '100%';
+            deleteRow.style.marginTop = '-4px';
+
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'trash-btn';
+            deleteButton.type = 'button';
+            deleteButton.textContent = '🗑️ Delete Dish';
+            deleteButton.addEventListener('click', () => deleteDishPermanently(dishId));
+            deleteRow.appendChild(deleteButton);
+
+            inventoryCard.append(inventoryTopRow, descriptionTextarea, deleteRow);
+            inventoryContainer.appendChild(inventoryCard);
+
+            const pricingCard = document.createElement('div');
+            pricingCard.className = 'price-card';
+            pricingCard.id = `price-card-${dishId}`;
+            pricingCard.dataset.searchName = dishName.toLowerCase();
+
+            const pricingName = document.createElement('div');
+            pricingName.style.fontWeight = '700';
+            pricingName.style.fontSize = '14px';
+            pricingName.style.color = '#f8fafc';
+            pricingName.textContent = dishName;
+
+            const priceRow = document.createElement('div');
+            priceRow.className = 'price-row';
+
+            const basePriceGroup = document.createElement('div');
+            basePriceGroup.style.display = 'flex';
+            basePriceGroup.style.flexDirection = 'column';
+            basePriceGroup.style.gap = '2px';
+
+            const basePriceLabel = document.createElement('label');
+            basePriceLabel.style.fontSize = '10px';
+            basePriceLabel.style.color = '#94a3b8';
+            basePriceLabel.style.fontWeight = '700';
+            basePriceLabel.textContent = 'BASE PRICE';
+
+            const priceInput = document.createElement('input');
+            priceInput.type = 'text';
+            priceInput.className = 'price-input';
+            priceInput.id = `price-${dishId}`;
+            priceInput.value = `$${parseFloat(dish.price).toFixed(2)}`;
+            priceInput.addEventListener('change', () => broadcastPriceUpdate(dishId, priceInput.value));
+
+            basePriceGroup.append(basePriceLabel, priceInput);
+
+            const promoButton = document.createElement('button');
+            promoButton.type = 'button';
+            promoButton.className = `deal-btn${isPromoActive ? ' active-deal' : ''}`;
+            promoButton.id = `deal-${dishId}`;
+            promoButton.textContent = isPromoActive ? '🔥 Promo On' : 'Promo Off';
+            promoButton.addEventListener('click', () => toggleHappyHour(dishId));
+
+            priceRow.append(basePriceGroup, promoButton);
+
+            const promoFieldBlock = document.createElement('div');
+            promoFieldBlock.id = `promo-field-block-${dishId}`;
+            promoFieldBlock.style.display = isPromoActive ? 'block' : 'none';
+            promoFieldBlock.style.borderTop = '1px dashed var(--border-clr)';
+            promoFieldBlock.style.paddingTop = '8px';
+
+            const promoPriceLabel = document.createElement('label');
+            promoPriceLabel.style.fontSize = '10px';
+            promoPriceLabel.style.color = 'var(--warning)';
+            promoPriceLabel.style.fontWeight = '700';
+            promoPriceLabel.textContent = 'PROMO PRICE ($)';
+
+            const promoPriceInput = document.createElement('input');
+            promoPriceInput.type = 'text';
+            promoPriceInput.className = 'promo-price-input';
+            promoPriceInput.id = `promo-price-field-${dishId}`;
+            promoPriceInput.value = dish.promo_price ?? '';
+            promoPriceInput.placeholder = 'e.g. 12.50';
+            promoPriceInput.addEventListener('change', () => updatePromoPriceValue(dishId, promoPriceInput.value));
+
+            promoFieldBlock.append(promoPriceLabel, promoPriceInput);
+            pricingCard.append(pricingName, priceRow, promoFieldBlock);
+            pricingContainer.appendChild(pricingCard);
         });
         
         refreshLiveAnalyticsMetrics();
