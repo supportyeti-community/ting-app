@@ -24,6 +24,15 @@ assert(source.includes('item_name_snapshot'), 'board must display immutable item
 assert(source.includes('line_total'), 'board must display stored line totals');
 assert(source.includes('boardInitialized'), 'module must guard against duplicate initialization');
 assert(source.includes('const RECONCILE_INTERVAL_MS = 15000'), 'order board must reconcile from the database every 15 seconds');
+assert(source.includes('const REFRESH_TIMEOUT_MS = 10000'), 'authoritative refreshes must have a bounded deadline');
+assert(source.includes('.abortSignal(signal)'), 'orders and order item reads must be cancellable when the refresh deadline is reached');
+assert(source.includes('refreshQueued = true'), 'reconciliation requests received during an active refresh must queue one follow-up refresh');
+assert(source.includes('queueMicrotask(() => refreshOrderBoard())'), 'queued reconciliation must run after the active refresh completes');
+assert(source.includes('lastRefreshFailed = true'), 'refresh failures must be remembered');
+assert(source.includes('lastRefreshFailed = false'), 'successful refreshes must clear degraded refresh state');
+assert(source.includes("state === 'degraded' || lastRefreshFailed || stale"), 'health state must remain degraded after a failed refresh until a later success');
+assert(source.includes("document.activeElement?.matches?.('[data-order-action]')"), 'polling renders must capture the focused order control');
+assert(source.includes('matchingButton?.focus()'), 'polling renders must restore keyboard focus when the same order action remains available');
 assert(source.includes("document.addEventListener('visibilitychange', handleVisibilityChange)"), 'order board must reconcile when the dashboard becomes visible');
 assert(source.includes("window.addEventListener('online', handleOnline)"), 'order board must reconcile when connectivity returns');
 assert(source.includes("document.visibilityState === 'visible'"), 'visibility reconciliation must only run when the document becomes visible');
@@ -32,6 +41,7 @@ assert(source.includes("status === 'SUBSCRIBED'"), 'realtime subscription succes
 assert(source.includes("if (status === 'SUBSCRIBED') refreshOrderBoard()"), 'realtime reconnect must reconcile from authoritative database state');
 assert(source.includes("setBoardHealth('degraded')"), 'failed authoritative refreshes must expose degraded state');
 assert(source.includes('lastSuccessfulRefreshAt'), 'board must track the last successful authoritative refresh');
+assert(source.includes("setBoardHealth(realtimeState === 'subscribed' ? 'live' : 'reconnecting')"), 'poll ticks must update stale health independently of refresh completion');
 assert(source.includes("document.removeEventListener('visibilitychange', handleVisibilityChange)"), 'visibility listener must be cleaned up');
 assert(source.includes("window.removeEventListener('online', handleOnline)"), 'online listener must be cleaned up');
 assert(source.includes('clearInterval(pollingTimer)'), 'polling timer must be cleaned up');
@@ -41,4 +51,4 @@ assert(migration.includes("tablename = 'orders'"), 'OPS-1 migration must provisi
 assert(migration.includes('alter publication supabase_realtime add table public.orders'), 'OPS-1 migration must add public.orders to Realtime');
 assert(!migration.includes('order_items'), 'OPS-1 must not widen Realtime publication to order_items');
 
-console.log('PASS: TING-11C admin order board is tenant-scoped, realtime-assisted, reconciles every 15 seconds and on reconnect/visibility/online, exposes degraded state, provisions orders Realtime idempotently, and advances status only through the guarded RPC');
+console.log('PASS: TING-11C admin order board is tenant-scoped, realtime-assisted, deadline-bounded, queues overlapping reconciliation, preserves degraded state and keyboard focus, reconciles every 15 seconds and on reconnect/visibility/online, provisions orders Realtime idempotently, and advances status only through the guarded RPC');
