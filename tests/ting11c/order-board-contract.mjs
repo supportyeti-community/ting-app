@@ -32,7 +32,7 @@ assert(source.includes('lastRefreshFailed = true'), 'refresh failures must be re
 assert(source.includes('lastRefreshFailed = false'), 'successful refreshes must clear degraded refresh state');
 assert(source.includes("state === 'degraded' || lastRefreshFailed || stale"), 'health state must remain degraded after a failed refresh until a later success');
 assert(source.includes("document.activeElement?.matches?.('[data-order-action]')"), 'polling renders must capture the focused order control');
-assert(source.includes('matchingButton?.focus()'), 'polling renders must restore keyboard focus when the same order action remains available');
+assert(source.includes('matchingButton?.focus({ preventScroll: true })'), 'polling renders must restore keyboard focus without changing scroll position');
 assert(source.includes("document.addEventListener('visibilitychange', handleVisibilityChange)"), 'order board must reconcile when the dashboard becomes visible');
 assert(source.includes("window.addEventListener('online', handleOnline)"), 'order board must reconcile when connectivity returns');
 assert(source.includes("document.visibilityState === 'visible'"), 'visibility reconciliation must only run when the document becomes visible');
@@ -51,4 +51,4 @@ assert(migration.includes("tablename = 'orders'"), 'OPS-1 migration must provisi
 assert(migration.includes('alter publication supabase_realtime add table public.orders'), 'OPS-1 migration must add public.orders to Realtime');
 assert(!migration.includes('order_items'), 'OPS-1 must not widen Realtime publication to order_items');
 
-console.log('PASS: TING-11C admin order board is tenant-scoped, realtime-assisted, deadline-bounded, queues overlapping reconciliation, preserves degraded state and keyboard focus, reconciles every 15 seconds and on reconnect/visibility/online, provisions orders Realtime idempotently, and advances status only through the guarded RPC');
+console.log('PASS: TING-11C admin order board is tenant-scoped, realtime-assisted, deadline-bounded, queues overlapping reconciliation, preserves degraded state and keyboard focus without scrolling, reconciles every 15 seconds and on reconnect/visibility/online, provisions orders Realtime idempotently, and advances status only through the guarded RPC');
