@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('../../ting11c-order-board.js', import.meta.url), 'utf8');
 const admin = readFileSync(new URL('../../admin.html', import.meta.url), 'utf8');
+const migration = readFileSync(new URL('../../supabase/migrations/20261030084000_ops1_orders_realtime.sql', import.meta.url), 'utf8');
 
 assert(admin.includes('<script src="ting11c-order-board.js"></script>'), 'admin page must load the TING-11C order board module');
 assert(source.includes(".from('orders')"), 'order board must read canonical orders');
@@ -34,5 +35,10 @@ assert(source.includes('lastSuccessfulRefreshAt'), 'board must track the last su
 assert(source.includes("document.removeEventListener('visibilitychange', handleVisibilityChange)"), 'visibility listener must be cleaned up');
 assert(source.includes("window.removeEventListener('online', handleOnline)"), 'online listener must be cleaned up');
 assert(source.includes('clearInterval(pollingTimer)'), 'polling timer must be cleaned up');
+assert(migration.includes("pubname = 'supabase_realtime'"), 'OPS-1 migration must target the Supabase Realtime publication');
+assert(migration.includes("schemaname = 'public'"), 'OPS-1 migration must target the public schema');
+assert(migration.includes("tablename = 'orders'"), 'OPS-1 migration must provision orders only when missing');
+assert(migration.includes('alter publication supabase_realtime add table public.orders'), 'OPS-1 migration must add public.orders to Realtime');
+assert(!migration.includes('order_items'), 'OPS-1 must not widen Realtime publication to order_items');
 
-console.log('PASS: TING-11C admin order board is tenant-scoped, realtime-assisted, reconciles every 15 seconds and on reconnect/visibility/online, exposes degraded state, and advances status only through the guarded RPC');
+console.log('PASS: TING-11C admin order board is tenant-scoped, realtime-assisted, reconciles every 15 seconds and on reconnect/visibility/online, exposes degraded state, provisions orders Realtime idempotently, and advances status only through the guarded RPC');
