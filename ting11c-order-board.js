@@ -31,27 +31,86 @@
     return div.innerHTML;
   }
 
+  function normalizeIssuedTableCapability(data, tableNumRaw) {
+    const issued = Array.isArray(data) ? data[0] : data;
+    const token = String(issued?.token || '').trim().toLowerCase();
+    if (!/^[0-9a-f]{64}$/.test(token) || issued?.table_number !== tableNumRaw) {
+      throw new Error('Secure table capability was not returned');
+    }
+    return { issued, token };
+  }
+
+  function renderSecuredTableQr(tableNumRaw, token, { replaced = false } = {}) {
+    const wrapper = document.getElementById('qrContainerWrapper');
+    const targetArea = document.getElementById('qrCodeTargetArea');
+    if (!wrapper || !targetArea || typeof QRCode === 'undefined') {
+      throw new Error('QR generator is unavailable');
+    }
+
+    const link = new URL('https://ting.supportyeti.com/');
+    link.searchParams.set('client', clientSlug);
+    link.searchParams.set('table', tableNumRaw);
+    link.searchParams.set('ctx', token);
+
+    targetArea.innerHTML = '';
+    wrapper.style.display = 'block';
+    new QRCode(targetArea, {
+      text: link.toString(),
+      width: 160,
+      height: 160,
+      colorDark: '#000000',
+      colorLight: '#ffffff'
+    });
+
+    setTimeout(() => {
+      const canvas = targetArea.querySelector('canvas');
+      if (!canvas) return;
+      document.getElementById('qrDlBtn')?.remove();
+      const dlBtn = document.createElement('button');
+      dlBtn.id = 'qrDlBtn';
+      dlBtn.className = 'qr-dl-btn';
+      dlBtn.innerText = '📥 Save Secured PNG';
+      dlBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.download = `QR_Table_${tableNumRaw}.png`;
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+      };
+      targetArea.appendChild(dlBtn);
+
+      const note = document.createElement('div');
+      note.style.cssText = 'margin-top:7px;font-size:10px;color:#475569;max-width:180px;line-height:1.35;';
+      note.textContent = replaced
+        ? 'Replacement credential issued. Previous secured QR/NFC links for this table are revoked.'
+        : 'Secured table credential embedded. Keep this QR/NFC link at the intended table.';
+      targetArea.appendChild(note);
+    }, 150);
+  }
+
+  function tableCredentialPrerequisites() {
+    const input = document.getElementById('qrTargetTable');
+    const tableNumRaw = input?.value.trim() || '';
+    if (!/^[A-Za-z0-9 _-]{1,20}$/.test(tableNumRaw)) {
+      alert('Specify a valid table number.');
+      return null;
+    }
+    if (typeof supabaseInstance === 'undefined' || !supabaseInstance || typeof tenantId === 'undefined' || !tenantId) {
+      alert('Restaurant authorization is not ready.');
+      return null;
+    }
+    if (!document.getElementById('qrContainerWrapper') || !document.getElementById('qrCodeTargetArea') || typeof QRCode === 'undefined') {
+      alert('QR generator is unavailable.');
+      return null;
+    }
+    return tableNumRaw;
+  }
+
   function installSecureTableQrGenerator() {
     window.generateTableQrCodeCanvas = async function generateTableQrCodeCanvas() {
-      const input = document.getElementById('qrTargetTable');
-      const wrapper = document.getElementById('qrContainerWrapper');
-      const targetArea = document.getElementById('qrCodeTargetArea');
       const zone = document.getElementById('qrGenerationZone');
-      const generateButton = zone?.querySelector('button');
-      const tableNumRaw = input?.value.trim() || '';
-
-      if (!/^[A-Za-z0-9 _-]{1,20}$/.test(tableNumRaw)) {
-        alert('Specify a valid table number.');
-        return;
-      }
-      if (typeof supabaseInstance === 'undefined' || !supabaseInstance || typeof tenantId === 'undefined' || !tenantId) {
-        alert('Restaurant authorization is not ready.');
-        return;
-      }
-      if (!wrapper || !targetArea || typeof QRCode === 'undefined') {
-        alert('QR generator is unavailable.');
-        return;
-      }
+      const generateButton = zone?.querySelector('button:not(#qrReplaceCredentialBtn)');
+      const tableNumRaw = tableCredentialPrerequisites();
+      if (!tableNumRaw) return;
 
       const previousLabel = generateButton?.textContent || 'Generate QR';
       if (generateButton) {
@@ -64,53 +123,14 @@
           p_table_number: tableNumRaw
         });
         if (error) throw error;
-
-        const issued = Array.isArray(data) ? data[0] : data;
-        const token = String(issued?.token || '').trim().toLowerCase();
-        if (!/^[0-9a-f]{64}$/.test(token) || issued?.table_number !== tableNumRaw) {
-          throw new Error('Secure table capability was not returned');
-        }
-
-        const link = new URL('https://ting.supportyeti.com/');
-        link.searchParams.set('client', clientSlug);
-        link.searchParams.set('table', tableNumRaw);
-        link.searchParams.set('ctx', token);
-
-        targetArea.innerHTML = '';
-        wrapper.style.display = 'block';
-        new QRCode(targetArea, {
-          text: link.toString(),
-          width: 160,
-          height: 160,
-          colorDark: '#000000',
-          colorLight: '#ffffff'
-        });
-
-        setTimeout(() => {
-          const canvas = targetArea.querySelector('canvas');
-          if (!canvas) return;
-          document.getElementById('qrDlBtn')?.remove();
-          const dlBtn = document.createElement('button');
-          dlBtn.id = 'qrDlBtn';
-          dlBtn.className = 'qr-dl-btn';
-          dlBtn.innerText = '📥 Save Secured PNG';
-          dlBtn.onclick = () => {
-            const a = document.createElement('a');
-            a.download = `QR_Table_${tableNumRaw}.png`;
-            a.href = canvas.toDataURL('image/png');
-            a.click();
-          };
-          targetArea.appendChild(dlBtn);
-
-          const note = document.createElement('div');
-          note.style.cssText = 'margin-top:7px;font-size:10px;color:#475569;max-width:180px;line-height:1.35;';
-          note.textContent = 'Secured table credential embedded. Keep this QR/NFC link at the intended table.';
-          targetArea.appendChild(note);
-        }, 150);
+        const { token } = normalizeIssuedTableCapability(data, tableNumRaw);
+        renderSecuredTableQr(tableNumRaw, token);
       } catch (error) {
         console.error('Secure table QR issuance failed:', error);
-        targetArea.innerHTML = '';
-        wrapper.style.display = 'none';
+        const wrapper = document.getElementById('qrContainerWrapper');
+        const targetArea = document.getElementById('qrCodeTargetArea');
+        if (targetArea) targetArea.innerHTML = '';
+        if (wrapper) wrapper.style.display = 'none';
         alert('Could not issue a secured table QR. Check your tenant access and try again.');
       } finally {
         if (generateButton) {
@@ -119,6 +139,45 @@
         }
       }
     };
+  }
+
+  function installTableCredentialRotationControl() {
+    const zone = document.getElementById('qrGenerationZone');
+    if (!zone || document.getElementById('qrReplaceCredentialBtn')) return;
+
+    const replaceButton = document.createElement('button');
+    replaceButton.id = 'qrReplaceCredentialBtn';
+    replaceButton.type = 'button';
+    replaceButton.textContent = 'Replace Table Credential';
+    replaceButton.style.cssText = 'margin-top:8px;width:100%;background:rgba(239,68,68,.12);border:1px solid var(--danger);color:#fecaca;padding:8px;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer;';
+    replaceButton.addEventListener('click', async () => {
+      const tableNumRaw = tableCredentialPrerequisites();
+      if (!tableNumRaw || replaceButton.disabled) return;
+
+      const approved = window.confirm(
+        `Replace the secured credential for Table ${tableNumRaw}? All existing TinG QR/NFC links for this table will stop authorizing orders and assistance.`
+      );
+      if (!approved) return;
+
+      const previousLabel = replaceButton.textContent;
+      replaceButton.disabled = true;
+      replaceButton.textContent = 'Replacing…';
+      try {
+        const { data, error } = await supabaseInstance.rpc('rotate_table_access_context', {
+          p_table_number: tableNumRaw
+        });
+        if (error) throw error;
+        const { token } = normalizeIssuedTableCapability(data, tableNumRaw);
+        renderSecuredTableQr(tableNumRaw, token, { replaced: true });
+      } catch (error) {
+        console.error('Table credential replacement failed:', error);
+        alert('Could not replace the table credential. Existing secured links were not confirmed as replaced; check tenant access and try again.');
+      } finally {
+        replaceButton.disabled = false;
+        replaceButton.textContent = previousLabel;
+      }
+    });
+    zone.appendChild(replaceButton);
   }
 
   function statusLabel(status) {
@@ -413,6 +472,7 @@
 
   const readinessTimer = setInterval(() => {
     try {
+      installTableCredentialRotationControl();
       if (document.getElementById('tingOrdersSection')) {
         clearInterval(readinessTimer);
         initOrderBoard();
