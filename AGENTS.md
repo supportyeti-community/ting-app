@@ -11,7 +11,7 @@ Use the source closest to the decision being made:
 3. This repository — executable truth for code, migrations, branches, PRs, tests and releases.
 4. Supabase, Vercel and provider configuration — runtime truth that must be reconciled into engineering records when materially different from Git.
 
-Do not infer product intent from code alone. If sources disagree, identify the conflict instead of silently choosing one.
+Do not infer product intent from code alone. If sources disagree, verify execution/runtime truth first, then reconcile higher-level documentation before proceeding.
 
 ## 2. Core engineering priorities
 
