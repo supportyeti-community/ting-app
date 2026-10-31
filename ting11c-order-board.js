@@ -19,6 +19,8 @@
   let lastSuccessfulRefreshAt = 0;
   let lastRefreshFailed = false;
   let realtimeState = 'connecting';
+  let credentialOperationId = 0;
+  let credentialOperationInFlight = false;
 
   function money(value) {
     const amount = Number(value || 0);
@@ -40,7 +42,41 @@
     return { issued, token };
   }
 
-  function renderSecuredTableQr(tableNumRaw, token, { replaced = false } = {}) {
+  function credentialControls() {
+    const zone = document.getElementById('qrGenerationZone');
+    return {
+      generateButton: zone?.querySelector('button:not(#qrReplaceCredentialBtn)') || null,
+      replaceButton: document.getElementById('qrReplaceCredentialBtn')
+    };
+  }
+
+  function beginCredentialOperation() {
+    credentialOperationId += 1;
+    credentialOperationInFlight = true;
+    const controls = credentialControls();
+    if (controls.generateButton) controls.generateButton.disabled = true;
+    if (controls.replaceButton) controls.replaceButton.disabled = true;
+    return credentialOperationId;
+  }
+
+  function finishCredentialOperation(operationId) {
+    if (operationId !== credentialOperationId) return false;
+    credentialOperationInFlight = false;
+    const controls = credentialControls();
+    if (controls.generateButton) controls.generateButton.disabled = false;
+    if (controls.replaceButton) controls.replaceButton.disabled = false;
+    return true;
+  }
+
+  function clearRenderedTableCredential() {
+    const wrapper = document.getElementById('qrContainerWrapper');
+    const targetArea = document.getElementById('qrCodeTargetArea');
+    if (targetArea) targetArea.innerHTML = '';
+    if (wrapper) wrapper.style.display = 'none';
+  }
+
+  function renderSecuredTableQr(tableNumRaw, token, { replaced = false, operationId = credentialOperationId } = {}) {
+    if (operationId !== credentialOperationId) return;
     const wrapper = document.getElementById('qrContainerWrapper');
     const targetArea = document.getElementById('qrCodeTargetArea');
     if (!wrapper || !targetArea || typeof QRCode === 'undefined') {
@@ -63,6 +99,7 @@
     });
 
     setTimeout(() => {
+      if (operationId !== credentialOperationId) return;
       const canvas = targetArea.querySelector('canvas');
       if (!canvas) return;
       document.getElementById('qrDlBtn')?.remove();
@@ -71,6 +108,7 @@
       dlBtn.className = 'qr-dl-btn';
       dlBtn.innerText = '📥 Save Secured PNG';
       dlBtn.onclick = () => {
+        if (operationId !== credentialOperationId) return;
         const a = document.createElement('a');
         a.download = `QR_Table_${tableNumRaw}.png`;
         a.href = canvas.toDataURL('image/png');
@@ -107,34 +145,30 @@
 
   function installSecureTableQrGenerator() {
     window.generateTableQrCodeCanvas = async function generateTableQrCodeCanvas() {
-      const zone = document.getElementById('qrGenerationZone');
-      const generateButton = zone?.querySelector('button:not(#qrReplaceCredentialBtn)');
+      if (credentialOperationInFlight) return;
+      const { generateButton } = credentialControls();
       const tableNumRaw = tableCredentialPrerequisites();
       if (!tableNumRaw) return;
 
       const previousLabel = generateButton?.textContent || 'Generate QR';
-      if (generateButton) {
-        generateButton.disabled = true;
-        generateButton.textContent = 'Securing…';
-      }
+      const operationId = beginCredentialOperation();
+      if (generateButton) generateButton.textContent = 'Securing…';
 
       try {
         const { data, error } = await supabaseInstance.rpc('issue_table_access_context', {
           p_table_number: tableNumRaw
         });
+        if (operationId !== credentialOperationId) return;
         if (error) throw error;
         const { token } = normalizeIssuedTableCapability(data, tableNumRaw);
-        renderSecuredTableQr(tableNumRaw, token);
+        renderSecuredTableQr(tableNumRaw, token, { operationId });
       } catch (error) {
+        if (operationId !== credentialOperationId) return;
         console.error('Secure table QR issuance failed:', error);
-        const wrapper = document.getElementById('qrContainerWrapper');
-        const targetArea = document.getElementById('qrCodeTargetArea');
-        if (targetArea) targetArea.innerHTML = '';
-        if (wrapper) wrapper.style.display = 'none';
+        clearRenderedTableCredential();
         alert('Could not issue a secured table QR. Check your tenant access and try again.');
       } finally {
-        if (generateButton) {
-          generateButton.disabled = false;
+        if (finishCredentialOperation(operationId) && generateButton) {
           generateButton.textContent = previousLabel;
         }
       }
@@ -151,8 +185,9 @@
     replaceButton.textContent = 'Replace Table Credential';
     replaceButton.style.cssText = 'margin-top:8px;width:100%;background:rgba(239,68,68,.12);border:1px solid var(--danger);color:#fecaca;padding:8px;border-radius:6px;font-size:11px;font-weight:800;cursor:pointer;';
     replaceButton.addEventListener('click', async () => {
+      if (credentialOperationInFlight) return;
       const tableNumRaw = tableCredentialPrerequisites();
-      if (!tableNumRaw || replaceButton.disabled) return;
+      if (!tableNumRaw) return;
 
       const approved = window.confirm(
         `Replace the secured credential for Table ${tableNumRaw}? All existing TinG QR/NFC links for this table will stop authorizing orders and assistance.`
@@ -160,21 +195,26 @@
       if (!approved) return;
 
       const previousLabel = replaceButton.textContent;
-      replaceButton.disabled = true;
+      const operationId = beginCredentialOperation();
       replaceButton.textContent = 'Replacing…';
+      clearRenderedTableCredential();
       try {
         const { data, error } = await supabaseInstance.rpc('rotate_table_access_context', {
           p_table_number: tableNumRaw
         });
+        if (operationId !== credentialOperationId) return;
         if (error) throw error;
         const { token } = normalizeIssuedTableCapability(data, tableNumRaw);
-        renderSecuredTableQr(tableNumRaw, token, { replaced: true });
+        renderSecuredTableQr(tableNumRaw, token, { replaced: true, operationId });
       } catch (error) {
+        if (operationId !== credentialOperationId) return;
         console.error('Table credential replacement failed:', error);
-        alert('Could not replace the table credential. Existing secured links were not confirmed as replaced; check tenant access and try again.');
+        clearRenderedTableCredential();
+        alert('Table credential replacement is indeterminate. The previous QR/NFC credential may already be revoked. Generate or replace a fresh credential before distributing a table link.');
       } finally {
-        replaceButton.disabled = false;
-        replaceButton.textContent = previousLabel;
+        if (finishCredentialOperation(operationId)) {
+          replaceButton.textContent = previousLabel;
+        }
       }
     });
     zone.appendChild(replaceButton);
