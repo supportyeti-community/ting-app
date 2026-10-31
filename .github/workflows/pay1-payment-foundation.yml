@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - 'docs/PAYMENTS-V1-DESIGN.md'
-      - 'supabase/migrations/*pay1*.sql'
+      - 'supabase/migrations/**'
       - 'supabase/baseline/native/pay1.mjs'
       - 'supabase/baseline/native/run.mjs'
       - 'tests/pay1/**'
