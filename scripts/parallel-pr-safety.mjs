@@ -43,6 +43,15 @@ async function paged(path) {
   return out;
 }
 
+function filePaths(changes) {
+  const files = new Set();
+  for (const change of changes) {
+    if (change.filename) files.add(change.filename);
+    if (change.previous_filename) files.add(change.previous_filename);
+  }
+  return [...files];
+}
+
 function domainsFor(files) {
   const domains = new Set();
   for (const [domain, prefixes] of Object.entries(config.domains || {})) {
@@ -53,7 +62,8 @@ function domainsFor(files) {
   return domains;
 }
 
-const currentFiles = (await paged(`/repos/${owner}/${name}/pulls/${current.number}/files`)).map(x => x.filename);
+const currentChanges = await paged(`/repos/${owner}/${name}/pulls/${current.number}/files`);
+const currentFiles = filePaths(currentChanges);
 const currentDomains = domainsFor(currentFiles);
 const openPrs = await paged(`/repos/${owner}/${name}/pulls?state=open`);
 
@@ -61,7 +71,8 @@ const findings = [];
 for (const pr of openPrs) {
   if (pr.number === current.number || pr.base.ref !== current.base.ref) continue;
 
-  const files = (await paged(`/repos/${owner}/${name}/pulls/${pr.number}/files`)).map(x => x.filename);
+  const changes = await paged(`/repos/${owner}/${name}/pulls/${pr.number}/files`);
+  const files = filePaths(changes);
   const direct = [...new Set(currentFiles.filter(file => files.includes(file)))].sort();
   const otherDomains = domainsFor(files);
   const sharedDomains = [...currentDomains].filter(domain => otherDomains.has(domain)).sort();
@@ -91,7 +102,7 @@ if (!findings.length) {
     }
     if (finding.sharedDomains.length) {
       body += `  - Shared domains: ${finding.sharedDomains.map(x => `\`${x}\``).join(', ')}\n`;
-      body += '  - Required action: after either PR merges, refresh/revalidate the other PR against the new `main` before merge.\n';
+      body += `  - Required action: after either PR merges, refresh/revalidate the other PR against the new \`${current.base.ref}\` before merge.\n`;
     }
   }
 }
