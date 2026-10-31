@@ -10,11 +10,6 @@ import {
 
 export const config = { api: { bodyParser: false } };
 
-async function cancelFailedIntent(stripe, intent, connectedAccountId) {
-  if (intent.status === 'canceled' || intent.status === 'succeeded') return intent;
-  return stripe.paymentIntents.cancel(intent.id, {}, { stripeAccount: connectedAccountId });
-}
-
 export default async function handler(request, response) {
   if (request.method !== 'POST') return response.status(405).json({ error: 'Method not allowed' });
 
@@ -42,19 +37,11 @@ export default async function handler(request, response) {
       case 'payment_intent.succeeded':
         await confirmAttemptFromStripe(intent, connectedAccountId);
         break;
-      case 'payment_intent.payment_failed': {
-        const cancelled = await cancelFailedIntent(stripe, intent, connectedAccountId);
-        if (cancelled.status !== 'canceled') throw new Error('Failed PaymentIntent could not be cancelled before releasing TinG reservation');
-        await releaseAttempt({
-          attemptId,
-          providerAccountId: connectedAccountId,
-          providerPaymentId: intent.id,
-          terminalStatus: 'failed',
-          failureCode: intent.last_payment_error?.code || 'payment_failed',
-          failureMessage: intent.last_payment_error?.message || 'Stripe reported payment failure.',
-        });
-        break;
-      }
+      case 'payment_intent.payment_failed':
+        // A failed attempt can still be retryable with the same PaymentIntent/client_secret.
+        // Keep the TinG reservation until Stripe cancels the intent or stale cleanup can
+        // safely reconcile the current processor state.
+        return response.status(200).json({ received: true, ignored: true });
       case 'payment_intent.canceled':
         await releaseAttempt({
           attemptId,
