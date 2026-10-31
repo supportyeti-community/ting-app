@@ -45,10 +45,28 @@ assert(source.includes("setBoardHealth(realtimeState === 'subscribed' ? 'live' :
 assert(source.includes("document.removeEventListener('visibilitychange', handleVisibilityChange)"), 'visibility listener must be cleaned up');
 assert(source.includes("window.removeEventListener('online', handleOnline)"), 'online listener must be cleaned up');
 assert(source.includes('clearInterval(pollingTimer)'), 'polling timer must be cleaned up');
+
+assert(source.includes("supabaseInstance.rpc('issue_table_access_context'"), 'ordinary QR generation must keep using non-destructive capability issuance');
+assert(source.includes("supabaseInstance.rpc('rotate_table_access_context'"), 'explicit replacement must use the destructive rotation RPC');
+assert(source.includes("replaceButton.id = 'qrReplaceCredentialBtn'"), 'admin must expose a distinct credential replacement control');
+assert(source.includes("replaceButton.textContent = 'Replace Table Credential'"), 'replacement control must be clearly labelled');
+assert(source.includes('window.confirm('), 'credential replacement must require explicit staff confirmation');
+assert(source.includes('All existing TinG QR/NFC links for this table will stop authorizing orders and assistance.'), 'replacement warning must describe the destructive effect');
+assert(source.includes("renderSecuredTableQr(tableNumRaw, token, { replaced: true, operationId })"), 'successful rotation must render only the replacement credential owned by the current operation');
+assert(source.includes('Previous secured QR/NFC links for this table are revoked.'), 'replacement result must tell staff that old credentials are revoked');
+assert(source.includes("button:not(#qrReplaceCredentialBtn)"), 'ordinary generate control must remain distinct from the destructive replacement control');
+assert(source.includes('let credentialOperationId = 0'), 'credential lifecycle must track operation ownership');
+assert(source.includes('let credentialOperationInFlight = false'), 'credential lifecycle must block overlapping staff operations');
+assert(source.includes('if (operationId !== credentialOperationId) return;'), 'stale credential responses and deferred renders must be ignored');
+assert(source.includes('if (controls.generateButton) controls.generateButton.disabled = true'), 'issuance must be disabled while any credential operation is active');
+assert(source.includes('if (controls.replaceButton) controls.replaceButton.disabled = true'), 'replacement must be disabled while any credential operation is active');
+assert(source.includes('clearRenderedTableCredential();'), 'replacement must remove previously exportable credential output before rotation');
+assert(source.includes('Table credential replacement is indeterminate.'), 'failed replacement must explicitly warn that the previous credential may already be revoked');
+
 assert(migration.includes("pubname = 'supabase_realtime'"), 'OPS-1 migration must target the Supabase Realtime publication');
 assert(migration.includes("schemaname = 'public'"), 'OPS-1 migration must target the public schema');
 assert(migration.includes("tablename = 'orders'"), 'OPS-1 migration must provision orders only when missing');
 assert(migration.includes('alter publication supabase_realtime add table public.orders'), 'OPS-1 migration must add public.orders to Realtime');
 assert(!migration.includes('order_items'), 'OPS-1 must not widen Realtime publication to order_items');
 
-console.log('PASS: TING-11C admin order board is tenant-scoped, realtime-assisted, deadline-bounded, queues overlapping reconciliation, preserves degraded state and keyboard focus without scrolling, reconciles every 15 seconds and on reconnect/visibility/online, provisions orders Realtime idempotently, and advances status only through the guarded RPC');
+console.log('PASS: TING-11C admin order board is tenant-scoped, realtime-assisted, deadline-bounded, queues overlapping reconciliation, preserves degraded state and keyboard focus without scrolling, reconciles every 15 seconds and on reconnect/visibility/online, provisions orders Realtime idempotently, advances status only through the guarded RPC, keeps ordinary QR issuance non-destructive, and serializes admin credential rendering so stale or indeterminate outputs cannot remain distributable');
