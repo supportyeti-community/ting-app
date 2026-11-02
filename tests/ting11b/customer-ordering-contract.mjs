@@ -1,3 +1,4 @@
+import './checkout-idempotency.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
@@ -20,6 +21,8 @@ assert(source.includes("String(error.code || '').startsWith('23')"), 'database v
 assert(source.includes('getOrCreateCheckoutRequestId(orderItems)'), 'checkout must reuse the persisted idempotency key for the same cart');
 assert(source.includes('checkoutAttempt = { requestId: crypto.randomUUID(), fingerprint };'), 'a new idempotency key must be generated only when no matching checkout attempt exists');
 assert(source.includes("return `ting:checkout-attempt:${clientSlug}:${tableIdentifier}`"), 'persisted checkout identity must remain route/table scoped');
+assert(source.includes('if (checkoutAttempt) {'), 'an unresolved checkout attempt must lock cart mutation until the outcome is known');
+assert(source.includes('if (definitiveFailure) invalidateCheckoutAttempt();'), 'definitive rejection must release the uncertain-attempt lock');
 assert(source.includes("logTelemetryAnalyticsEvent('order_submitted'"), 'successful order submission should emit telemetry');
 assert(source.includes('Final pricing and availability are revalidated by TinG'), 'UI must communicate that cart totals are estimates');
 assert(source.includes('const observer = new MutationObserver(() => decorateMenuCards());'), 'cart observer must remain independently identifiable');
