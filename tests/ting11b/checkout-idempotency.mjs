@@ -4,11 +4,14 @@ import vm from 'node:vm';
 
 const source = readFileSync(new URL('../../ting11b-cart.js', import.meta.url), 'utf8');
 
-function makeSessionStorage() {
+function makeSessionStorage({ failWrites = false } = {}) {
     const values = new Map();
     return {
         getItem(key) { return values.has(key) ? values.get(key) : null; },
-        setItem(key, value) { values.set(key, String(value)); },
+        setItem(key, value) {
+            if (failWrites) throw new Error('storage unavailable');
+            values.set(key, String(value));
+        },
         removeItem(key) { values.delete(key); },
         dump() { return new Map(values); }
     };
@@ -95,10 +98,22 @@ secondLoad.invalidateCheckoutAttempt();
 const persistedKeys = [...storage.dump().keys()];
 assert(!persistedKeys.some(key => key.includes('checkout-attempt')), 'explicit invalidation must clear the persisted checkout attempt');
 
+const failedStorage = makeSessionStorage({ failWrites: true });
+const storageFailureLoad = loadHooks(failedStorage, ['33333333-3333-4333-8333-333333333333']);
+storageFailureLoad.hydrateCheckoutAttempt();
+assert.equal(
+    storageFailureLoad.getOrCreateCheckoutRequestId(firstCart),
+    null,
+    'checkout must not return a usable request id when its retry identity cannot be persisted'
+);
+
 assert(source.includes('hydrateCart();'), 'cart state must hydrate on reload before retry reconciliation');
 assert(source.includes('persistCart();'), 'cart changes must persist for reload-safe uncertain retry recovery');
+assert(source.includes('if (!persistCart()) {'), 'checkout must fail closed if the cart cannot be persisted before submission');
+assert(source.includes('if (!requestId) {'), 'checkout must fail closed if the request identity cannot be persisted');
+assert(source.includes('Your order was not sent'), 'storage failure must tell the guest that no order was submitted');
 assert(source.includes('reconcileCheckoutAttemptWithCart();'), 'restored request identity must be checked against restored cart state');
 assert(source.includes('clearCheckoutPersistence();'), 'successful checkout must clear persisted cart and request identity');
 assert(source.includes('p_client_request_id: requestId'), 'the preserved request id must still be sent to submit_order');
 
-console.log('PASS: uncertain checkout retries reuse one persisted request id across retry and reload, while cart changes rotate the identity');
+console.log('PASS: uncertain checkout retries persist one request id across retry/reload and fail closed when that identity cannot be stored');
