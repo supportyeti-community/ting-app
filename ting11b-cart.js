@@ -301,6 +301,10 @@
 
     async function changeQuantity(itemId, delta) {
         if (submitting) return;
+        if (checkoutAttempt) {
+            showToastNotification('⚠️ We still need to confirm your previous order attempt. Retry that order before changing the cart.');
+            return;
+        }
         const existing = cart.get(itemId);
         if (!existing && delta > 0) {
             const item = await fetchMenuItem(itemId);
@@ -317,7 +321,6 @@
             if (next === 0) cart.delete(itemId);
             else existing.quantity = next;
         }
-        invalidateCheckoutAttempt();
         persistCart();
         renderCartState();
     }
@@ -444,13 +447,16 @@
 
         const { data: order, error } = await submitOrderWithRetry(requestId, orderItems);
         if (error || !order?.id) {
+            const errorCode = String(error?.code || '');
+            const definitiveFailure = errorCode.startsWith('23') || errorCode === '42501';
+            if (definitiveFailure) invalidateCheckoutAttempt();
             submitting = false;
             renderCartSheet();
             const message = error?.message?.includes('out of stock')
                 ? '⚠️ One of your items is now out of stock. Please review your cart.'
-                : error?.message?.includes('table access context')
+                : error?.message?.includes('table access context') || errorCode === '42501'
                     ? '⚠️ This table link is no longer authorized. Scan the table QR/NFC tag again.'
-                    : '⚠️ We could not confirm the order. Your cart is still here—retrying will safely reuse the same request.';
+                    : '⚠️ We could not confirm the order. Your cart is locked to this attempt—retrying will safely reuse the same request.';
             showToastNotification(message);
             return;
         }
