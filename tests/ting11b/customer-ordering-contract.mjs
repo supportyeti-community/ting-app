@@ -1,3 +1,4 @@
+import './checkout-idempotency.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
@@ -17,7 +18,11 @@ assert(!source.includes('p_price'), 'customer must never submit authoritative pr
 assert(source.includes(".eq('tenant_id', tenantId)"), 'menu hydration must remain route-tenant scoped');
 assert(source.includes('is_out_of_stock'), 'customer add flow must respect stock state');
 assert(source.includes("String(error.code || '').startsWith('23')"), 'database validation errors must fail without blind retry');
-assert(source.includes('const requestId = crypto.randomUUID();'), 'each checkout attempt must create one idempotency key');
+assert(source.includes('getOrCreateCheckoutRequestId(orderItems)'), 'checkout must reuse the persisted idempotency key for the same cart');
+assert(source.includes('checkoutAttempt = { requestId: crypto.randomUUID(), fingerprint };'), 'a new idempotency key must be generated only when no matching checkout attempt exists');
+assert(source.includes("return `ting:checkout-attempt:${clientSlug}:${tableIdentifier}`"), 'persisted checkout identity must remain route/table scoped');
+assert(source.includes('if (checkoutAttempt) {'), 'an unresolved checkout attempt must lock cart mutation until the outcome is known');
+assert(source.includes('if (definitiveFailure) invalidateCheckoutAttempt();'), 'definitive rejection must release the uncertain-attempt lock');
 assert(source.includes("logTelemetryAnalyticsEvent('order_submitted'"), 'successful order submission should emit telemetry');
 assert(source.includes('Final pricing and availability are revalidated by TinG'), 'UI must communicate that cart totals are estimates');
 assert(source.includes('const observer = new MutationObserver(() => decorateMenuCards());'), 'cart observer must remain independently identifiable');
@@ -30,4 +35,4 @@ assert(source.includes('confirm with venue staff before ordering'), 'medical-die
 assert(source.includes("else if (cat === 'celiac') card.style.display = tags.includes('celiac') ? 'flex' : 'none';"), 'celiac guidance filter must require the explicit celiac tag');
 assert(!source.includes("tags.includes('celiac') || tags.includes('mod')"), 'generic mod tags must never qualify an item for celiac guidance');
 
-console.log('PASS: TING-11B customer page preserves route-bound ordering and enforces conservative celiac/allergen guidance without unsupported safety claims');
+console.log('PASS: TING-11B customer page preserves route-bound ordering, persistent checkout idempotency, and conservative celiac/allergen guidance without unsupported safety claims');
