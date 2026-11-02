@@ -7,10 +7,21 @@
     let cartButton = null;
     let submitting = false;
     let tableAccessToken = null;
+    let checkoutAttempt = null;
 
     function tableContextStorageKey() {
         if (typeof clientSlug === 'undefined' || !clientSlug || typeof tableIdentifier === 'undefined' || !tableIdentifier) return null;
         return `ting:table-context:${clientSlug}:${tableIdentifier}`;
+    }
+
+    function cartStorageKey() {
+        if (typeof clientSlug === 'undefined' || !clientSlug || typeof tableIdentifier === 'undefined' || !tableIdentifier) return null;
+        return `ting:cart:${clientSlug}:${tableIdentifier}`;
+    }
+
+    function checkoutAttemptStorageKey() {
+        if (typeof clientSlug === 'undefined' || !clientSlug || typeof tableIdentifier === 'undefined' || !tableIdentifier) return null;
+        return `ting:checkout-attempt:${clientSlug}:${tableIdentifier}`;
     }
 
     function hydrateTableAccessToken() {
@@ -40,6 +51,104 @@
         } catch {
             return null;
         }
+    }
+
+    function currentOrderItems() {
+        return [...cart.values()].map(item => ({
+            menu_item_id: item.id,
+            quantity: item.quantity
+        }));
+    }
+
+    function cartFingerprintFromItems(orderItems) {
+        return JSON.stringify([...orderItems]
+            .map(item => ({ menu_item_id: String(item.menu_item_id), quantity: Number(item.quantity) }))
+            .sort((left, right) => left.menu_item_id.localeCompare(right.menu_item_id)));
+    }
+
+    function hydrateCart() {
+        const storageKey = cartStorageKey();
+        if (!storageKey) return;
+        try {
+            const parsed = JSON.parse(sessionStorage.getItem(storageKey) || '[]');
+            if (!Array.isArray(parsed)) return;
+            for (const item of parsed) {
+                const id = String(item?.id || '').trim();
+                const name = String(item?.name || '').trim();
+                const unitPrice = Number(item?.unitPrice);
+                const quantity = Number(item?.quantity);
+                if (!id || !name || !Number.isFinite(unitPrice) || unitPrice < 0 || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) continue;
+                cart.set(id, { id, name, unitPrice, quantity });
+            }
+        } catch {
+            try { sessionStorage.removeItem(storageKey); } catch {}
+        }
+    }
+
+    function persistCart() {
+        const storageKey = cartStorageKey();
+        if (!storageKey) return;
+        try {
+            if (!cart.size) sessionStorage.removeItem(storageKey);
+            else sessionStorage.setItem(storageKey, JSON.stringify([...cart.values()]));
+        } catch {}
+    }
+
+    function hydrateCheckoutAttempt() {
+        const storageKey = checkoutAttemptStorageKey();
+        if (!storageKey) return null;
+        try {
+            const parsed = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+            const requestId = String(parsed?.requestId || '').trim();
+            const fingerprint = String(parsed?.fingerprint || '');
+            if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId) || !fingerprint) {
+                sessionStorage.removeItem(storageKey);
+                return null;
+            }
+            checkoutAttempt = { requestId, fingerprint };
+            return checkoutAttempt;
+        } catch {
+            try { sessionStorage.removeItem(storageKey); } catch {}
+            return null;
+        }
+    }
+
+    function invalidateCheckoutAttempt() {
+        checkoutAttempt = null;
+        const storageKey = checkoutAttemptStorageKey();
+        if (!storageKey) return;
+        try { sessionStorage.removeItem(storageKey); } catch {}
+    }
+
+    function persistCheckoutAttempt() {
+        const storageKey = checkoutAttemptStorageKey();
+        if (!storageKey || !checkoutAttempt) return;
+        try { sessionStorage.setItem(storageKey, JSON.stringify(checkoutAttempt)); } catch {}
+    }
+
+    function getOrCreateCheckoutRequestId(orderItems) {
+        const fingerprint = cartFingerprintFromItems(orderItems);
+        if (checkoutAttempt?.requestId && checkoutAttempt.fingerprint === fingerprint) return checkoutAttempt.requestId;
+        checkoutAttempt = { requestId: crypto.randomUUID(), fingerprint };
+        persistCheckoutAttempt();
+        return checkoutAttempt.requestId;
+    }
+
+    function reconcileCheckoutAttemptWithCart() {
+        if (!checkoutAttempt) return;
+        const orderItems = currentOrderItems();
+        if (!orderItems.length || checkoutAttempt.fingerprint !== cartFingerprintFromItems(orderItems)) invalidateCheckoutAttempt();
+    }
+
+    function clearCheckoutPersistence() {
+        cart.clear();
+        const cartKey = cartStorageKey();
+        const attemptKey = checkoutAttemptStorageKey();
+        checkoutAttempt = null;
+        try {
+            if (cartKey) sessionStorage.removeItem(cartKey);
+            if (attemptKey) sessionStorage.removeItem(attemptKey);
+        } catch {}
     }
 
     function money(value) {
@@ -208,6 +317,8 @@
             if (next === 0) cart.delete(itemId);
             else existing.quantity = next;
         }
+        invalidateCheckoutAttempt();
+        persistCart();
         renderCartState();
     }
 
@@ -303,18 +414,24 @@
     }
 
     async function submitOrderWithRetry(requestId, orderItems, retries = 3) {
+        let lastError = new Error('Order submission failed');
         for (let attempt = 0; attempt < retries; attempt++) {
-            const { data, error } = await supabaseInstance.rpc('submit_order', {
-                p_table_number: tableNumber,
-                p_client_request_id: requestId,
-                p_items: orderItems,
-                p_table_token: tableAccessToken
-            });
-            if (!error) return { data: Array.isArray(data) ? data[0] : data, error: null };
-            if (String(error.code || '').startsWith('23') || String(error.code || '') === '42501' || attempt === retries - 1) return { data: null, error };
-            await new Promise(resolve => setTimeout(resolve, 700 * (attempt + 1)));
+            try {
+                const { data, error } = await supabaseInstance.rpc('submit_order', {
+                    p_table_number: tableNumber,
+                    p_client_request_id: requestId,
+                    p_items: orderItems,
+                    p_table_token: tableAccessToken
+                });
+                if (!error) return { data: Array.isArray(data) ? data[0] : data, error: null };
+                lastError = error;
+                if (String(error.code || '').startsWith('23') || String(error.code || '') === '42501') return { data: null, error };
+            } catch (error) {
+                lastError = error;
+            }
+            if (attempt < retries - 1) await new Promise(resolve => setTimeout(resolve, 700 * (attempt + 1)));
         }
-        return { data: null, error: new Error('Order submission failed') };
+        return { data: null, error: lastError };
     }
 
     async function placeOrder() {
@@ -322,11 +439,8 @@
         submitting = true;
         renderCartSheet();
 
-        const requestId = crypto.randomUUID();
-        const orderItems = [...cart.values()].map(item => ({
-            menu_item_id: item.id,
-            quantity: item.quantity
-        }));
+        const orderItems = currentOrderItems();
+        const requestId = getOrCreateCheckoutRequestId(orderItems);
 
         const { data: order, error } = await submitOrderWithRetry(requestId, orderItems);
         if (error || !order?.id) {
@@ -336,13 +450,13 @@
                 ? '⚠️ One of your items is now out of stock. Please review your cart.'
                 : error?.message?.includes('table access context')
                     ? '⚠️ This table link is no longer authorized. Scan the table QR/NFC tag again.'
-                    : '⚠️ We could not place the order. Your cart is still here—please try again.';
+                    : '⚠️ We could not confirm the order. Your cart is still here—retrying will safely reuse the same request.';
             showToastNotification(message);
             return;
         }
 
         const submittedCount = cartCount();
-        cart.clear();
+        clearCheckoutPersistence();
         submitting = false;
         renderCartState();
         logTelemetryAnalyticsEvent('order_submitted', null, {
@@ -380,6 +494,9 @@
     function init() {
         try {
             tableAccessToken = hydrateTableAccessToken();
+            hydrateCart();
+            hydrateCheckoutAttempt();
+            reconcileCheckoutAttemptWithCart();
             installSecuredAssistanceBridge();
             injectStyles();
             injectCartUi();
@@ -390,6 +507,15 @@
             window.ting11bCartReady = false;
             console.error('TING-11B cart initialization failed safely:', error);
         }
+    }
+
+    if (typeof window !== 'undefined' && window.__TING_TEST__) {
+        window.__tingCheckoutIdempotencyTestHooks = {
+            cartFingerprintFromItems,
+            hydrateCheckoutAttempt,
+            invalidateCheckoutAttempt,
+            getOrCreateCheckoutRequestId
+        };
     }
 
     if (document.readyState === 'complete') init();
