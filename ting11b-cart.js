@@ -87,11 +87,14 @@
 
     function persistCart() {
         const storageKey = cartStorageKey();
-        if (!storageKey) return;
+        if (!storageKey) return false;
         try {
             if (!cart.size) sessionStorage.removeItem(storageKey);
             else sessionStorage.setItem(storageKey, JSON.stringify([...cart.values()]));
-        } catch {}
+            return true;
+        } catch {
+            return false;
+        }
     }
 
     function hydrateCheckoutAttempt() {
@@ -122,15 +125,25 @@
 
     function persistCheckoutAttempt() {
         const storageKey = checkoutAttemptStorageKey();
-        if (!storageKey || !checkoutAttempt) return;
-        try { sessionStorage.setItem(storageKey, JSON.stringify(checkoutAttempt)); } catch {}
+        if (!storageKey || !checkoutAttempt) return false;
+        try {
+            sessionStorage.setItem(storageKey, JSON.stringify(checkoutAttempt));
+            return true;
+        } catch {
+            return false;
+        }
     }
 
     function getOrCreateCheckoutRequestId(orderItems) {
         const fingerprint = cartFingerprintFromItems(orderItems);
-        if (checkoutAttempt?.requestId && checkoutAttempt.fingerprint === fingerprint) return checkoutAttempt.requestId;
+        if (checkoutAttempt?.requestId && checkoutAttempt.fingerprint === fingerprint) {
+            return persistCheckoutAttempt() ? checkoutAttempt.requestId : null;
+        }
         checkoutAttempt = { requestId: crypto.randomUUID(), fingerprint };
-        persistCheckoutAttempt();
+        if (!persistCheckoutAttempt()) {
+            checkoutAttempt = null;
+            return null;
+        }
         return checkoutAttempt.requestId;
     }
 
@@ -181,7 +194,7 @@
             return false;
         }
         if (!tableAccessToken) {
-            showToastNotification('⚠️ This table link is not authorized for assistance. Scan this table’s QR/NFC tag again.');
+            showToastNotification('⚠️ This table link is not authorized for assistance. Scan the table QR/NFC tag again.');
             return false;
         }
         if (!supabaseInstance || !tenantId) {
@@ -442,8 +455,21 @@
         submitting = true;
         renderCartSheet();
 
+        if (!persistCart()) {
+            submitting = false;
+            renderCartSheet();
+            showToastNotification('⚠️ TinG cannot safely preserve this checkout on this device. Your order was not sent. Please try again.');
+            return;
+        }
+
         const orderItems = currentOrderItems();
         const requestId = getOrCreateCheckoutRequestId(orderItems);
+        if (!requestId) {
+            submitting = false;
+            renderCartSheet();
+            showToastNotification('⚠️ TinG cannot safely preserve this checkout on this device. Your order was not sent. Please try again.');
+            return;
+        }
 
         const { data: order, error } = await submitOrderWithRetry(requestId, orderItems);
         if (error || !order?.id) {
