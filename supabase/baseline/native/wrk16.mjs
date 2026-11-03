@@ -33,6 +33,7 @@ function equalCatalogue(actual,expected,label,capText=false){
  if(capText)for(const c of [a,b])for(const f of c.functions)if(f.schema==='ting_private'&&['issue_table_access_context','revoke_table_access_context','rotate_table_access_context'].includes(f.name))f.definition=f.definition.replace(/--[^\n]*/g,'').replace(/\s+/g,'').toLowerCase();
  const different=Object.keys(b).filter(k=>JSON.stringify(stable(a[k]))!==JSON.stringify(stable(b[k])));
  report[label]={result:different.length?'FAIL':'PASS',different};
+ if(different.length)report[label].details=Object.fromEntries(different.map(k=>[k,{actual:a[k],expected:b[k]}]));
  assert.equal(different.length,0,label+': '+different.join(','));
  pass(label);
 }
