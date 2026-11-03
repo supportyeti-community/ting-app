@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://www.coderabbit.ai/integrations/schema.v2.json
+
+language: "en-US"
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: true
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_pause_after_reviewed_commits: 0
+
+  path_instructions:
+    - path: "supabase/**"
+      instructions: >-
+        Treat database, migration, function, trigger, grant and RLS changes as security-sensitive. Verify canonical tenant ownership, cross-tenant isolation, fail-closed behavior, search_path safety, migration compatibility, retry or idempotency behavior where relevant, persistent data integrity, and an explicit rollback or forward-fix path. Flag any weakening of tenant isolation, privileged boundaries, ownership immutability, or existing production guarantees as a blocker.
+
+    - path: "admin.html"
+      instructions: >-
+        Review venue and admin behavior with strict authentication and authorization separation. Do not accept browser-controlled tenant or role values as final authority. Check that privileged operations remain scoped to the authenticated venue membership and that no service-role or equivalent privileged secret reaches browser code.
+
+    - path: "auth.html"
+      instructions: >-
+        Treat authentication changes as high risk. Check redirect handling, session state, token exposure, account enumeration, authorization after authentication, tenant membership validation, and fail-closed error behavior.
+
+    - path: "reset-password.html"
+      instructions: >-
+        Treat password recovery and password change behavior as high risk. Check recovery-session validation, token handling, redirect safety, membership and authorization after recovery, replay or reuse risk, account enumeration, rate-limit assumptions, and accidental secret exposure.
+
+    - path: "index.html"
+      instructions: >-
+        Review guest-facing changes for tenant-bound request integrity, unsafe trust in client-supplied ownership or identifiers, duplicate or retry behavior, input validation, XSS and injection risks, and regressions in the QR or table guest journey.
+
+    - path: "ting11b-cart.js"
+      instructions: >-
+        Review ordering writes for canonical tenant and table ownership, price and item authority, duplicate submission and retry safety, malformed or stale client state, failure handling, and any path where browser-controlled values could become protected server-side truth.
+
+    - path: "ting11c-order-board.js"
+      instructions: >-
+        Review venue order-board behavior for tenant isolation, authorization, cross-tenant reads or updates, state-transition authority, realtime assumptions, stale state, failure recovery, and unsafe trust in browser-provided identifiers.
+
+    - path: ".github/workflows/**"
+      instructions: >-
+        Review workflow changes for least-privilege permissions, pinned third-party actions, untrusted pull-request input, secret exposure, unsafe shell interpolation, accidental production mutation, and checks that can report success without actually exercising the intended invariant.
