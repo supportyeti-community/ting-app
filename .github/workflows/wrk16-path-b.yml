@@ -1,0 +1,23 @@
+name: WRK-16 Path B production-state upgrade
+on:
+  push:
+    branches: ['codex/wrk16-path-b']
+permissions:
+  contents: read
+concurrency:
+  group: wrk16-path-b
+  cancel-in-progress: false
+jobs:
+  path-b:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --prefix supabase/baseline/native
+      - name: Rehearse only production-state upgrade
+        run: node supabase/baseline/native/wrk16.mjs

@@ -1,0 +1,3286 @@
+{
+  "tables": [
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=r/postgres"
+      ],
+      "rls": true,
+      "name": "admin_users",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        }
+      ],
+      "comment": "Legacy platform allowlist, retained for menu-pictures storage policies. Own-row authenticated read only; trusted operator writes.",
+      "force_rls": false,
+      "replica_identity": "d"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "anon=a/postgres",
+        "authenticated=ard/postgres"
+      ],
+      "rls": true,
+      "name": "menu_events",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "event_type",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "item_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "table_number",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "client_slug",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "comment": null,
+          "default": "'{}'::jsonb",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "comment": "Append-only client telemetry: routed inserts; tenant member reads and deletes; no client updates.",
+      "force_rls": false,
+      "replica_identity": "d"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "anon=r/postgres",
+        "authenticated=arwd/postgres"
+      ],
+      "rls": true,
+      "name": "menu_items",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "client_slug",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "price",
+          "type": "numeric",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "image_url",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "tags",
+          "type": "text[]",
+          "comment": null,
+          "default": "'{}'::text[]",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "is_out_of_stock",
+          "type": "boolean",
+          "comment": null,
+          "default": "false",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "is_promo",
+          "type": "boolean",
+          "comment": null,
+          "default": "false",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "promo_price",
+          "type": "numeric",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "sort_order",
+          "type": "integer",
+          "comment": null,
+          "default": "0",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "comment": null,
+      "force_rls": false,
+      "replica_identity": "d"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=r/postgres"
+      ],
+      "rls": true,
+      "name": "order_items",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "order_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "menu_item_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "item_name_snapshot",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "unit_price_snapshot",
+          "type": "numeric(12,2)",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "quantity",
+          "type": "integer",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "line_total",
+          "type": "numeric(12,2)",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "comment": "Immutable historical line-item snapshots for canonical tenant-owned orders.",
+      "force_rls": false,
+      "replica_identity": "d"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=r/postgres"
+      ],
+      "rls": true,
+      "name": "orders",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "table_number",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "comment": null,
+          "default": "'submitted'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "subtotal",
+          "type": "numeric(12,2)",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "total",
+          "type": "numeric(12,2)",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "client_request_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "submitted_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "accepted_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "preparing_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "ready_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "payment_status",
+          "type": "text",
+          "comment": null,
+          "default": "'unpaid'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "comment": "Canonical tenant-owned restaurant orders. Customer submissions are accepted only through submit_order RPC; tenant members may read their tenant orders.",
+      "force_rls": false,
+      "replica_identity": "d"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=r/postgres"
+      ],
+      "rls": true,
+      "name": "payment_allocations",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "order_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "payment_attempt_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "amount",
+          "type": "numeric(12,2)",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "comment": null,
+          "default": "'AUD'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "comment": "Server-recognized successful money allocated to an order. These rows, not browser success state, reduce the outstanding balance.",
+      "force_rls": false,
+      "replica_identity": "d"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=r/postgres"
+      ],
+      "rls": true,
+      "name": "payment_attempts",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "order_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "comment": null,
+          "default": "'unassigned'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "provider_payment_id",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "client_request_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "requested_amount",
+          "type": "numeric(12,2)",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "confirmed_amount",
+          "type": "numeric(12,2)",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "comment": null,
+          "default": "'AUD'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "comment": null,
+          "default": "'created'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "reservation_expires_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "failure_code",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "failure_message",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "confirmed_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "cancelled_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "provider_account_id",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        }
+      ],
+      "comment": "Tenant-owned payment attempts. Pending attempts reserve order balance for a bounded window; browser clients cannot write this table directly.",
+      "force_rls": false,
+      "replica_identity": "d"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "anon=r/postgres",
+        "authenticated=r/postgres"
+      ],
+      "rls": true,
+      "name": "restaurant_clients",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "client_slug",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "supabase_url",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "supabase_anon_key",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "restaurant_name",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        }
+      ],
+      "comment": "Public platform routing registry: exact header-scoped SELECT; headerless legacy fallback exposes only the-bistro until cached pages are retired. Operator-managed writes only. A public slug is not authorization.",
+      "force_rls": false,
+      "replica_identity": "d"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "anon=r/postgres",
+        "authenticated=arwd/postgres"
+      ],
+      "rls": true,
+      "name": "restaurant_settings",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "restaurant_name",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "google_place_id",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "accent_color",
+          "type": "text",
+          "comment": null,
+          "default": "'#e67e22'::text",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "logo_url",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "comment": null,
+      "force_rls": false,
+      "replica_identity": "d"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=rw/postgres"
+      ],
+      "rls": true,
+      "name": "service_tickets",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "table_number",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "request_type",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "comment": null,
+          "default": "'pending'::text",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "client_slug",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "comment": "Tenant-routed assistance queue: public pending inserts; tenant member read/status update; no client delete while Postgres Changes is published.",
+      "force_rls": false,
+      "replica_identity": "d"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres"
+      ],
+      "rls": true,
+      "name": "table_access_contexts",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "table_number",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "token_hash",
+          "type": "bytea",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        }
+      ],
+      "comment": "Hashed bearer capabilities issued by an authorized tenant manager for a specific physical table. Tokens are never stored in plaintext.",
+      "force_rls": false,
+      "replica_identity": "d"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=arwd/postgres"
+      ],
+      "rls": true,
+      "name": "table_configurations",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "source_table",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "target_table",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "comment": null,
+      "force_rls": false,
+      "replica_identity": "d"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "rls": true,
+      "name": "tenant_memberships",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "role",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "comment": null,
+      "force_rls": false,
+      "replica_identity": "d"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwd/postgres"
+      ],
+      "rls": true,
+      "name": "tenant_payment_accounts",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "provider",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "provider_account_id",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "comment": null,
+          "default": "'active'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "comment": "Server-managed tenant to payment-provider account mapping. No KYC, bank, card, or provider secret data is stored here.",
+      "force_rls": false,
+      "replica_identity": "d"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "rls": true,
+      "name": "tenants",
+      "owner": "postgres",
+      "schema": "public",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "comment": null,
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "client_slug",
+          "type": "text",
+          "comment": null,
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "comment": null,
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "comment": null,
+      "force_rls": false,
+      "replica_identity": "d"
+    }
+  ],
+  "indexes": [
+    {
+      "name": "admin_users_pkey",
+      "table": "admin_users",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX admin_users_pkey ON public.admin_users USING btree (user_id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "idx_master_clients_slug",
+      "table": "restaurant_clients",
+      "schema": "public",
+      "definition": "CREATE INDEX idx_master_clients_slug ON public.restaurant_clients USING btree (client_slug)",
+      "constraint_backed": false
+    },
+    {
+      "name": "idx_menu_events_metrics",
+      "table": "menu_events",
+      "schema": "public",
+      "definition": "CREATE INDEX idx_menu_events_metrics ON public.menu_events USING btree (client_slug, event_type)",
+      "constraint_backed": false
+    },
+    {
+      "name": "idx_menu_sort",
+      "table": "menu_items",
+      "schema": "public",
+      "definition": "CREATE INDEX idx_menu_sort ON public.menu_items USING btree (sort_order)",
+      "constraint_backed": false
+    },
+    {
+      "name": "idx_tickets_pending",
+      "table": "service_tickets",
+      "schema": "public",
+      "definition": "CREATE INDEX idx_tickets_pending ON public.service_tickets USING btree (status) WHERE (status = 'pending'::text)",
+      "constraint_backed": false
+    },
+    {
+      "name": "menu_events_pkey",
+      "table": "menu_events",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX menu_events_pkey ON public.menu_events USING btree (id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "menu_events_tenant_id_idx",
+      "table": "menu_events",
+      "schema": "public",
+      "definition": "CREATE INDEX menu_events_tenant_id_idx ON public.menu_events USING btree (tenant_id)",
+      "constraint_backed": false
+    },
+    {
+      "name": "menu_items_pkey",
+      "table": "menu_items",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX menu_items_pkey ON public.menu_items USING btree (id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "menu_items_tenant_id_idx",
+      "table": "menu_items",
+      "schema": "public",
+      "definition": "CREATE INDEX menu_items_tenant_id_idx ON public.menu_items USING btree (tenant_id)",
+      "constraint_backed": false
+    },
+    {
+      "name": "order_items_pkey",
+      "table": "order_items",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX order_items_pkey ON public.order_items USING btree (id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "order_items_tenant_order_idx",
+      "table": "order_items",
+      "schema": "public",
+      "definition": "CREATE INDEX order_items_tenant_order_idx ON public.order_items USING btree (tenant_id, order_id)",
+      "constraint_backed": false
+    },
+    {
+      "name": "orders_pkey",
+      "table": "orders",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX orders_pkey ON public.orders USING btree (id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "orders_tenant_client_request_key",
+      "table": "orders",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX orders_tenant_client_request_key ON public.orders USING btree (tenant_id, client_request_id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "orders_tenant_id_id_key",
+      "table": "orders",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX orders_tenant_id_id_key ON public.orders USING btree (tenant_id, id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "orders_tenant_status_created_idx",
+      "table": "orders",
+      "schema": "public",
+      "definition": "CREATE INDEX orders_tenant_status_created_idx ON public.orders USING btree (tenant_id, status, created_at DESC)",
+      "constraint_backed": false
+    },
+    {
+      "name": "payment_allocations_one_per_attempt",
+      "table": "payment_allocations",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX payment_allocations_one_per_attempt ON public.payment_allocations USING btree (payment_attempt_id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "payment_allocations_pkey",
+      "table": "payment_allocations",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX payment_allocations_pkey ON public.payment_allocations USING btree (id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "payment_allocations_tenant_attempt_idx",
+      "table": "payment_allocations",
+      "schema": "public",
+      "definition": "CREATE INDEX payment_allocations_tenant_attempt_idx ON public.payment_allocations USING btree (tenant_id, payment_attempt_id)",
+      "constraint_backed": false
+    },
+    {
+      "name": "payment_allocations_tenant_order_idx",
+      "table": "payment_allocations",
+      "schema": "public",
+      "definition": "CREATE INDEX payment_allocations_tenant_order_idx ON public.payment_allocations USING btree (tenant_id, order_id, created_at DESC)",
+      "constraint_backed": false
+    },
+    {
+      "name": "payment_attempts_active_reservation_idx",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "CREATE INDEX payment_attempts_active_reservation_idx ON public.payment_attempts USING btree (tenant_id, order_id, reservation_expires_at) WHERE (status = ANY (ARRAY['created'::text, 'pending'::text]))",
+      "constraint_backed": false
+    },
+    {
+      "name": "payment_attempts_pkey",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX payment_attempts_pkey ON public.payment_attempts USING btree (id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "payment_attempts_provider_account_idx",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "CREATE INDEX payment_attempts_provider_account_idx ON public.payment_attempts USING btree (provider, provider_account_id) WHERE (provider_account_id IS NOT NULL)",
+      "constraint_backed": false
+    },
+    {
+      "name": "payment_attempts_provider_reference_key",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX payment_attempts_provider_reference_key ON public.payment_attempts USING btree (provider, provider_payment_id) WHERE (provider_payment_id IS NOT NULL)",
+      "constraint_backed": false
+    },
+    {
+      "name": "payment_attempts_tenant_client_request_key",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX payment_attempts_tenant_client_request_key ON public.payment_attempts USING btree (tenant_id, client_request_id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "payment_attempts_tenant_id_id_key",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX payment_attempts_tenant_id_id_key ON public.payment_attempts USING btree (tenant_id, id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "payment_attempts_tenant_order_created_idx",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "CREATE INDEX payment_attempts_tenant_order_created_idx ON public.payment_attempts USING btree (tenant_id, order_id, created_at DESC)",
+      "constraint_backed": false
+    },
+    {
+      "name": "restaurant_clients_client_slug_key",
+      "table": "restaurant_clients",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX restaurant_clients_client_slug_key ON public.restaurant_clients USING btree (client_slug)",
+      "constraint_backed": true
+    },
+    {
+      "name": "restaurant_clients_pkey",
+      "table": "restaurant_clients",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX restaurant_clients_pkey ON public.restaurant_clients USING btree (id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "restaurant_settings_pkey",
+      "table": "restaurant_settings",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX restaurant_settings_pkey ON public.restaurant_settings USING btree (id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "restaurant_settings_tenant_id_idx",
+      "table": "restaurant_settings",
+      "schema": "public",
+      "definition": "CREATE INDEX restaurant_settings_tenant_id_idx ON public.restaurant_settings USING btree (tenant_id)",
+      "constraint_backed": false
+    },
+    {
+      "name": "restaurant_settings_tenant_key",
+      "table": "restaurant_settings",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX restaurant_settings_tenant_key ON public.restaurant_settings USING btree (tenant_id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "service_tickets_pkey",
+      "table": "service_tickets",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX service_tickets_pkey ON public.service_tickets USING btree (id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "service_tickets_tenant_id_idx",
+      "table": "service_tickets",
+      "schema": "public",
+      "definition": "CREATE INDEX service_tickets_tenant_id_idx ON public.service_tickets USING btree (tenant_id)",
+      "constraint_backed": false
+    },
+    {
+      "name": "table_access_contexts_active_table_idx",
+      "table": "table_access_contexts",
+      "schema": "public",
+      "definition": "CREATE INDEX table_access_contexts_active_table_idx ON public.table_access_contexts USING btree (tenant_id, table_number) WHERE (revoked_at IS NULL)",
+      "constraint_backed": false
+    },
+    {
+      "name": "table_access_contexts_pkey",
+      "table": "table_access_contexts",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX table_access_contexts_pkey ON public.table_access_contexts USING btree (id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "table_access_contexts_tenant_token_key",
+      "table": "table_access_contexts",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX table_access_contexts_tenant_token_key ON public.table_access_contexts USING btree (tenant_id, token_hash)",
+      "constraint_backed": true
+    },
+    {
+      "name": "table_configurations_pkey",
+      "table": "table_configurations",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX table_configurations_pkey ON public.table_configurations USING btree (tenant_id, source_table, target_table)",
+      "constraint_backed": true
+    },
+    {
+      "name": "table_configurations_tenant_id_idx",
+      "table": "table_configurations",
+      "schema": "public",
+      "definition": "CREATE INDEX table_configurations_tenant_id_idx ON public.table_configurations USING btree (tenant_id)",
+      "constraint_backed": false
+    },
+    {
+      "name": "tenant_memberships_pkey",
+      "table": "tenant_memberships",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX tenant_memberships_pkey ON public.tenant_memberships USING btree (id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "tenant_memberships_tenant_id_idx",
+      "table": "tenant_memberships",
+      "schema": "public",
+      "definition": "CREATE INDEX tenant_memberships_tenant_id_idx ON public.tenant_memberships USING btree (tenant_id)",
+      "constraint_backed": false
+    },
+    {
+      "name": "tenant_memberships_tenant_user_key",
+      "table": "tenant_memberships",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX tenant_memberships_tenant_user_key ON public.tenant_memberships USING btree (tenant_id, user_id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "tenant_memberships_user_id_idx",
+      "table": "tenant_memberships",
+      "schema": "public",
+      "definition": "CREATE INDEX tenant_memberships_user_id_idx ON public.tenant_memberships USING btree (user_id)",
+      "constraint_backed": false
+    },
+    {
+      "name": "tenant_payment_accounts_pkey",
+      "table": "tenant_payment_accounts",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX tenant_payment_accounts_pkey ON public.tenant_payment_accounts USING btree (id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "tenant_payment_accounts_provider_account_unique",
+      "table": "tenant_payment_accounts",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX tenant_payment_accounts_provider_account_unique ON public.tenant_payment_accounts USING btree (provider, provider_account_id)",
+      "constraint_backed": true
+    },
+    {
+      "name": "tenant_payment_accounts_tenant_provider_unique",
+      "table": "tenant_payment_accounts",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX tenant_payment_accounts_tenant_provider_unique ON public.tenant_payment_accounts USING btree (tenant_id, provider)",
+      "constraint_backed": true
+    },
+    {
+      "name": "tenants_client_slug_key",
+      "table": "tenants",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX tenants_client_slug_key ON public.tenants USING btree (client_slug)",
+      "constraint_backed": true
+    },
+    {
+      "name": "tenants_pkey",
+      "table": "tenants",
+      "schema": "public",
+      "definition": "CREATE UNIQUE INDEX tenants_pkey ON public.tenants USING btree (id)",
+      "constraint_backed": true
+    }
+  ],
+  "schemas": [
+    {
+      "acl": [
+        "pg_database_owner=UC/pg_database_owner",
+        "=U/pg_database_owner",
+        "postgres=U/pg_database_owner",
+        "anon=U/pg_database_owner",
+        "authenticated=U/pg_database_owner",
+        "service_role=U/pg_database_owner"
+      ],
+      "name": "public",
+      "owner": "pg_database_owner"
+    },
+    {
+      "acl": [
+        "postgres=UC/postgres",
+        "anon=U/postgres",
+        "authenticated=U/postgres"
+      ],
+      "name": "ting_private",
+      "owner": "postgres"
+    }
+  ],
+  "policies": [
+    {
+      "cmd": "SELECT",
+      "qual": "(user_id = auth.uid())",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "admin_users",
+      "permissive": "PERMISSIVE",
+      "policyname": "Admins can read own admin allowlist row",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "menu_events",
+      "permissive": "PERMISSIVE",
+      "policyname": "menu_events_member_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "menu_events",
+      "permissive": "PERMISSIVE",
+      "policyname": "menu_events_member_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "tablename": "menu_events",
+      "permissive": "PERMISSIVE",
+      "policyname": "menu_events_routed_insert",
+      "schemaname": "public",
+      "with_check": "((tenant_id = ( SELECT ting_private.request_tenant_id() AS request_tenant_id)) AND ((item_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM menu_items item\n  WHERE ((item.id = menu_events.item_id) AND (item.tenant_id = menu_events.tenant_id))))))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "menu_items",
+      "permissive": "PERMISSIVE",
+      "policyname": "menu_items_member_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "menu_items",
+      "permissive": "PERMISSIVE",
+      "policyname": "menu_items_member_insert",
+      "schemaname": "public",
+      "with_check": "(ting_private.can_manage_tenant(tenant_id) AND (price >= (0)::numeric) AND ((promo_price IS NULL) OR (promo_price >= (0)::numeric)))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "menu_items",
+      "permissive": "PERMISSIVE",
+      "policyname": "menu_items_member_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "menu_items",
+      "permissive": "PERMISSIVE",
+      "policyname": "menu_items_member_update",
+      "schemaname": "public",
+      "with_check": "(ting_private.can_manage_tenant(tenant_id) AND (price >= (0)::numeric) AND ((promo_price IS NULL) OR (promo_price >= (0)::numeric)))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(tenant_id = ( SELECT ting_private.request_tenant_id() AS request_tenant_id))",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "tablename": "menu_items",
+      "permissive": "PERMISSIVE",
+      "policyname": "menu_items_public_route",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(ting_private.can_manage_tenant(tenant_id) AND (EXISTS ( SELECT 1\n   FROM orders parent_order\n  WHERE ((parent_order.id = order_items.order_id) AND (parent_order.tenant_id = order_items.tenant_id)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "order_items",
+      "permissive": "PERMISSIVE",
+      "policyname": "order_items_member_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "orders",
+      "permissive": "PERMISSIVE",
+      "policyname": "orders_member_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "payment_allocations",
+      "permissive": "PERMISSIVE",
+      "policyname": "payment_allocations_member_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "payment_attempts",
+      "permissive": "PERMISSIVE",
+      "policyname": "payment_attempts_member_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(client_slug = ( SELECT ting_private.routing_client_slug() AS routing_client_slug))",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "tablename": "restaurant_clients",
+      "permissive": "PERMISSIVE",
+      "policyname": "routing_registry_public_route",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "restaurant_settings",
+      "permissive": "PERMISSIVE",
+      "policyname": "settings_member_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "restaurant_settings",
+      "permissive": "PERMISSIVE",
+      "policyname": "settings_member_insert",
+      "schemaname": "public",
+      "with_check": "ting_private.can_manage_tenant(tenant_id)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "restaurant_settings",
+      "permissive": "PERMISSIVE",
+      "policyname": "settings_member_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "restaurant_settings",
+      "permissive": "PERMISSIVE",
+      "policyname": "settings_member_update",
+      "schemaname": "public",
+      "with_check": "ting_private.can_manage_tenant(tenant_id)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(tenant_id = ( SELECT ting_private.request_tenant_id() AS request_tenant_id))",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "tablename": "restaurant_settings",
+      "permissive": "PERMISSIVE",
+      "policyname": "settings_public_route",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "service_tickets",
+      "permissive": "PERMISSIVE",
+      "policyname": "service_tickets_member_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "service_tickets",
+      "permissive": "PERMISSIVE",
+      "policyname": "service_tickets_member_update",
+      "schemaname": "public",
+      "with_check": "(ting_private.can_manage_tenant(tenant_id) AND (status = ANY (ARRAY['pending'::text, 'resolved'::text])))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "table_configurations",
+      "permissive": "PERMISSIVE",
+      "policyname": "table_links_member_delete",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "table_configurations",
+      "permissive": "PERMISSIVE",
+      "policyname": "table_links_member_insert",
+      "schemaname": "public",
+      "with_check": "ting_private.can_manage_tenant(tenant_id)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "table_configurations",
+      "permissive": "PERMISSIVE",
+      "policyname": "table_links_member_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "ting_private.can_manage_tenant(tenant_id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "table_configurations",
+      "permissive": "PERMISSIVE",
+      "policyname": "table_links_member_update",
+      "schemaname": "public",
+      "with_check": "ting_private.can_manage_tenant(tenant_id)"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "((bucket_id = 'menu-pictures'::text) AND\nCASE\n    WHEN (name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}[.](jpg|png)$'::text) THEN ting_private.can_manage_tenant((split_part(name, '/'::text, 1))::uuid)\n    ELSE false\nEND)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "menu_pictures_member_delete",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "menu_pictures_member_insert",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'menu-pictures'::text) AND\nCASE\n    WHEN (name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}[.](jpg|png)$'::text) THEN ting_private.can_manage_tenant((split_part(name, '/'::text, 1))::uuid)\n    ELSE false\nEND)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((bucket_id = 'menu-pictures'::text) AND (\nCASE\n    WHEN (name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}[.](jpg|png)$'::text) THEN ting_private.can_manage_tenant((split_part(name, '/'::text, 1))::uuid)\n    ELSE false\nEND OR ((POSITION(('/'::text) IN (name)) = 0) AND ting_private.can_manage_tenant('d8e68393-70de-4e77-8c07-51992f2b64a6'::uuid))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "menu_pictures_member_select",
+      "schemaname": "storage",
+      "with_check": null
+    }
+  ],
+  "triggers": [
+    {
+      "name": "menu_events_assign_tenant_id",
+      "table": "menu_events",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER menu_events_assign_tenant_id BEFORE INSERT ON menu_events FOR EACH ROW EXECUTE FUNCTION ting_private.assign_tenant_id_from_client_slug()"
+    },
+    {
+      "name": "clean_menu_items_trigger",
+      "table": "menu_items",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER clean_menu_items_trigger BEFORE INSERT OR UPDATE ON menu_items FOR EACH ROW EXECUTE FUNCTION sanitize_text()"
+    },
+    {
+      "name": "menu_items_assign_tenant_id",
+      "table": "menu_items",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER menu_items_assign_tenant_id BEFORE INSERT ON menu_items FOR EACH ROW EXECUTE FUNCTION ting_private.assign_tenant_id_from_client_slug()"
+    },
+    {
+      "name": "menu_items_tenant_immutable",
+      "table": "menu_items",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER menu_items_tenant_immutable BEFORE UPDATE ON menu_items FOR EACH ROW EXECUTE FUNCTION ting_private.prevent_menu_item_reassignment()"
+    },
+    {
+      "name": "clean_restaurant_settings_trigger",
+      "table": "restaurant_settings",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER clean_restaurant_settings_trigger BEFORE INSERT OR UPDATE ON restaurant_settings FOR EACH ROW EXECUTE FUNCTION sanitize_text()"
+    },
+    {
+      "name": "settings_tenant_immutable",
+      "table": "restaurant_settings",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER settings_tenant_immutable BEFORE UPDATE ON restaurant_settings FOR EACH ROW EXECUTE FUNCTION ting_private.prevent_tenant_reassignment()"
+    },
+    {
+      "name": "a_assign_service_ticket_tenant",
+      "table": "service_tickets",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER a_assign_service_ticket_tenant BEFORE INSERT OR UPDATE ON service_tickets FOR EACH ROW EXECUTE FUNCTION ting_private.assign_service_ticket_tenant()"
+    },
+    {
+      "name": "clean_service_tickets_trigger",
+      "table": "service_tickets",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER clean_service_tickets_trigger BEFORE INSERT OR UPDATE ON service_tickets FOR EACH ROW EXECUTE FUNCTION sanitize_text()"
+    },
+    {
+      "name": "table_links_tenant_immutable",
+      "table": "table_configurations",
+      "schema": "public",
+      "enabled": "O",
+      "definition": "CREATE TRIGGER table_links_tenant_immutable BEFORE UPDATE ON table_configurations FOR EACH ROW EXECUTE FUNCTION ting_private.prevent_tenant_reassignment()"
+    }
+  ],
+  "functions": [
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "abort_created_payment_attempt",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.abort_created_payment_attempt(p_attempt_id uuid, p_failure_code text DEFAULT NULL::text, p_failure_message text DEFAULT NULL::text)\n RETURNS payment_attempts\n LANGUAGE sql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  SELECT ting_private.abort_created_payment_attempt(p_attempt_id,p_failure_code,p_failure_message);\n$function$\n",
+      "identity_args": "p_attempt_id uuid, p_failure_code text, p_failure_message text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "advance_order_status",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.advance_order_status(p_order_id uuid, p_next_status text)\n RETURNS orders\n LANGUAGE sql\n SET search_path TO ''\nAS $function$\n  SELECT ting_private.advance_order_status(p_order_id, p_next_status);\n$function$\n",
+      "identity_args": "p_order_id uuid, p_next_status text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "authorize_order_payment_context",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.authorize_order_payment_context(p_order_id uuid, p_table_token text)\n RETURNS TABLE(tenant_id uuid, order_id uuid, table_number text)\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$\n  SELECT * FROM ting_private.authorize_order_payment_context(p_order_id,p_table_token);\n$function$\n",
+      "identity_args": "p_order_id uuid, p_table_token text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "bind_payment_provider",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.bind_payment_provider(p_attempt_id uuid, p_provider text, p_provider_account_id text, p_provider_payment_id text)\n RETURNS payment_attempts\n LANGUAGE sql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  SELECT ting_private.bind_payment_provider(p_attempt_id,p_provider,p_provider_account_id,p_provider_payment_id);\n$function$\n",
+      "identity_args": "p_attempt_id uuid, p_provider text, p_provider_account_id text, p_provider_payment_id text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "can_manage_current_tenant",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.can_manage_current_tenant()\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$\n  SELECT COALESCE(\n    ting_private.can_manage_tenant(ting_private.request_tenant_id()),\n    false\n  );\n$function$\n",
+      "identity_args": ""
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "confirm_payment_attempt_trusted",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.confirm_payment_attempt_trusted(p_attempt_id uuid, p_provider text, p_provider_account_id text, p_provider_payment_id text, p_confirmed_amount numeric, p_currency text)\n RETURNS payment_attempts\n LANGUAGE sql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  SELECT ting_private.confirm_payment_attempt(\n    p_attempt_id,p_provider,p_provider_account_id,p_provider_payment_id,p_confirmed_amount,p_currency\n  );\n$function$\n",
+      "identity_args": "p_attempt_id uuid, p_provider text, p_provider_account_id text, p_provider_payment_id text, p_confirmed_amount numeric, p_currency text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "create_payment_attempt",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.create_payment_attempt(p_order_id uuid, p_requested_amount numeric, p_client_request_id uuid, p_table_token text DEFAULT NULL::text)\n RETURNS payment_attempts\n LANGUAGE sql\n SET search_path TO ''\nAS $function$\n  SELECT ting_private.create_payment_attempt(p_order_id,p_requested_amount,p_client_request_id,p_table_token);\n$function$\n",
+      "identity_args": "p_order_id uuid, p_requested_amount numeric, p_client_request_id uuid, p_table_token text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "get_order_payment_balance",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_order_payment_balance(p_order_id uuid)\n RETURNS TABLE(order_total numeric, amount_paid numeric, amount_reserved numeric, amount_due numeric, amount_available numeric, payment_status text)\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$\n  SELECT *\n  FROM ting_private.payment_balance(\n    p_order_id,\n    ting_private.request_tenant_id(),\n    false\n  );\n$function$\n",
+      "identity_args": "p_order_id uuid"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "is_admin",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.is_admin()\n RETURNS boolean\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF auth.uid() IS NULL THEN RETURN false; END IF;\n  RETURN EXISTS (SELECT 1 FROM public.admin_users WHERE public.admin_users.user_id=auth.uid());\nEND\n$function$\n",
+      "identity_args": ""
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "issue_table_access_context",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.issue_table_access_context(p_table_number text)\n RETURNS TABLE(context_id uuid, table_number text, token text)\n LANGUAGE sql\n SET search_path TO ''\nAS $function$\n  SELECT * FROM ting_private.issue_table_access_context(p_table_number);\n$function$\n",
+      "identity_args": "p_table_number text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "release_payment_attempt",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.release_payment_attempt(p_attempt_id uuid, p_provider text, p_provider_account_id text, p_provider_payment_id text, p_terminal_status text, p_failure_code text DEFAULT NULL::text, p_failure_message text DEFAULT NULL::text)\n RETURNS payment_attempts\n LANGUAGE sql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  SELECT ting_private.release_payment_attempt(\n    p_attempt_id,p_provider,p_provider_account_id,p_provider_payment_id,p_terminal_status,p_failure_code,p_failure_message\n  );\n$function$\n",
+      "identity_args": "p_attempt_id uuid, p_provider text, p_provider_account_id text, p_provider_payment_id text, p_terminal_status text, p_failure_code text, p_failure_message text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "request_tenant_id",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.request_tenant_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$\n  SELECT ting_private.request_tenant_id();\n$function$\n",
+      "identity_args": ""
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "revoke_table_access_context",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.revoke_table_access_context(p_context_id uuid)\n RETURNS TABLE(context_id uuid, table_number text, revoked_at timestamp with time zone)\n LANGUAGE sql\n SET search_path TO ''\nAS $function$\n  SELECT * FROM ting_private.revoke_table_access_context(p_context_id);\n$function$\n",
+      "identity_args": "p_context_id uuid"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "rotate_table_access_context",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.rotate_table_access_context(p_table_number text)\n RETURNS TABLE(context_id uuid, table_number text, token text)\n LANGUAGE sql\n SET search_path TO ''\nAS $function$\n  SELECT * FROM ting_private.rotate_table_access_context(p_table_number);\n$function$\n",
+      "identity_args": "p_table_number text"
+    },
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "sanitize_text",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.sanitize_text()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\r\nBEGIN\r\n    IF TG_TABLE_NAME = 'menu_items' THEN\r\n        IF NEW.name IS NOT NULL THEN\r\n            NEW.name := regexp_replace(NEW.name, '<[^>]*>', '', 'g');\r\n        END IF;\r\n\r\n        IF NEW.description IS NOT NULL THEN\r\n            NEW.description := regexp_replace(NEW.description, '<[^>]*>', '', 'g');\r\n        END IF;\r\n\r\n        IF NEW.image_url IS NOT NULL AND NEW.image_url !~* '^https?://' THEN\r\n            NEW.image_url := NULL;\r\n        END IF;\r\n    END IF;\r\n\r\n    IF TG_TABLE_NAME = 'restaurant_settings' THEN\r\n        IF NEW.restaurant_name IS NOT NULL THEN\r\n            NEW.restaurant_name := regexp_replace(NEW.restaurant_name, '<[^>]*>', '', 'g');\r\n        END IF;\r\n\r\n        IF NEW.logo_url IS NOT NULL AND NEW.logo_url !~* '^https?://' THEN\r\n            NEW.logo_url := NULL;\r\n        END IF;\r\n    END IF;\r\n\r\n    IF TG_TABLE_NAME = 'service_tickets' THEN\r\n        IF NEW.request_type IS NOT NULL THEN\r\n            NEW.request_type := regexp_replace(NEW.request_type, '<[^>]*>', '', 'g');\r\n        END IF;\r\n    END IF;\r\n\r\n    RETURN NEW;\r\nEND;\r\n$function$\n",
+      "identity_args": ""
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "submit_order",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.submit_order(p_table_number text, p_client_request_id uuid, p_items jsonb, p_table_token text DEFAULT NULL::text)\n RETURNS orders\n LANGUAGE sql\n SET search_path TO ''\nAS $function$\n  SELECT ting_private.submit_order(\n    p_table_number,\n    p_client_request_id,\n    p_items,\n    p_table_token\n  );\n$function$\n",
+      "identity_args": "p_table_number text, p_client_request_id uuid, p_items jsonb, p_table_token text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "submit_service_ticket",
+      "owner": "postgres",
+      "schema": "public",
+      "definition": "CREATE OR REPLACE FUNCTION public.submit_service_ticket(p_id uuid, p_table_number text, p_request_type text, p_table_token text DEFAULT NULL::text)\n RETURNS service_tickets\n LANGUAGE sql\n SET search_path TO ''\nAS $function$\n  SELECT ting_private.submit_service_ticket(\n    p_id,\n    p_table_number,\n    p_request_type,\n    p_table_token\n  );\n$function$\n",
+      "identity_args": "p_id uuid, p_table_number text, p_request_type text, p_table_token text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "abort_created_payment_attempt",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.abort_created_payment_attempt(p_attempt_id uuid, p_failure_code text DEFAULT NULL::text, p_failure_message text DEFAULT NULL::text)\n RETURNS payment_attempts\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE attempt public.payment_attempts%ROWTYPE; updated_attempt public.payment_attempts%ROWTYPE;\nBEGIN\n  SELECT * INTO attempt FROM public.payment_attempts WHERE id=p_attempt_id FOR UPDATE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'payment attempt unavailable' USING errcode='42501'; END IF;\n  IF attempt.status='failed' AND attempt.provider_payment_id IS NULL THEN RETURN attempt; END IF;\n  IF attempt.status<>'created' OR attempt.provider_payment_id IS NOT NULL THEN\n    RAISE EXCEPTION 'only an unbound created payment attempt can be aborted' USING errcode='23514';\n  END IF;\n  UPDATE public.payment_attempts\n  SET status='failed', failure_code=NULLIF(left(COALESCE(p_failure_code,''),120),''),\n      failure_message=NULLIF(left(COALESCE(p_failure_message,''),500),''), updated_at=now()\n  WHERE id=p_attempt_id RETURNING * INTO updated_attempt;\n  RETURN updated_attempt;\nEND;\n$function$\n",
+      "identity_args": "p_attempt_id uuid, p_failure_code text, p_failure_message text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "advance_order_status",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.advance_order_status(p_order_id uuid, p_next_status text)\n RETURNS orders\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  current_order public.orders%ROWTYPE;\n  updated_order public.orders%ROWTYPE;\nBEGIN\n  IF (SELECT auth.uid()) IS NULL THEN\n    RAISE EXCEPTION 'authentication required' USING errcode = '42501';\n  END IF;\n\n  SELECT * INTO current_order\n  FROM public.orders\n  WHERE id = p_order_id\n  FOR UPDATE;\n\n  IF NOT FOUND OR NOT ting_private.can_manage_tenant(current_order.tenant_id) THEN\n    RAISE EXCEPTION 'order unavailable' USING errcode = '42501';\n  END IF;\n\n  IF NOT (\n    (current_order.status = 'submitted' AND p_next_status = 'accepted') OR\n    (current_order.status = 'accepted' AND p_next_status = 'preparing') OR\n    (current_order.status = 'preparing' AND p_next_status = 'ready') OR\n    (current_order.status = 'ready' AND p_next_status = 'completed')\n  ) THEN\n    RAISE EXCEPTION 'invalid order status transition' USING errcode = '23514';\n  END IF;\n\n  UPDATE public.orders\n  SET\n    status = p_next_status,\n    accepted_at = CASE WHEN p_next_status = 'accepted' THEN now() ELSE accepted_at END,\n    preparing_at = CASE WHEN p_next_status = 'preparing' THEN now() ELSE preparing_at END,\n    ready_at = CASE WHEN p_next_status = 'ready' THEN now() ELSE ready_at END,\n    completed_at = CASE WHEN p_next_status = 'completed' THEN now() ELSE completed_at END,\n    updated_at = now()\n  WHERE id = current_order.id\n  RETURNING * INTO updated_order;\n\n  RETURN updated_order;\nEND;\n$function$\n",
+      "identity_args": "p_order_id uuid, p_next_status text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "assign_service_ticket_tenant",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.assign_service_ticket_tenant()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  routed_tenant_id uuid;\n  routed_client_slug text;\nBEGIN\n  IF tg_table_schema <> 'public'\n     OR tg_table_name <> 'service_tickets'\n     OR tg_when <> 'BEFORE'\n     OR tg_level <> 'ROW'\n     OR tg_op NOT IN ('INSERT', 'UPDATE') THEN\n    RAISE EXCEPTION 'assign_service_ticket_tenant may only run as the approved public.service_tickets row trigger'\n      USING errcode = '42501';\n  END IF;\n\n  IF tg_op = 'UPDATE' THEN\n    IF new.id IS DISTINCT FROM old.id\n       OR new.tenant_id IS DISTINCT FROM old.tenant_id\n       OR new.client_slug IS DISTINCT FROM old.client_slug\n       OR new.table_number IS DISTINCT FROM old.table_number\n       OR new.request_type IS DISTINCT FROM old.request_type\n       OR new.created_at IS DISTINCT FROM old.created_at THEN\n      RAISE EXCEPTION 'service ticket request details and ownership are immutable'\n        USING errcode = '23514';\n    END IF;\n    RETURN new;\n  END IF;\n\n  routed_tenant_id := ting_private.request_tenant_id();\n  IF routed_tenant_id IS NULL THEN\n    RAISE EXCEPTION 'service ticket insert requires a valid tenant route'\n      USING errcode = '23514';\n  END IF;\n\n  SELECT tenant.client_slug\n    INTO routed_client_slug\n    FROM public.tenants tenant\n   WHERE tenant.id = routed_tenant_id;\n\n  IF new.tenant_id IS NOT NULL AND new.tenant_id <> routed_tenant_id THEN\n    RAISE EXCEPTION 'tenant_id does not match the request route'\n      USING errcode = '23514';\n  END IF;\n  IF new.client_slug IS NOT NULL AND new.client_slug <> routed_client_slug THEN\n    RAISE EXCEPTION 'client_slug does not match the request route'\n      USING errcode = '23514';\n  END IF;\n\n  new.tenant_id := routed_tenant_id;\n  new.client_slug := routed_client_slug;\n  RETURN new;\nEND;\n$function$\n",
+      "identity_args": ""
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "assign_tenant_id_from_client_slug",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.assign_tenant_id_from_client_slug()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n    resolved_tenant_id UUID;\nBEGIN\n    IF TG_OP <> 'INSERT'\n       OR TG_TABLE_SCHEMA <> 'public'\n       OR TG_TABLE_NAME NOT IN ('menu_items', 'menu_events') THEN\n        RAISE EXCEPTION\n            'assign_tenant_id_from_client_slug may only run for approved INSERT triggers';\n    END IF;\n\n    IF NEW.client_slug IS NULL THEN\n        RETURN NEW;\n    END IF;\n\n    SELECT tenant.id\n    INTO resolved_tenant_id\n    FROM public.tenants AS tenant\n    WHERE tenant.client_slug = NEW.client_slug;\n\n    IF NEW.tenant_id IS NULL THEN\n        NEW.tenant_id := resolved_tenant_id;\n\n    ELSIF resolved_tenant_id IS NULL\n          OR NEW.tenant_id <> resolved_tenant_id THEN\n        RAISE EXCEPTION\n            'tenant_id does not match client_slug'\n            USING ERRCODE = '23514';\n    END IF;\n\n    RETURN NEW;\nEND;\n$function$\n",
+      "identity_args": ""
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "authorize_order_payment_context",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.authorize_order_payment_context(p_order_id uuid, p_table_token text)\n RETURNS TABLE(tenant_id uuid, order_id uuid, table_number text)\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE routed_tenant_id uuid; canonical_table text;\nBEGIN\n  routed_tenant_id := ting_private.request_tenant_id();\n  IF routed_tenant_id IS NULL THEN\n    RAISE EXCEPTION 'payment authorization requires a valid tenant route' USING errcode='23514';\n  END IF;\n\n  SELECT o.table_number INTO canonical_table\n  FROM public.orders o\n  WHERE o.id=p_order_id AND o.tenant_id=routed_tenant_id;\n  IF NOT FOUND THEN RAISE EXCEPTION 'order unavailable' USING errcode='42501'; END IF;\n\n  IF NOT ting_private.table_access_context_is_valid(routed_tenant_id, canonical_table, p_table_token) THEN\n    RAISE EXCEPTION 'valid table access context required for payment' USING errcode='42501';\n  END IF;\n\n  RETURN QUERY SELECT routed_tenant_id, p_order_id, canonical_table;\nEND;\n$function$\n",
+      "identity_args": "p_order_id uuid, p_table_token text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "bind_payment_provider",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.bind_payment_provider(p_attempt_id uuid, p_provider text, p_provider_account_id text, p_provider_payment_id text)\n RETURNS payment_attempts\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE attempt public.payment_attempts%ROWTYPE; normalized_provider text; normalized_account text; updated_attempt public.payment_attempts%ROWTYPE;\nBEGIN\n  normalized_provider := lower(trim(COALESCE(p_provider,'')));\n  normalized_account := trim(COALESCE(p_provider_account_id,''));\n  IF normalized_provider !~ '^[a-z0-9_-]{1,40}$' OR normalized_account=''\n     OR NULLIF(trim(COALESCE(p_provider_payment_id,'')),'') IS NULL THEN\n    RAISE EXCEPTION 'invalid provider binding' USING errcode='23514';\n  END IF;\n  SELECT * INTO attempt FROM public.payment_attempts WHERE id=p_attempt_id FOR UPDATE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'payment attempt unavailable' USING errcode='42501'; END IF;\n  IF NOT EXISTS (\n    SELECT 1 FROM public.tenant_payment_accounts a\n    WHERE a.tenant_id=attempt.tenant_id AND a.provider=normalized_provider\n      AND a.provider_account_id=normalized_account AND a.status='active'\n  ) THEN RAISE EXCEPTION 'tenant payment account unavailable' USING errcode='42501'; END IF;\n  IF attempt.status='pending' THEN\n    IF attempt.provider=normalized_provider AND attempt.provider_account_id=normalized_account\n       AND attempt.provider_payment_id=p_provider_payment_id THEN RETURN attempt; END IF;\n    RAISE EXCEPTION 'payment provider binding mismatch' USING errcode='23514';\n  END IF;\n  IF attempt.status<>'created' THEN RAISE EXCEPTION 'payment attempt is not bindable' USING errcode='23514'; END IF;\n  IF attempt.reservation_expires_at<=now() THEN RAISE EXCEPTION 'payment attempt reservation expired before provider binding' USING errcode='23514'; END IF;\n  UPDATE public.payment_attempts\n  SET provider=normalized_provider, provider_account_id=normalized_account, provider_payment_id=p_provider_payment_id,\n      status='pending', reservation_expires_at=now()+interval '30 minutes', updated_at=now()\n  WHERE id=p_attempt_id RETURNING * INTO updated_attempt;\n  RETURN updated_attempt;\nEND;\n$function$\n",
+      "identity_args": "p_attempt_id uuid, p_provider text, p_provider_account_id text, p_provider_payment_id text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "can_manage_tenant",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.can_manage_tenant(target uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  SELECT auth.uid() IS NOT NULL AND EXISTS (\n    SELECT 1 FROM public.tenant_memberships m\n    WHERE m.user_id = auth.uid() AND m.tenant_id = target\n      AND m.role IN ('owner', 'admin')\n  );\n$function$\n",
+      "identity_args": "target uuid"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "confirm_payment_attempt",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.confirm_payment_attempt(p_attempt_id uuid, p_provider text, p_provider_account_id text, p_provider_payment_id text, p_confirmed_amount numeric, p_currency text)\n RETURNS payment_attempts\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE attempt public.payment_attempts%ROWTYPE; updated_attempt public.payment_attempts%ROWTYPE;\n        normalized_amount numeric(12,2); normalized_provider text; normalized_account text; paid numeric(12,2); order_total numeric(12,2);\nBEGIN\n  normalized_amount:=round(p_confirmed_amount,2);\n  normalized_provider:=lower(trim(COALESCE(p_provider,'')));\n  normalized_account:=trim(COALESCE(p_provider_account_id,''));\n  SELECT * INTO attempt FROM public.payment_attempts WHERE id=p_attempt_id FOR UPDATE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'payment attempt unavailable' USING errcode='42501'; END IF;\n  IF attempt.status='succeeded' THEN\n    IF attempt.provider=normalized_provider AND attempt.provider_account_id=normalized_account\n       AND attempt.provider_payment_id=p_provider_payment_id AND attempt.confirmed_amount=normalized_amount\n       AND attempt.currency=upper(p_currency) THEN RETURN attempt; END IF;\n    RAISE EXCEPTION 'payment confirmation mismatch' USING errcode='23514';\n  END IF;\n  IF attempt.status NOT IN ('created','pending') THEN RAISE EXCEPTION 'payment attempt is not confirmable' USING errcode='23514'; END IF;\n  IF attempt.provider_payment_id IS NULL AND NOT EXISTS (\n    SELECT 1 FROM public.tenant_payment_accounts a\n    WHERE a.tenant_id=attempt.tenant_id AND a.provider=normalized_provider\n      AND a.provider_account_id=normalized_account AND a.status='active'\n  ) THEN RAISE EXCEPTION 'tenant payment account unavailable' USING errcode='42501'; END IF;\n  IF attempt.provider_payment_id IS NOT NULL AND (\n       attempt.provider<>normalized_provider OR attempt.provider_account_id IS DISTINCT FROM normalized_account\n       OR attempt.provider_payment_id<>p_provider_payment_id\n  ) THEN RAISE EXCEPTION 'payment provider reference mismatch' USING errcode='23514'; END IF;\n  IF normalized_amount IS NULL OR normalized_amount<=0 OR normalized_amount<>attempt.requested_amount THEN\n    RAISE EXCEPTION 'confirmed amount mismatch' USING errcode='23514';\n  END IF;\n  IF upper(COALESCE(p_currency,''))<>attempt.currency THEN RAISE EXCEPTION 'currency mismatch' USING errcode='23514'; END IF;\n  SELECT total INTO order_total FROM public.orders WHERE id=attempt.order_id AND tenant_id=attempt.tenant_id FOR UPDATE;\n  SELECT COALESCE(round(sum(amount),2),0) INTO paid FROM public.payment_allocations\n  WHERE tenant_id=attempt.tenant_id AND order_id=attempt.order_id;\n  IF paid+normalized_amount>order_total THEN RAISE EXCEPTION 'payment would exceed order total' USING errcode='23514'; END IF;\n  UPDATE public.payment_attempts\n  SET provider=normalized_provider, provider_account_id=normalized_account, provider_payment_id=p_provider_payment_id,\n      confirmed_amount=normalized_amount, status='succeeded', confirmed_at=now(), updated_at=now()\n  WHERE id=attempt.id RETURNING * INTO updated_attempt;\n  INSERT INTO public.payment_allocations(tenant_id,order_id,payment_attempt_id,amount,currency)\n  VALUES (attempt.tenant_id,attempt.order_id,attempt.id,normalized_amount,attempt.currency)\n  ON CONFLICT (payment_attempt_id) DO NOTHING;\n  SELECT COALESCE(round(sum(amount),2),0) INTO paid FROM public.payment_allocations\n  WHERE tenant_id=attempt.tenant_id AND order_id=attempt.order_id;\n  UPDATE public.orders\n  SET payment_status=CASE WHEN paid<=0 THEN 'unpaid' WHEN paid<total THEN 'partially_paid' ELSE 'paid' END, updated_at=now()\n  WHERE id=attempt.order_id AND tenant_id=attempt.tenant_id;\n  RETURN updated_attempt;\nEND;\n$function$\n",
+      "identity_args": "p_attempt_id uuid, p_provider text, p_provider_account_id text, p_provider_payment_id text, p_confirmed_amount numeric, p_currency text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "create_payment_attempt",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.create_payment_attempt(p_order_id uuid, p_requested_amount numeric, p_client_request_id uuid, p_table_token text)\n RETURNS payment_attempts\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  PERFORM * FROM ting_private.authorize_order_payment_context(p_order_id,p_table_token);\n  RETURN ting_private.create_payment_attempt_unverified(p_order_id,p_requested_amount,p_client_request_id);\nEND;\n$function$\n",
+      "identity_args": "p_order_id uuid, p_requested_amount numeric, p_client_request_id uuid, p_table_token text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "create_payment_attempt_unverified",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.create_payment_attempt_unverified(p_order_id uuid, p_requested_amount numeric, p_client_request_id uuid)\n RETURNS payment_attempts\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  routed_tenant_id uuid;\n  normalized_amount numeric(12,2);\n  existing_attempt public.payment_attempts%ROWTYPE;\n  created_attempt public.payment_attempts%ROWTYPE;\n  balance record;\nBEGIN\n  routed_tenant_id := ting_private.request_tenant_id();\n  IF routed_tenant_id IS NULL THEN\n    RAISE EXCEPTION 'payment attempt requires a valid tenant route' USING errcode = '23514';\n  END IF;\n  IF p_order_id IS NULL OR p_client_request_id IS NULL THEN\n    RAISE EXCEPTION 'order_id and client_request_id are required' USING errcode = '23514';\n  END IF;\n\n  normalized_amount := round(p_requested_amount,2);\n  IF normalized_amount IS NULL OR normalized_amount <= 0 THEN\n    RAISE EXCEPTION 'payment amount must be positive' USING errcode = '23514';\n  END IF;\n\n  SELECT * INTO existing_attempt\n  FROM public.payment_attempts\n  WHERE tenant_id = routed_tenant_id\n    AND client_request_id = p_client_request_id;\n  IF FOUND THEN\n    RETURN existing_attempt;\n  END IF;\n\n  PERFORM ting_private.expire_payment_reservations(routed_tenant_id, p_order_id);\n\n  SELECT * INTO balance\n  FROM ting_private.payment_balance(p_order_id, routed_tenant_id, true);\n\n  IF balance.amount_due <= 0 THEN\n    RAISE EXCEPTION 'order is already fully paid' USING errcode = '23514';\n  END IF;\n  IF normalized_amount > balance.amount_available THEN\n    RAISE EXCEPTION 'payment amount exceeds currently available balance' USING errcode = '23514';\n  END IF;\n\n  BEGIN\n    INSERT INTO public.payment_attempts(\n      tenant_id, order_id, client_request_id, requested_amount,\n      currency, status, reservation_expires_at\n    ) VALUES (\n      routed_tenant_id, p_order_id, p_client_request_id, normalized_amount,\n      'AUD', 'created', now() + interval '10 minutes'\n    )\n    RETURNING * INTO created_attempt;\n  EXCEPTION WHEN unique_violation THEN\n    SELECT * INTO created_attempt\n    FROM public.payment_attempts\n    WHERE tenant_id = routed_tenant_id\n      AND client_request_id = p_client_request_id;\n    IF NOT FOUND THEN RAISE; END IF;\n  END;\n\n  RETURN created_attempt;\nEND;\n$function$\n",
+      "identity_args": "p_order_id uuid, p_requested_amount numeric, p_client_request_id uuid"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "expire_payment_reservations",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.expire_payment_reservations(p_tenant_id uuid, p_order_id uuid)\n RETURNS integer\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE affected integer;\nBEGIN\n  UPDATE public.payment_attempts\n  SET status='expired', updated_at=now(), cancelled_at=now()\n  WHERE tenant_id=p_tenant_id AND order_id=p_order_id\n    AND status='created' AND provider_payment_id IS NULL AND reservation_expires_at<=now();\n  GET DIAGNOSTICS affected = ROW_COUNT;\n  RETURN affected;\nEND;\n$function$\n",
+      "identity_args": "p_tenant_id uuid, p_order_id uuid"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "issue_table_access_context",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.issue_table_access_context(p_table_number text)\n RETURNS TABLE(context_id uuid, table_number text, token text)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  routed_tenant_id uuid;\n  normalized_table text;\n  raw_token text;\n  inserted_id uuid;\nBEGIN\n  routed_tenant_id := ting_private.request_tenant_id();\n  IF routed_tenant_id IS NULL\n     OR (SELECT auth.uid()) IS NULL\n     OR NOT ting_private.can_manage_tenant(routed_tenant_id) THEN\n    RAISE EXCEPTION 'tenant management authorization required'\n      USING errcode = '42501';\n  END IF;\n\n  normalized_table := trim(COALESCE(p_table_number, ''));\n  IF normalized_table !~ '^[A-Za-z0-9 _-]{1,20}$' THEN\n    RAISE EXCEPTION 'invalid table context' USING errcode = '23514';\n  END IF;\n\n  PERFORM pg_catalog.pg_advisory_xact_lock(\n    pg_catalog.hashtextextended(routed_tenant_id::text || ':' || normalized_table, 0)\n  );\n\n  raw_token := pg_catalog.encode(extensions.gen_random_bytes(32), 'hex');\n\n  INSERT INTO public.table_access_contexts (\n    tenant_id,\n    table_number,\n    token_hash,\n    created_by\n  ) VALUES (\n    routed_tenant_id,\n    normalized_table,\n    extensions.digest(raw_token, 'sha256'),\n    (SELECT auth.uid())\n  )\n  RETURNING id INTO inserted_id;\n\n  RETURN QUERY SELECT inserted_id, normalized_table, raw_token;\nEND;\n$function$\n",
+      "identity_args": "p_table_number text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "payment_balance",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.payment_balance(p_order_id uuid, p_tenant_id uuid, p_lock boolean DEFAULT false)\n RETURNS TABLE(order_total numeric, amount_paid numeric, amount_reserved numeric, amount_due numeric, amount_available numeric, payment_status text)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE current_order public.orders%ROWTYPE; paid numeric(12,2); reserved numeric(12,2);\nBEGIN\n  IF p_lock THEN\n    SELECT * INTO current_order FROM public.orders WHERE id=p_order_id AND tenant_id=p_tenant_id FOR UPDATE;\n  ELSE\n    SELECT * INTO current_order FROM public.orders WHERE id=p_order_id AND tenant_id=p_tenant_id;\n  END IF;\n  IF NOT FOUND THEN RAISE EXCEPTION 'order unavailable' USING errcode='42501'; END IF;\n\n  SELECT COALESCE(round(sum(a.amount),2),0) INTO paid\n  FROM public.payment_allocations a WHERE a.tenant_id=p_tenant_id AND a.order_id=p_order_id;\n\n  SELECT COALESCE(round(sum(a.requested_amount),2),0) INTO reserved\n  FROM public.payment_attempts a\n  WHERE a.tenant_id=p_tenant_id AND a.order_id=p_order_id\n    AND (a.status='pending' OR (a.status='created' AND a.reservation_expires_at>now()));\n\n  order_total := current_order.total;\n  amount_paid := paid;\n  amount_reserved := reserved;\n  amount_due := greatest(round(current_order.total-paid,2),0);\n  amount_available := greatest(round(current_order.total-paid-reserved,2),0);\n  payment_status := CASE WHEN paid<=0 THEN 'unpaid' WHEN paid<current_order.total THEN 'partially_paid' ELSE 'paid' END;\n  RETURN NEXT;\nEND;\n$function$\n",
+      "identity_args": "p_order_id uuid, p_tenant_id uuid, p_lock boolean"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "prevent_menu_item_reassignment",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.prevent_menu_item_reassignment()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF NEW.tenant_id IS DISTINCT FROM OLD.tenant_id\n     OR NEW.client_slug IS DISTINCT FROM OLD.client_slug THEN\n    RAISE EXCEPTION 'Menu item tenant ownership is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n",
+      "identity_args": ""
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "prevent_tenant_reassignment",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.prevent_tenant_reassignment()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF NEW.tenant_id IS DISTINCT FROM OLD.tenant_id THEN\n    RAISE EXCEPTION 'Tenant ownership is immutable' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n",
+      "identity_args": ""
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "name": "release_payment_attempt",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.release_payment_attempt(p_attempt_id uuid, p_provider text, p_provider_account_id text, p_provider_payment_id text, p_terminal_status text, p_failure_code text DEFAULT NULL::text, p_failure_message text DEFAULT NULL::text)\n RETURNS payment_attempts\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE attempt public.payment_attempts%ROWTYPE; normalized_provider text; normalized_account text; normalized_status text; updated_attempt public.payment_attempts%ROWTYPE;\nBEGIN\n  normalized_provider:=lower(trim(COALESCE(p_provider,'')));\n  normalized_account:=trim(COALESCE(p_provider_account_id,''));\n  normalized_status:=lower(trim(COALESCE(p_terminal_status,'')));\n  IF normalized_status NOT IN ('failed','cancelled','expired') THEN RAISE EXCEPTION 'invalid releasing terminal status' USING errcode='23514'; END IF;\n  SELECT * INTO attempt FROM public.payment_attempts WHERE id=p_attempt_id FOR UPDATE;\n  IF NOT FOUND THEN RAISE EXCEPTION 'payment attempt unavailable' USING errcode='42501'; END IF;\n  IF attempt.provider<>normalized_provider OR attempt.provider_account_id IS DISTINCT FROM normalized_account\n     OR attempt.provider_payment_id IS DISTINCT FROM p_provider_payment_id THEN\n    RAISE EXCEPTION 'payment provider reference mismatch' USING errcode='23514';\n  END IF;\n  IF attempt.status IN ('failed','cancelled','expired') THEN RETURN attempt; END IF;\n  IF attempt.status='succeeded' THEN RAISE EXCEPTION 'succeeded payment cannot be released' USING errcode='23514'; END IF;\n  IF attempt.status<>'pending' THEN RAISE EXCEPTION 'payment attempt is not releasable' USING errcode='23514'; END IF;\n  UPDATE public.payment_attempts\n  SET status=normalized_status, failure_code=NULLIF(left(COALESCE(p_failure_code,''),120),''),\n      failure_message=NULLIF(left(COALESCE(p_failure_message,''),500),''),\n      cancelled_at=CASE WHEN normalized_status IN ('cancelled','expired') THEN now() ELSE cancelled_at END,\n      updated_at=now()\n  WHERE id=p_attempt_id RETURNING * INTO updated_attempt;\n  RETURN updated_attempt;\nEND;\n$function$\n",
+      "identity_args": "p_attempt_id uuid, p_provider text, p_provider_account_id text, p_provider_payment_id text, p_terminal_status text, p_failure_code text, p_failure_message text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "request_tenant_id",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.request_tenant_id()\n RETURNS uuid\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE headers jsonb; slug text;\nBEGIN\n  BEGIN\n    headers := nullif(current_setting('request.headers', true), '')::jsonb;\n  EXCEPTION WHEN invalid_text_representation THEN RETURN NULL;\n  END;\n  slug := headers ->> 'x-client-slug';\n  IF slug IS NULL OR slug !~ '^[A-Za-z0-9_-]{1,80}$' THEN RETURN NULL; END IF;\n  RETURN (SELECT id FROM public.tenants WHERE client_slug = slug);\nEND $function$\n",
+      "identity_args": ""
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "revoke_table_access_context",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.revoke_table_access_context(p_context_id uuid)\n RETURNS TABLE(context_id uuid, table_number text, revoked_at timestamp with time zone)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  routed_tenant_id uuid;\nBEGIN\n  routed_tenant_id := ting_private.request_tenant_id();\n  IF routed_tenant_id IS NULL\n     OR (SELECT auth.uid()) IS NULL\n     OR NOT ting_private.can_manage_tenant(routed_tenant_id) THEN\n    RAISE EXCEPTION 'tenant management authorization required'\n      USING errcode = '42501';\n  END IF;\n\n  RETURN QUERY\n  UPDATE public.table_access_contexts AS context\n  SET revoked_at = COALESCE(context.revoked_at, pg_catalog.clock_timestamp())\n  WHERE context.id = p_context_id\n    AND context.tenant_id = routed_tenant_id\n  RETURNING context.id, context.table_number, context.revoked_at;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'table access context unavailable'\n      USING errcode = '42501';\n  END IF;\nEND;\n$function$\n",
+      "identity_args": "p_context_id uuid"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "rls_auto_enable",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.rls_auto_enable()\n RETURNS event_trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog'\nAS $function$\nDECLARE cmd record;\nBEGIN\n  FOR cmd IN SELECT * FROM pg_event_trigger_ddl_commands() WHERE command_tag IN ('CREATE TABLE','CREATE TABLE AS','SELECT INTO') AND object_type IN ('table','partitioned table')\n  LOOP\n    IF cmd.schema_name IS NOT NULL AND cmd.schema_name IN ('public') AND cmd.schema_name NOT IN ('pg_catalog','information_schema') AND cmd.schema_name NOT LIKE 'pg_toast%' AND cmd.schema_name NOT LIKE 'pg_temp%' THEN\n      BEGIN\n        EXECUTE format('alter table if exists %s enable row level security',cmd.object_identity);\n        RAISE LOG 'rls_auto_enable: enabled RLS on %',cmd.object_identity;\n      EXCEPTION WHEN OTHERS THEN\n        RAISE LOG 'rls_auto_enable: failed to enable RLS on %',cmd.object_identity;\n      END;\n    ELSE\n      RAISE LOG 'rls_auto_enable: skip % (schema: %)',cmd.object_identity,cmd.schema_name;\n    END IF;\n  END LOOP;\nEND\n$function$\n",
+      "identity_args": ""
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "rotate_table_access_context",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.rotate_table_access_context(p_table_number text)\n RETURNS TABLE(context_id uuid, table_number text, token text)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  routed_tenant_id uuid;\n  normalized_table text;\n  raw_token text;\n  inserted_id uuid;\nBEGIN\n  routed_tenant_id := ting_private.request_tenant_id();\n  IF routed_tenant_id IS NULL\n     OR (SELECT auth.uid()) IS NULL\n     OR NOT ting_private.can_manage_tenant(routed_tenant_id) THEN\n    RAISE EXCEPTION 'tenant management authorization required'\n      USING errcode = '42501';\n  END IF;\n\n  normalized_table := trim(COALESCE(p_table_number, ''));\n  IF normalized_table !~ '^[A-Za-z0-9 _-]{1,20}$' THEN\n    RAISE EXCEPTION 'invalid table context' USING errcode = '23514';\n  END IF;\n\n  -- Serialize replacements for one tenant/table so concurrent rotations cannot\n  -- leave multiple newly-issued credentials active. Ordinary issuance takes\n  -- the same lock, so it cannot cross the revoke-and-replace boundary.\n  PERFORM pg_catalog.pg_advisory_xact_lock(\n    pg_catalog.hashtextextended(routed_tenant_id::text || ':' || normalized_table, 0)\n  );\n\n  UPDATE public.table_access_contexts AS context\n  SET revoked_at = pg_catalog.clock_timestamp()\n  WHERE context.tenant_id = routed_tenant_id\n    AND context.table_number = normalized_table\n    AND context.revoked_at IS NULL;\n\n  raw_token := pg_catalog.encode(extensions.gen_random_bytes(32), 'hex');\n\n  INSERT INTO public.table_access_contexts (\n    tenant_id,\n    table_number,\n    token_hash,\n    created_by\n  ) VALUES (\n    routed_tenant_id,\n    normalized_table,\n    extensions.digest(raw_token, 'sha256'),\n    (SELECT auth.uid())\n  )\n  RETURNING id INTO inserted_id;\n\n  RETURN QUERY SELECT inserted_id, normalized_table, raw_token;\nEND;\n$function$\n",
+      "identity_args": "p_table_number text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "routing_client_slug",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.routing_client_slug()\n RETURNS text\n LANGUAGE plpgsql\n STABLE\n SET search_path TO ''\nAS $function$\nDECLARE headers jsonb; slug text;\nBEGIN\n  BEGIN\n    headers := nullif(current_setting('request.headers', true), '')::jsonb;\n  EXCEPTION WHEN invalid_text_representation THEN RETURN NULL;\n  END;\n  IF headers IS NULL THEN RETURN 'the-bistro'; END IF;\n  IF jsonb_typeof(headers) <> 'object' THEN RETURN NULL; END IF;\n  IF NOT headers ? 'x-client-slug' THEN RETURN 'the-bistro'; END IF;\n  slug := headers ->> 'x-client-slug';\n  IF slug IS NULL OR slug !~ '^[A-Za-z0-9_-]{1,80}$' THEN RETURN NULL; END IF;\n  RETURN slug;\nEND $function$\n",
+      "identity_args": ""
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "submit_order",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.submit_order(p_table_number text, p_client_request_id uuid, p_items jsonb, p_table_token text)\n RETURNS orders\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  routed_tenant_id uuid;\n  normalized_table text;\nBEGIN\n  routed_tenant_id := ting_private.request_tenant_id();\n  IF routed_tenant_id IS NULL THEN\n    RAISE EXCEPTION 'order submission requires a valid tenant route'\n      USING errcode = '23514';\n  END IF;\n\n  normalized_table := trim(COALESCE(p_table_number, ''));\n  IF NOT ting_private.table_access_context_is_valid(\n    routed_tenant_id,\n    normalized_table,\n    p_table_token\n  ) THEN\n    RAISE EXCEPTION 'valid table access context required'\n      USING errcode = '42501';\n  END IF;\n\n  RETURN ting_private.submit_order_unverified(\n    normalized_table,\n    p_client_request_id,\n    p_items\n  );\nEND;\n$function$\n",
+      "identity_args": "p_table_number text, p_client_request_id uuid, p_items jsonb, p_table_token text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "submit_order_unverified",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.submit_order_unverified(p_table_number text, p_client_request_id uuid, p_items jsonb)\n RETURNS orders\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  routed_tenant_id uuid;\n  normalized_table text;\n  item_count integer;\n  request_row record;\n  menu_row public.menu_items%ROWTYPE;\n  unit_price numeric(12,2);\n  computed_subtotal numeric(12,2) := 0;\n  existing_order public.orders%ROWTYPE;\n  created_order public.orders%ROWTYPE;\nBEGIN\n  routed_tenant_id := ting_private.request_tenant_id();\n  IF routed_tenant_id IS NULL THEN\n    RAISE EXCEPTION 'order submission requires a valid tenant route'\n      USING errcode = '23514';\n  END IF;\n\n  normalized_table := trim(COALESCE(p_table_number, ''));\n  IF normalized_table !~ '^[A-Za-z0-9 _-]{1,20}$' THEN\n    RAISE EXCEPTION 'invalid table context' USING errcode = '23514';\n  END IF;\n\n  IF p_client_request_id IS NULL THEN\n    RAISE EXCEPTION 'client_request_id is required' USING errcode = '23514';\n  END IF;\n\n  IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array' THEN\n    RAISE EXCEPTION 'items must be a JSON array' USING errcode = '23514';\n  END IF;\n\n  item_count := jsonb_array_length(p_items);\n  IF item_count < 1 OR item_count > 50 THEN\n    RAISE EXCEPTION 'order must contain between 1 and 50 line items' USING errcode = '23514';\n  END IF;\n\n  SELECT * INTO existing_order\n  FROM public.orders\n  WHERE tenant_id = routed_tenant_id\n    AND client_request_id = p_client_request_id;\n\n  IF FOUND THEN\n    RETURN existing_order;\n  END IF;\n\n  CREATE TEMP TABLE IF NOT EXISTS pg_temp.ting11_order_lines (\n    menu_item_id uuid PRIMARY KEY,\n    item_name text NOT NULL,\n    unit_price numeric(12,2) NOT NULL,\n    quantity integer NOT NULL,\n    line_total numeric(12,2) NOT NULL\n  ) ON COMMIT DROP;\n  TRUNCATE pg_temp.ting11_order_lines;\n\n  FOR request_row IN\n    SELECT\n      x.menu_item_id,\n      sum(x.quantity)::integer AS quantity\n    FROM (\n      SELECT\n        CASE\n          WHEN item ? 'menu_item_id' AND (item->>'menu_item_id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'\n          THEN (item->>'menu_item_id')::uuid\n          ELSE NULL\n        END AS menu_item_id,\n        CASE\n          WHEN item ? 'quantity' AND (item->>'quantity') ~ '^[0-9]+$'\n          THEN (item->>'quantity')::integer\n          ELSE NULL\n        END AS quantity\n      FROM jsonb_array_elements(p_items) AS item\n    ) x\n    GROUP BY x.menu_item_id\n  LOOP\n    IF request_row.menu_item_id IS NULL\n       OR request_row.quantity IS NULL\n       OR request_row.quantity < 1\n       OR request_row.quantity > 99 THEN\n      RAISE EXCEPTION 'invalid order item payload' USING errcode = '23514';\n    END IF;\n\n    SELECT * INTO menu_row\n    FROM public.menu_items\n    WHERE id = request_row.menu_item_id\n      AND tenant_id = routed_tenant_id\n    FOR SHARE;\n\n    IF NOT FOUND THEN\n      RAISE EXCEPTION 'menu item is unavailable for this restaurant' USING errcode = '23514';\n    END IF;\n\n    IF COALESCE(menu_row.is_out_of_stock, false) THEN\n      RAISE EXCEPTION 'menu item is out of stock' USING errcode = '23514';\n    END IF;\n\n    unit_price := round(\n      CASE\n        WHEN COALESCE(menu_row.is_promo, false) AND menu_row.promo_price IS NOT NULL\n          THEN menu_row.promo_price\n        ELSE menu_row.price\n      END,\n      2\n    );\n\n    INSERT INTO pg_temp.ting11_order_lines(menu_item_id, item_name, unit_price, quantity, line_total)\n    VALUES (\n      menu_row.id,\n      menu_row.name,\n      unit_price,\n      request_row.quantity,\n      round(unit_price * request_row.quantity, 2)\n    );\n  END LOOP;\n\n  SELECT COALESCE(round(sum(line_total), 2), 0)\n  INTO computed_subtotal\n  FROM pg_temp.ting11_order_lines;\n\n  BEGIN\n    INSERT INTO public.orders (\n      tenant_id,\n      table_number,\n      status,\n      subtotal,\n      total,\n      client_request_id\n    )\n    VALUES (\n      routed_tenant_id,\n      normalized_table,\n      'submitted',\n      computed_subtotal,\n      computed_subtotal,\n      p_client_request_id\n    )\n    RETURNING * INTO created_order;\n  EXCEPTION WHEN unique_violation THEN\n    SELECT * INTO created_order\n    FROM public.orders\n    WHERE tenant_id = routed_tenant_id\n      AND client_request_id = p_client_request_id;\n    IF NOT FOUND THEN\n      RAISE;\n    END IF;\n    RETURN created_order;\n  END;\n\n  INSERT INTO public.order_items (\n    tenant_id,\n    order_id,\n    menu_item_id,\n    item_name_snapshot,\n    unit_price_snapshot,\n    quantity,\n    line_total\n  )\n  SELECT\n    routed_tenant_id,\n    created_order.id,\n    line.menu_item_id,\n    line.item_name,\n    line.unit_price,\n    line.quantity,\n    line.line_total\n  FROM pg_temp.ting11_order_lines line;\n\n  RETURN created_order;\nEND;\n$function$\n",
+      "identity_args": "p_table_number text, p_client_request_id uuid, p_items jsonb"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "name": "submit_service_ticket",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.submit_service_ticket(p_id uuid, p_table_number text, p_request_type text, p_table_token text)\n RETURNS service_tickets\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  routed_tenant_id uuid;\n  normalized_table text;\n  normalized_request_type text;\n  inserted_ticket public.service_tickets;\nBEGIN\n  routed_tenant_id := ting_private.request_tenant_id();\n  IF routed_tenant_id IS NULL THEN\n    RAISE EXCEPTION 'service ticket submission requires a valid tenant route'\n      USING errcode = '23514';\n  END IF;\n\n  IF p_id IS NULL THEN\n    RAISE EXCEPTION 'service ticket id is required'\n      USING errcode = '23502';\n  END IF;\n\n  normalized_table := trim(COALESCE(p_table_number, ''));\n  IF normalized_table !~ '^[A-Za-z0-9 _-]{1,20}$' THEN\n    RAISE EXCEPTION 'invalid table context'\n      USING errcode = '23514';\n  END IF;\n\n  IF NOT ting_private.table_access_context_is_valid(\n    routed_tenant_id,\n    normalized_table,\n    p_table_token\n  ) THEN\n    RAISE EXCEPTION 'valid table access context required'\n      USING errcode = '42501';\n  END IF;\n\n  normalized_request_type := trim(COALESCE(p_request_type, ''));\n  IF length(normalized_request_type) NOT BETWEEN 1 AND 500 THEN\n    RAISE EXCEPTION 'invalid service ticket request type'\n      USING errcode = '23514';\n  END IF;\n\n  INSERT INTO public.service_tickets (\n    id,\n    table_number,\n    request_type,\n    status\n  ) VALUES (\n    p_id,\n    normalized_table,\n    normalized_request_type,\n    'pending'\n  )\n  ON CONFLICT (id) DO NOTHING\n  RETURNING * INTO inserted_ticket;\n\n  IF inserted_ticket.id IS NULL THEN\n    SELECT *\n      INTO inserted_ticket\n      FROM public.service_tickets ticket\n     WHERE ticket.id = p_id;\n\n    IF inserted_ticket.id IS NULL\n       OR inserted_ticket.tenant_id <> routed_tenant_id\n       OR inserted_ticket.table_number <> normalized_table\n       OR inserted_ticket.request_type <> normalized_request_type THEN\n      RAISE EXCEPTION 'service ticket id already exists with different request details'\n        USING errcode = '23505';\n    END IF;\n  END IF;\n\n  RETURN inserted_ticket;\nEND;\n$function$\n",
+      "identity_args": "p_id uuid, p_table_number text, p_request_type text, p_table_token text"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "name": "table_access_context_is_valid",
+      "owner": "postgres",
+      "schema": "ting_private",
+      "definition": "CREATE OR REPLACE FUNCTION ting_private.table_access_context_is_valid(p_tenant_id uuid, p_table_number text, p_token text)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  SELECT CASE\n    WHEN p_tenant_id IS NULL\n      OR p_table_number IS NULL\n      OR p_token IS NULL\n      OR p_token !~ '^[0-9a-fA-F]{64}$'\n      THEN false\n    ELSE EXISTS (\n      SELECT 1\n      FROM public.table_access_contexts context\n      WHERE context.tenant_id = p_tenant_id\n        AND context.table_number = trim(p_table_number)\n        AND context.revoked_at IS NULL\n        AND context.token_hash = extensions.digest(lower(p_token), 'sha256')\n    )\n  END;\n$function$\n",
+      "identity_args": "p_tenant_id uuid, p_table_number text, p_token text"
+    }
+  ],
+  "extensions": [
+    {
+      "name": "plpgsql",
+      "schema": "pg_catalog",
+      "version": "1.0"
+    },
+    {
+      "name": "uuid-ossp",
+      "schema": "extensions",
+      "version": "1.1"
+    },
+    {
+      "name": "pgcrypto",
+      "schema": "extensions",
+      "version": "1.3"
+    },
+    {
+      "name": "pg_stat_statements",
+      "schema": "extensions",
+      "version": "1.11"
+    },
+    {
+      "name": "supabase_vault",
+      "schema": "vault",
+      "version": "0.3.1"
+    }
+  ],
+  "captured_at": "2026-11-03T00:26:01.976239+00:00",
+  "constraints": [
+    {
+      "name": "menu_events_client_slug_clean",
+      "type": "c",
+      "table": "menu_events",
+      "schema": "public",
+      "definition": "CHECK (client_slug ~ '^[A-Za-z0-9_-]{1,80}$'::text)"
+    },
+    {
+      "name": "menu_events_known_event_type",
+      "type": "c",
+      "table": "menu_events",
+      "schema": "public",
+      "definition": "CHECK (event_type = ANY (ARRAY['menu_view'::text, 'item_viewed'::text, 'filter_used'::text, 'assistance_requested'::text]))"
+    },
+    {
+      "name": "menu_events_metadata_object",
+      "type": "c",
+      "table": "menu_events",
+      "schema": "public",
+      "definition": "CHECK (metadata IS NULL OR jsonb_typeof(metadata) = 'object'::text)"
+    },
+    {
+      "name": "menu_items_price_nonnegative",
+      "type": "c",
+      "table": "menu_items",
+      "schema": "public",
+      "definition": "CHECK (price >= 0::numeric)"
+    },
+    {
+      "name": "menu_items_promo_price_nonnegative",
+      "type": "c",
+      "table": "menu_items",
+      "schema": "public",
+      "definition": "CHECK (promo_price IS NULL OR promo_price >= 0::numeric)"
+    },
+    {
+      "name": "order_items_line_total_matches",
+      "type": "c",
+      "table": "order_items",
+      "schema": "public",
+      "definition": "CHECK (line_total = round(unit_price_snapshot * quantity::numeric, 2))"
+    },
+    {
+      "name": "order_items_line_total_nonnegative",
+      "type": "c",
+      "table": "order_items",
+      "schema": "public",
+      "definition": "CHECK (line_total >= 0::numeric)"
+    },
+    {
+      "name": "order_items_name_length",
+      "type": "c",
+      "table": "order_items",
+      "schema": "public",
+      "definition": "CHECK (length(TRIM(BOTH FROM item_name_snapshot)) >= 1 AND length(TRIM(BOTH FROM item_name_snapshot)) <= 200)"
+    },
+    {
+      "name": "order_items_quantity_range",
+      "type": "c",
+      "table": "order_items",
+      "schema": "public",
+      "definition": "CHECK (quantity >= 1 AND quantity <= 99)"
+    },
+    {
+      "name": "order_items_unit_price_nonnegative",
+      "type": "c",
+      "table": "order_items",
+      "schema": "public",
+      "definition": "CHECK (unit_price_snapshot >= 0::numeric)"
+    },
+    {
+      "name": "orders_payment_status_check",
+      "type": "c",
+      "table": "orders",
+      "schema": "public",
+      "definition": "CHECK (payment_status = ANY (ARRAY['unpaid'::text, 'partially_paid'::text, 'paid'::text]))"
+    },
+    {
+      "name": "orders_status_check",
+      "type": "c",
+      "table": "orders",
+      "schema": "public",
+      "definition": "CHECK (status = ANY (ARRAY['submitted'::text, 'accepted'::text, 'preparing'::text, 'ready'::text, 'completed'::text]))"
+    },
+    {
+      "name": "orders_subtotal_nonnegative",
+      "type": "c",
+      "table": "orders",
+      "schema": "public",
+      "definition": "CHECK (subtotal >= 0::numeric)"
+    },
+    {
+      "name": "orders_table_number_clean",
+      "type": "c",
+      "table": "orders",
+      "schema": "public",
+      "definition": "CHECK (table_number ~ '^[A-Za-z0-9 _-]{1,20}$'::text)"
+    },
+    {
+      "name": "orders_total_matches_subtotal",
+      "type": "c",
+      "table": "orders",
+      "schema": "public",
+      "definition": "CHECK (total = subtotal)"
+    },
+    {
+      "name": "orders_total_nonnegative",
+      "type": "c",
+      "table": "orders",
+      "schema": "public",
+      "definition": "CHECK (total >= 0::numeric)"
+    },
+    {
+      "name": "payment_allocations_amount_positive",
+      "type": "c",
+      "table": "payment_allocations",
+      "schema": "public",
+      "definition": "CHECK (amount > 0::numeric)"
+    },
+    {
+      "name": "payment_allocations_currency_check",
+      "type": "c",
+      "table": "payment_allocations",
+      "schema": "public",
+      "definition": "CHECK (currency ~ '^[A-Z]{3}$'::text)"
+    },
+    {
+      "name": "payment_attempts_confirmed_nonnegative",
+      "type": "c",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "CHECK (confirmed_amount IS NULL OR confirmed_amount >= 0::numeric)"
+    },
+    {
+      "name": "payment_attempts_confirmed_not_over_requested",
+      "type": "c",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "CHECK (confirmed_amount IS NULL OR confirmed_amount <= requested_amount)"
+    },
+    {
+      "name": "payment_attempts_currency_check",
+      "type": "c",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "CHECK (currency ~ '^[A-Z]{3}$'::text)"
+    },
+    {
+      "name": "payment_attempts_provider_clean",
+      "type": "c",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "CHECK (provider ~ '^[a-z0-9_-]{1,40}$'::text)"
+    },
+    {
+      "name": "payment_attempts_requested_positive",
+      "type": "c",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "CHECK (requested_amount > 0::numeric)"
+    },
+    {
+      "name": "payment_attempts_status_check",
+      "type": "c",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "CHECK (status = ANY (ARRAY['created'::text, 'pending'::text, 'succeeded'::text, 'failed'::text, 'cancelled'::text, 'expired'::text]))"
+    },
+    {
+      "name": "service_tickets_request_type_length",
+      "type": "c",
+      "table": "service_tickets",
+      "schema": "public",
+      "definition": "CHECK (length(TRIM(BOTH FROM request_type)) >= 1 AND length(TRIM(BOTH FROM request_type)) <= 500)"
+    },
+    {
+      "name": "service_tickets_status_check",
+      "type": "c",
+      "table": "service_tickets",
+      "schema": "public",
+      "definition": "CHECK (status = ANY (ARRAY['pending'::text, 'resolved'::text]))"
+    },
+    {
+      "name": "service_tickets_table_number_clean",
+      "type": "c",
+      "table": "service_tickets",
+      "schema": "public",
+      "definition": "CHECK (table_number ~ '^[A-Za-z0-9 _-]{1,20}$'::text)"
+    },
+    {
+      "name": "table_access_contexts_table_number_clean",
+      "type": "c",
+      "table": "table_access_contexts",
+      "schema": "public",
+      "definition": "CHECK (table_number ~ '^[A-Za-z0-9 _-]{1,20}$'::text)"
+    },
+    {
+      "name": "table_access_contexts_token_hash_length",
+      "type": "c",
+      "table": "table_access_contexts",
+      "schema": "public",
+      "definition": "CHECK (octet_length(token_hash) = 32)"
+    },
+    {
+      "name": "table_configurations_no_self_merge",
+      "type": "c",
+      "table": "table_configurations",
+      "schema": "public",
+      "definition": "CHECK (source_table <> target_table)"
+    },
+    {
+      "name": "table_configurations_source_clean",
+      "type": "c",
+      "table": "table_configurations",
+      "schema": "public",
+      "definition": "CHECK (source_table ~ '^[A-Za-z0-9 _-]{1,20}$'::text)"
+    },
+    {
+      "name": "table_configurations_target_clean",
+      "type": "c",
+      "table": "table_configurations",
+      "schema": "public",
+      "definition": "CHECK (target_table ~ '^[A-Za-z0-9 _-]{1,20}$'::text)"
+    },
+    {
+      "name": "tenant_payment_accounts_account_check",
+      "type": "c",
+      "table": "tenant_payment_accounts",
+      "schema": "public",
+      "definition": "CHECK (length(TRIM(BOTH FROM provider_account_id)) >= 1 AND length(TRIM(BOTH FROM provider_account_id)) <= 255)"
+    },
+    {
+      "name": "tenant_payment_accounts_provider_check",
+      "type": "c",
+      "table": "tenant_payment_accounts",
+      "schema": "public",
+      "definition": "CHECK (provider ~ '^[a-z0-9_-]{1,40}$'::text)"
+    },
+    {
+      "name": "tenant_payment_accounts_status_check",
+      "type": "c",
+      "table": "tenant_payment_accounts",
+      "schema": "public",
+      "definition": "CHECK (status = ANY (ARRAY['active'::text, 'disabled'::text]))"
+    },
+    {
+      "name": "admin_users_user_id_fkey",
+      "type": "f",
+      "table": "admin_users",
+      "schema": "public",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "menu_events_item_id_fkey",
+      "type": "f",
+      "table": "menu_events",
+      "schema": "public",
+      "definition": "FOREIGN KEY (item_id) REFERENCES menu_items(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "menu_events_tenant_id_fkey",
+      "type": "f",
+      "table": "menu_events",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id)"
+    },
+    {
+      "name": "menu_items_tenant_id_fkey",
+      "type": "f",
+      "table": "menu_items",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id)"
+    },
+    {
+      "name": "order_items_menu_item_id_fkey",
+      "type": "f",
+      "table": "order_items",
+      "schema": "public",
+      "definition": "FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "order_items_order_tenant_fkey",
+      "type": "f",
+      "table": "order_items",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id, order_id) REFERENCES orders(tenant_id, id) ON DELETE CASCADE"
+    },
+    {
+      "name": "order_items_tenant_id_fkey",
+      "type": "f",
+      "table": "order_items",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "orders_tenant_id_fkey",
+      "type": "f",
+      "table": "orders",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "payment_allocations_tenant_attempt_fk",
+      "type": "f",
+      "table": "payment_allocations",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id, payment_attempt_id) REFERENCES payment_attempts(tenant_id, id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "payment_allocations_tenant_id_fkey",
+      "type": "f",
+      "table": "payment_allocations",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "payment_allocations_tenant_order_fk",
+      "type": "f",
+      "table": "payment_allocations",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id, order_id) REFERENCES orders(tenant_id, id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "payment_attempts_tenant_id_fkey",
+      "type": "f",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "payment_attempts_tenant_order_fk",
+      "type": "f",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id, order_id) REFERENCES orders(tenant_id, id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "restaurant_settings_tenant_id_fkey",
+      "type": "f",
+      "table": "restaurant_settings",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id)"
+    },
+    {
+      "name": "service_tickets_tenant_id_fkey",
+      "type": "f",
+      "table": "service_tickets",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id)"
+    },
+    {
+      "name": "table_access_contexts_created_by_fkey",
+      "type": "f",
+      "table": "table_access_contexts",
+      "schema": "public",
+      "definition": "FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "table_access_contexts_tenant_id_fkey",
+      "type": "f",
+      "table": "table_access_contexts",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "table_configurations_tenant_id_fkey",
+      "type": "f",
+      "table": "table_configurations",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id)"
+    },
+    {
+      "name": "tenant_memberships_tenant_id_fkey",
+      "type": "f",
+      "table": "tenant_memberships",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "tenant_memberships_user_id_fkey",
+      "type": "f",
+      "table": "tenant_memberships",
+      "schema": "public",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "tenant_payment_accounts_tenant_id_fkey",
+      "type": "f",
+      "table": "tenant_payment_accounts",
+      "schema": "public",
+      "definition": "FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE"
+    },
+    {
+      "name": "admin_users_pkey",
+      "type": "p",
+      "table": "admin_users",
+      "schema": "public",
+      "definition": "PRIMARY KEY (user_id)"
+    },
+    {
+      "name": "menu_events_pkey",
+      "type": "p",
+      "table": "menu_events",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "menu_items_pkey",
+      "type": "p",
+      "table": "menu_items",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "order_items_pkey",
+      "type": "p",
+      "table": "order_items",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "orders_pkey",
+      "type": "p",
+      "table": "orders",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "payment_allocations_pkey",
+      "type": "p",
+      "table": "payment_allocations",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "payment_attempts_pkey",
+      "type": "p",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "restaurant_clients_pkey",
+      "type": "p",
+      "table": "restaurant_clients",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "restaurant_settings_pkey",
+      "type": "p",
+      "table": "restaurant_settings",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "service_tickets_pkey",
+      "type": "p",
+      "table": "service_tickets",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "table_access_contexts_pkey",
+      "type": "p",
+      "table": "table_access_contexts",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "table_configurations_pkey",
+      "type": "p",
+      "table": "table_configurations",
+      "schema": "public",
+      "definition": "PRIMARY KEY (tenant_id, source_table, target_table)"
+    },
+    {
+      "name": "tenant_memberships_pkey",
+      "type": "p",
+      "table": "tenant_memberships",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "tenant_payment_accounts_pkey",
+      "type": "p",
+      "table": "tenant_payment_accounts",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "tenants_pkey",
+      "type": "p",
+      "table": "tenants",
+      "schema": "public",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "orders_tenant_client_request_key",
+      "type": "u",
+      "table": "orders",
+      "schema": "public",
+      "definition": "UNIQUE (tenant_id, client_request_id)"
+    },
+    {
+      "name": "orders_tenant_id_id_key",
+      "type": "u",
+      "table": "orders",
+      "schema": "public",
+      "definition": "UNIQUE (tenant_id, id)"
+    },
+    {
+      "name": "payment_allocations_one_per_attempt",
+      "type": "u",
+      "table": "payment_allocations",
+      "schema": "public",
+      "definition": "UNIQUE (payment_attempt_id)"
+    },
+    {
+      "name": "payment_attempts_tenant_client_request_key",
+      "type": "u",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "UNIQUE (tenant_id, client_request_id)"
+    },
+    {
+      "name": "payment_attempts_tenant_id_id_key",
+      "type": "u",
+      "table": "payment_attempts",
+      "schema": "public",
+      "definition": "UNIQUE (tenant_id, id)"
+    },
+    {
+      "name": "restaurant_clients_client_slug_key",
+      "type": "u",
+      "table": "restaurant_clients",
+      "schema": "public",
+      "definition": "UNIQUE (client_slug)"
+    },
+    {
+      "name": "restaurant_settings_tenant_key",
+      "type": "u",
+      "table": "restaurant_settings",
+      "schema": "public",
+      "definition": "UNIQUE (tenant_id)"
+    },
+    {
+      "name": "table_access_contexts_tenant_token_key",
+      "type": "u",
+      "table": "table_access_contexts",
+      "schema": "public",
+      "definition": "UNIQUE (tenant_id, token_hash)"
+    },
+    {
+      "name": "tenant_memberships_tenant_user_key",
+      "type": "u",
+      "table": "tenant_memberships",
+      "schema": "public",
+      "definition": "UNIQUE (tenant_id, user_id)"
+    },
+    {
+      "name": "tenant_payment_accounts_provider_account_unique",
+      "type": "u",
+      "table": "tenant_payment_accounts",
+      "schema": "public",
+      "definition": "UNIQUE (provider, provider_account_id)"
+    },
+    {
+      "name": "tenant_payment_accounts_tenant_provider_unique",
+      "type": "u",
+      "table": "tenant_payment_accounts",
+      "schema": "public",
+      "definition": "UNIQUE (tenant_id, provider)"
+    },
+    {
+      "name": "tenants_client_slug_key",
+      "type": "u",
+      "table": "tenants",
+      "schema": "public",
+      "definition": "UNIQUE (client_slug)"
+    }
+  ],
+  "custom_types": null,
+  "default_acls": [
+    {
+      "acl": [
+        "postgres=rwU/supabase_admin",
+        "anon=rwU/supabase_admin",
+        "authenticated=rwU/supabase_admin",
+        "service_role=rwU/supabase_admin"
+      ],
+      "type": "S",
+      "owner": "supabase_admin",
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/supabase_admin",
+        "anon=arwdDxtm/supabase_admin",
+        "authenticated=arwdDxtm/supabase_admin",
+        "service_role=arwdDxtm/supabase_admin"
+      ],
+      "type": "r",
+      "owner": "supabase_admin",
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=X/supabase_admin",
+        "anon=X/supabase_admin",
+        "authenticated=X/supabase_admin",
+        "service_role=X/supabase_admin"
+      ],
+      "type": "f",
+      "owner": "supabase_admin",
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "anon=arwdDxtm/postgres",
+        "authenticated=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "type": "r",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "type": "f",
+      "owner": "postgres",
+      "schema": "public"
+    },
+    {
+      "acl": [
+        "postgres=rwU/postgres",
+        "anon=rwU/postgres",
+        "authenticated=rwU/postgres",
+        "service_role=rwU/postgres"
+      ],
+      "type": "S",
+      "owner": "postgres",
+      "schema": "public"
+    }
+  ],
+  "publications": [
+    {
+      "name": "supabase_realtime",
+      "owner": "postgres",
+      "delete": true,
+      "insert": true,
+      "update": true,
+      "truncate": true,
+      "via_root": false,
+      "all_tables": false
+    }
+  ],
+  "event_triggers": [
+    {
+      "name": "ensure_rls",
+      "tags": [
+        "CREATE TABLE",
+        "CREATE TABLE AS",
+        "SELECT INTO"
+      ],
+      "event": "ddl_command_end",
+      "owner": "postgres",
+      "enabled": "O",
+      "function": "ting_private.rls_auto_enable"
+    }
+  ],
+  "other_relations": null,
+  "publication_tables": [
+    {
+      "pubname": "supabase_realtime",
+      "attnames": [
+        "id",
+        "table_number",
+        "request_type",
+        "status",
+        "created_at",
+        "tenant_id",
+        "client_slug"
+      ],
+      "rowfilter": null,
+      "tablename": "service_tickets",
+      "schemaname": "public"
+    },
+    {
+      "pubname": "supabase_realtime",
+      "attnames": [
+        "id",
+        "tenant_id",
+        "table_number",
+        "status",
+        "subtotal",
+        "total",
+        "client_request_id",
+        "submitted_at",
+        "accepted_at",
+        "preparing_at",
+        "ready_at",
+        "completed_at",
+        "created_at",
+        "updated_at",
+        "payment_status"
+      ],
+      "rowfilter": null,
+      "tablename": "orders",
+      "schemaname": "public"
+    }
+  ]
+}

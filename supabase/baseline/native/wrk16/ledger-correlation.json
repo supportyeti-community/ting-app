@@ -1,0 +1,311 @@
+[
+  {
+    "repo": "20260731143616_ting_secure_tenant_foundation.sql",
+    "prod": {
+      "version": "20260731143616",
+      "name": "ting_secure_tenant_foundation",
+      "statement_count": 1,
+      "sql_md5": "5021f413cb52f49f68f542637999d34a"
+    },
+    "repo_md5": "5021f413cb52f49f68f542637999d34a",
+    "byte_match": true
+  },
+  {
+    "repo": "20260801163330_ting_harden_security_definer_functions.sql",
+    "prod": {
+      "version": "20260801163330",
+      "name": "ting_harden_security_definer_functions",
+      "statement_count": 1,
+      "sql_md5": "0748ebd97be38bbef6eddab636d61453"
+    },
+    "repo_md5": "0748ebd97be38bbef6eddab636d61453",
+    "byte_match": true
+  },
+  {
+    "repo": "20260801174026_ting_seed_internal_demo_tenant_v3.sql",
+    "prod": {
+      "version": "20260801174026",
+      "name": "ting_seed_internal_demo_tenant_v3",
+      "statement_count": 1,
+      "sql_md5": "fe252a9079813d8216265cc4e6a3b96c"
+    },
+    "repo_md5": "fe252a9079813d8216265cc4e6a3b96c",
+    "byte_match": true
+  },
+  {
+    "repo": "20260801181205_ting_backfill_internal_demo_history.sql",
+    "prod": {
+      "version": "20260801181205",
+      "name": "ting_backfill_internal_demo_history",
+      "statement_count": 1,
+      "sql_md5": "df174a7a0b322bfbce81baca5408c161"
+    },
+    "repo_md5": "df174a7a0b322bfbce81baca5408c161",
+    "byte_match": true
+  },
+  {
+    "repo": "20260803090652_ting_remove_internal_demo_slug_defaults.sql",
+    "prod": {
+      "version": "20260803090652",
+      "name": "ting_remove_internal_demo_slug_defaults",
+      "statement_count": 1,
+      "sql_md5": "b0e0a2e5e6222922fc75942a0016f6fc"
+    },
+    "repo_md5": "b0e0a2e5e6222922fc75942a0016f6fc",
+    "byte_match": true
+  },
+  {
+    "repo": "20260803120714_ting9_service_ticket_ownership_expansion.sql",
+    "prod": {
+      "version": "20260803120714",
+      "name": "ting9_service_ticket_ownership_expansion",
+      "statement_count": 1,
+      "sql_md5": "d5d6d31b2099aa3e3071daa867a94058"
+    },
+    "repo_md5": "d5d6d31b2099aa3e3071daa867a94058",
+    "byte_match": true
+  },
+  {
+    "repo": "20260805041650_ting9_service_ticket_ownership_enforcement.sql",
+    "prod": {
+      "version": "20260805041650",
+      "name": "ting9_service_ticket_ownership_enforcement",
+      "statement_count": 1,
+      "sql_md5": "ecc9268cddaf23aeba102be44e43bfaf"
+    },
+    "repo_md5": "ecc9268cddaf23aeba102be44e43bfaf",
+    "byte_match": true
+  },
+  {
+    "repo": "20260805041932_ting9_rollback_enforcement_after_upsert_rls_regression.sql",
+    "prod": {
+      "version": "20260805041932",
+      "name": "ting9_rollback_enforcement_after_upsert_rls_regression",
+      "statement_count": 1,
+      "sql_md5": "9c6c00a08b27281e705ad51e01148617"
+    },
+    "repo_md5": "9c6c00a08b27281e705ad51e01148617",
+    "byte_match": true
+  },
+  {
+    "repo": "20260805042037_ting9_reapply_enforcement_after_deployed_writer_confirmation.sql",
+    "prod": {
+      "version": "20260805042037",
+      "name": "ting9_reapply_enforcement_after_deployed_writer_confirmation",
+      "statement_count": 1,
+      "sql_md5": "85e386a503794fd52dbb65530c72e7f3"
+    },
+    "repo_md5": "85e386a503794fd52dbb65530c72e7f3",
+    "byte_match": true
+  },
+  {
+    "repo": "20260918144301_ting2_settings_table_isolation.sql",
+    "prod": {
+      "version": "20260918144301",
+      "name": "ting2_settings_table_isolation",
+      "statement_count": 46,
+      "sql_md5": "8bf8b4181b3396733a160adb392e57b6"
+    },
+    "repo_md5": "5b5b4f9f5be1cd3a4a0fbbb51b4bb9a4",
+    "byte_match": false
+  },
+  {
+    "repo": "20260922054639_ting2_menu_item_isolation.sql",
+    "prod": {
+      "version": "20260922054639",
+      "name": "ting2_menu_item_isolation",
+      "statement_count": 24,
+      "sql_md5": "8a03634da74dd2c9ac7b4c4579864851"
+    },
+    "repo_md5": "47407b3233893fbb1bdd4cfc11e25350",
+    "byte_match": false
+  },
+  {
+    "repo": "20260922155033_ting2_menu_event_isolation.sql",
+    "prod": {
+      "version": "20260922155033",
+      "name": "ting2_menu_event_isolation",
+      "statement_count": 19,
+      "sql_md5": "a33e485871be86033c26d2eaaa4acbca"
+    },
+    "repo_md5": "d216011c492c7188c521ca8916d733fc",
+    "byte_match": false
+  },
+  {
+    "repo": "20260923101432_ting2_service_ticket_authorization.sql",
+    "prod": {
+      "version": "20260923101432",
+      "name": "ting2_service_ticket_authorization",
+      "statement_count": 1,
+      "sql_md5": "967198add728eb74023162b961114412"
+    },
+    "repo_md5": "967198add728eb74023162b961114412",
+    "byte_match": true
+  },
+  {
+    "repo": "20260923113515_ting2_routing_registry_prepare.sql",
+    "prod": {
+      "version": "20260923113515",
+      "name": "ting2_routing_registry_prepare",
+      "statement_count": 1,
+      "sql_md5": "76f15376d04cae86e63e860aeba92c6f"
+    },
+    "repo_md5": "76f15376d04cae86e63e860aeba92c6f",
+    "byte_match": true
+  },
+  {
+    "repo": "20260923132307_ting2_route_scope_registry.sql",
+    "prod": {
+      "version": "20260923132307",
+      "name": "ting2_route_scope_registry",
+      "statement_count": 1,
+      "sql_md5": "e907dffb7ff86ad6b84322a608a2435e"
+    },
+    "repo_md5": "e907dffb7ff86ad6b84322a608a2435e",
+    "byte_match": true
+  },
+  {
+    "repo": "20260923200127_ting4_restrict_menu_picture_listing.sql",
+    "prod": {
+      "version": "20260923200127",
+      "name": "ting4_restrict_menu_picture_listing",
+      "statement_count": 1,
+      "sql_md5": "ec84ebc0c50ec740ac48ab95efe982a5"
+    },
+    "repo_md5": "ec84ebc0c50ec740ac48ab95efe982a5",
+    "byte_match": true
+  },
+  {
+    "repo": "20260925013625_ting4_scope_menu_picture_writes.sql",
+    "prod": {
+      "version": "20260925013625",
+      "name": "ting4_scope_menu_picture_writes",
+      "statement_count": 1,
+      "sql_md5": "2f1024c9034eca30923f7178b5ee13be"
+    },
+    "repo_md5": "19dd2b6f35e1e71ac608eac549a25658",
+    "byte_match": false
+  },
+  {
+    "repo": "20260925093356_ting8_admin_membership_gate.sql",
+    "prod": {
+      "version": "20260925093356",
+      "name": "ting8_admin_membership_gate",
+      "statement_count": 1,
+      "sql_md5": "883f3e52fb0be1ea17c8f5d92392c1c9"
+    },
+    "repo_md5": "46714219406c35c62dc465b5d6935c43",
+    "byte_match": false
+  },
+  {
+    "repo": "20260930030209_ting6_harden_sanitize_text_search_path.sql",
+    "prod": {
+      "version": "20260930030209",
+      "name": "ting6_harden_sanitize_text_search_path",
+      "statement_count": 1,
+      "sql_md5": "5396daa47a4e08f99db673945d795a36"
+    },
+    "repo_md5": "2529ae960fb4d5b90093cb1f5a7d9eff",
+    "byte_match": false
+  },
+  {
+    "repo": "20261008082142_ting11_ordering_foundation.sql",
+    "prod": {
+      "version": "20261008082142",
+      "name": "ting11_ordering_foundation",
+      "statement_count": 1,
+      "sql_md5": "5ddb4b76ce2ad12ae18afd26c2424fd5"
+    },
+    "repo_md5": "5ddb4b76ce2ad12ae18afd26c2424fd5",
+    "byte_match": true
+  },
+  {
+    "repo": "20261008082156_ting11_order_item_tenant_coupling.sql",
+    "prod": {
+      "version": "20261008082156",
+      "name": "ting11_order_item_tenant_coupling",
+      "statement_count": 1,
+      "sql_md5": "935e355be5a51e4a6c38b910b5ee794c"
+    },
+    "repo_md5": "935e355be5a51e4a6c38b910b5ee794c",
+    "byte_match": true
+  },
+  {
+    "repo": "20261008110500_pay1_payment_foundation.sql",
+    "prod": {
+      "version": "20261008111104",
+      "name": "pay1_payment_foundation",
+      "statement_count": 1,
+      "sql_md5": "998ba2809f6fd3e0bf519312dc0648ab"
+    },
+    "repo_md5": "33c05514ee334e687a8635e79da2fd3d",
+    "byte_match": false
+  },
+  {
+    "repo": "20261008112000_pay1_hardening.sql",
+    "prod": {
+      "version": "20261008111706",
+      "name": "pay1_hardening",
+      "statement_count": 1,
+      "sql_md5": "f17294b9185426d74ff15dbfcf38db3e"
+    },
+    "repo_md5": "227413dba74f490f9390602d6bef77e1",
+    "byte_match": false
+  },
+  {
+    "repo": "20261015000000_ting11_table_access_context.sql",
+    "prod": {
+      "version": "20261014191710",
+      "name": "ting11_table_access_context",
+      "statement_count": 1,
+      "sql_md5": "f126a8975cd5f871aca82e6e9e57c4de"
+    },
+    "repo_md5": "63c78b62dd55f42ff6bdcac7785dd241",
+    "byte_match": false
+  },
+  {
+    "repo": "20261015010000_ting11_service_ticket_table_context.sql",
+    "prod": {
+      "version": "20261014193154",
+      "name": "ting11_service_ticket_table_context",
+      "statement_count": 1,
+      "sql_md5": "93fc99f6638d5112e92404a3c870a233"
+    },
+    "repo_md5": "4d6ae04984d7819ae66fb47e67289161",
+    "byte_match": false
+  },
+  {
+    "repo": "20261015020000_pay2_current_main_recovery.sql",
+    "prod": null,
+    "repo_md5": "59fc0259fb9daea9a51b48904934cc57",
+    "byte_match": false
+  },
+  {
+    "repo": "20261030084000_ops1_orders_realtime.sql",
+    "prod": {
+      "version": "20261030122153",
+      "name": "ops1_orders_realtime",
+      "statement_count": 1,
+      "sql_md5": "79cb39c7fb998679d6b5b481020e5b4e"
+    },
+    "repo_md5": "0c278a87e32a92c7dc9c3a21f17cc24b",
+    "byte_match": false
+  },
+  {
+    "repo": "20261031104500_pay2_unbound_confirmation_account_check.sql",
+    "prod": null,
+    "repo_md5": "8af0bf4614a5327142b44e2d5d7c9923",
+    "byte_match": false
+  },
+  {
+    "repo": "20261031113000_ting11_cap1_table_capability_lifecycle.sql",
+    "prod": {
+      "version": "20261031221339",
+      "name": "ting11_cap1_table_capability_lifecycle",
+      "statement_count": 1,
+      "sql_md5": "d0e9b7fc790b05ced01731da51e0298c"
+    },
+    "repo_md5": "25cb36de1cfe5689f0db1a1f9fb7f430",
+    "byte_match": false
+  }
+]
