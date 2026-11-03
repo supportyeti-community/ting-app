@@ -32,6 +32,11 @@ jobs:
             cat supabase/baseline/native/schema1/native-catalogue.json
             echo SCHEMA1_CATALOGUE_END
           fi
+          if test -f supabase/baseline/native/schema1/native-platform.json; then
+            echo SCHEMA1_PLATFORM_BEGIN
+            cat supabase/baseline/native/schema1/native-platform.json
+            echo SCHEMA1_PLATFORM_END
+          fi
   historical-pay1:
     strategy:
       fail-fast: false

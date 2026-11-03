@@ -1,0 +1,7 @@
+SELECT jsonb_build_object(
+ 'engine',version(),
+ 'roles',(SELECT jsonb_agg(jsonb_build_object('name',rolname,'inherit',rolinherit,'bypassrls',rolbypassrls,'superuser',rolsuper)) FROM pg_roles WHERE rolname IN ('anon','authenticated','service_role','postgres','supabase_admin')),
+ 'schemas',(SELECT jsonb_agg(jsonb_build_object('name',nspname,'owner',pg_get_userbyid(nspowner),'acl',nspacl)) FROM pg_namespace WHERE nspname IN ('public','ting_private','auth','storage','realtime','vault','graphql','graphql_public','extensions','supabase_migrations')),
+ 'platform_relations',(SELECT jsonb_agg(jsonb_build_object('schema',n.nspname,'name',c.relname,'kind',c.relkind,'owner',pg_get_userbyid(c.relowner),'acl',c.relacl,'rls',c.relrowsecurity,'force_rls',c.relforcerowsecurity)) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('auth','storage','realtime','vault','graphql','graphql_public','extensions') AND c.relkind IN ('r','p','v','m','S')),
+ 'integration_functions',(SELECT jsonb_agg(jsonb_build_object('schema',n.nspname,'name',p.proname,'args',pg_get_function_identity_arguments(p.oid),'owner',pg_get_userbyid(p.proowner),'acl',p.proacl,'config',p.proconfig,'security_definer',p.prosecdef,'definition',pg_get_functiondef(p.oid))) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE (n.nspname='auth' AND p.proname='uid') OR (n.nspname='extensions' AND p.proname IN ('digest','gen_random_bytes')))
+) AS snapshot;

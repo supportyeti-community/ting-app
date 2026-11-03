@@ -36,6 +36,7 @@ export async function rehearseSchema1(db,clients,status,report,command,workdir){
  const snapshot=(await db.query(capture)).rows[0].snapshot;
  writeFileSync(new URL('schema1/native-catalogue.json',import.meta.url),JSON.stringify(snapshot,null,2));
  report.bootstrap.ledger=complete;
+ writeFileSync(new URL('schema1/native-platform.json',import.meta.url),JSON.stringify((await db.query(read('schema1/platform.sql'))).rows[0].snapshot,null,2));
  await verifyStorage(db,clients,report,pass);
 }
 async function verifyStorage(db,{admin,ordinary,visitor,service},report,pass){
