@@ -22,7 +22,7 @@ function command(args){
  const r=spawnSync(cli,[...args,'--workdir',workdir],{encoding:'utf8',timeout:600000,maxBuffer:16*1024*1024,env});
  report.commands.push({args,exit:r.status});
  if(r.status!==0)throw new Error('Local CLI '+args.slice(0,2).join(' ')+' failed; output withheld');
- return r.stdout;
+ return r.stdout+(args[0]==='db'?r.stderr:'');
 }
 let db,status;
 const ledger=async()=> (await db.query('SELECT version,name FROM supabase_migrations.schema_migrations ORDER BY version')).rows;
@@ -87,7 +87,8 @@ try{
  }
  // Earlier PAY-2 timestamps require explicit include-all, with aliases already resolved.
  const dry=command(['db','push','--local','--dry-run','--include-all','--skip-vault','--yes']);
- for(const name of pending)assert(dry.includes(name),'Dry-run omitted '+name);
+ report.dry_run_files=[...new Set(dry.match(/\d{14}_[A-Za-z0-9_]+\.sql/g)||[])].sort();
+ assert.deepEqual(report.dry_run_files,pending,'Dry-run must propose exactly the two pending migrations');
  assert.deepEqual(await ledger(),beforeLedger);equalCatalogue(await capture(),json('starting-catalogue.json'),'dry_run_schema_unchanged');
  command(['db','push','--local','--include-all','--skip-vault','--yes']);
  const afterLedger=await ledger();assert.equal(afterLedger.length,29);
@@ -109,7 +110,7 @@ try{
   for(const c of clients){await c.query('BEGIN');await c.query("SET LOCAL statement_timeout='15s'");await c.query('SET LOCAL ROLE anon');await c.query("SELECT set_config('request.headers',$1,true)",[JSON.stringify({'x-client-slug':'order-a'})]);pids.push((await c.query('SELECT pg_backend_pid() AS p')).rows[0].p)}
   const calls=clients.map((c,i)=>c.query(sqls[i].sql,sqls[i].args).then(async r=>{await c.query('COMMIT');return {ok:true,rows:r.rows}},async e=>{await c.query('ROLLBACK');return {ok:false,code:e.code}}));
   let blocked=0;
-  for(let i=0;i<100;i++){blocked=(await db.query("SELECT count(*)::int n FROM pg_stat_activity WHERE pid=ANY($1::int[]) AND wait_event_type='Lock'",[pids])).rows[0].n;if(blocked===clients.length)break;await new Promise(r=>setTimeout(r,20))}
+  for(let i=0;i<100;i++){await db.query('SELECT pg_stat_clear_snapshot()');blocked=(await db.query("SELECT count(*)::int n FROM pg_stat_activity WHERE pid=ANY($1::int[]) AND wait_event_type='Lock'",[pids])).rows[0].n;if(blocked===clients.length)break;await new Promise(r=>setTimeout(r,20))}
   await db.query('COMMIT');
   const result=await Promise.all(calls);await Promise.all(clients.map(c=>c.end()));
   assert.equal(blocked,clients.length,'Concurrency barrier did not queue every session');
