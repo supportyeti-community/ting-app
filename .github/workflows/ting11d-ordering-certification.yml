@@ -3,8 +3,11 @@ name: TING-11D ordering certification
 on:
   pull_request:
     paths:
+      - 'index.html'
+      - 'admin.html'
       - 'ting11b-cart.js'
       - 'ting11c-order-board.js'
+      - 'supabase/migrations/**'
       - 'supabase/baseline/native/ting11.mjs'
       - 'tests/ting11d/**'
       - '.github/workflows/ting11d-ordering-certification.yml'

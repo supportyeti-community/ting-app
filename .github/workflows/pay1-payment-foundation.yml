@@ -1,10 +1,12 @@
-name: PAY-1 payment foundation
+# PAY-1 is the historical foundation layer. Later PAY slices extend these
+# invariants rather than replacing them, so this regression remains applicable.
+name: Payment foundation regression (PAY-1 invariants)
 
 on:
   pull_request:
     paths:
       - 'docs/PAYMENTS-V1-DESIGN.md'
-      - 'supabase/migrations/*pay1*.sql'
+      - 'supabase/migrations/**'
       - 'supabase/baseline/native/pay1.mjs'
       - 'supabase/baseline/native/run.mjs'
       - 'tests/pay1/**'
@@ -39,8 +41,9 @@ jobs:
           node-version: '24'
       - name: Install pinned native verification dependencies
         run: npm ci --prefix supabase/baseline/native
-      - name: Rehearse PAY-1 on disposable native Supabase
+      - name: Rehearse payment foundation invariants on disposable native Supabase
         env:
+          # Historical harness selector retained for provenance and compatibility.
           TING_TEST_ISSUE: pay1
         run: node supabase/baseline/native/run.mjs
       - name: Publish sanitized rehearsal summary

@@ -2,7 +2,7 @@ name: TING-11 ordering foundation
 on:
   pull_request:
     paths:
-      - 'supabase/migrations/*ting11*'
+      - 'supabase/migrations/**'
       - 'supabase/tests/ting11/**'
       - 'supabase/baseline/native/ting11.mjs'
       - 'supabase/baseline/native/run.mjs'
