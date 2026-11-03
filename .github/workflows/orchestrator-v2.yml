@@ -4,6 +4,7 @@ on:
     paths:
       - 'tools/orchestrator-v2/**'
       - '.github/workflows/orchestrator-v2.yml'
+      - '.github/workflows/orchestrator-v2-controller.yml'
   workflow_dispatch:
 
 permissions:
@@ -25,4 +26,4 @@ jobs:
         with:
           node-version: '24'
       - name: Unit test fail-closed task-selection and claim protocol
-        run: node --test tools/orchestrator-v2/core.test.mjs
+        run: node --test tools/orchestrator-v2/*.test.mjs
