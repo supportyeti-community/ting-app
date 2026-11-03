@@ -18,7 +18,8 @@ const releaseFiles=[
  '20260923200127_ting4_restrict_menu_picture_listing.sql',MEMBER_SCOPE,
  '20260925093356_ting8_admin_membership_gate.sql','20260930030209_ting6_harden_sanitize_text_search_path.sql',
  '20261008082142_ting11_ordering_foundation.sql','20261008082156_ting11_order_item_tenant_coupling.sql',
- '20261015000000_ting11_table_access_context.sql','20261015010000_ting11_service_ticket_table_context.sql'
+ '20261015000000_ting11_table_access_context.sql','20261015010000_ting11_service_ticket_table_context.sql',
+ '20261031113000_ting11_cap1_table_capability_lifecycle.sql'
 ];
 const sourceSql=name=>readFileSync(new URL('../../migrations/'+name,import.meta.url),'utf8');
 
@@ -119,7 +120,32 @@ export async function rehearseTing11(db,status,report,command,workdir){
   const visible=ok(await adminSpoofA.from('orders').select('id,tenant_id'),'member read');assert(visible.length>=1&&visible.every(x=>x.tenant_id===A)&&!visible.some(x=>x.id===bOrder.id));pass('Membership, not routed slug, controls order visibility');
   await denied(adminSpoofA.rpc('advance_order_status',{p_order_id:submitted.id,p_next_status:'ready'}),'invalid jump');for(const next of ['accepted','preparing','ready','completed'])assert.equal(row(ok(await adminSpoofA.rpc('advance_order_status',{p_order_id:submitted.id,p_next_status:next}),'advance '+next)).status,next);await denied(adminSpoofA.rpc('advance_order_status',{p_order_id:submitted.id,p_next_status:'accepted'}),'reverse completed');pass('Only submitted -> accepted -> preparing -> ready -> completed is allowed');
 
+  await denied(visitorA.rpc('revoke_table_access_context',{p_context_id:issued.context_id}),'anonymous capability revoke');
+  await denied(visitorA.rpc('rotate_table_access_context',{p_table_number:'12'}),'anonymous capability rotate');
+  await denied(adminSpoofA.rpc('revoke_table_access_context',{p_context_id:issued.context_id}),'cross-tenant routed capability revoke');
+
+  const revoked=row(ok(await adminRouteA.rpc('revoke_table_access_context',{p_context_id:issued.context_id}),'revoke table capability'));
+  assert.equal(revoked.context_id,issued.context_id);assert.equal(revoked.table_number,'12');assert(revoked.revoked_at);
+  const revokedRetry=row(ok(await adminRouteA.rpc('revoke_table_access_context',{p_context_id:issued.context_id}),'retry revoke table capability'));
+  assert.equal(revokedRetry.context_id,issued.context_id);assert.equal(revokedRetry.revoked_at,revoked.revoked_at);
+  await denied(visitorA.rpc('submit_order',{p_table_number:'12',p_client_request_id:randomUUID(),p_items:[{menu_item_id:ITEM_A,quantity:1}],p_table_token:issued.token}),'revoked token ordering');
+  await denied(visitorA.rpc('submit_service_ticket',{p_id:randomUUID(),p_table_number:'12',p_request_type:'Water',p_table_token:issued.token}),'revoked token assistance');
+  pass('Explicit capability revocation is retry-safe and immediately blocks ordering and assistance');
+
+  const multiA=row(ok(await adminRouteA.rpc('issue_table_access_context',{p_table_number:'15'}),'issue first rotation credential'));
+  const multiB=row(ok(await adminRouteA.rpc('issue_table_access_context',{p_table_number:'15'}),'issue second rotation credential'));
+  assert.equal((await db.query('SELECT count(*)::int n FROM public.table_access_contexts WHERE tenant_id=$1 AND table_number=$2 AND revoked_at IS NULL',[A,'15'])).rows[0].n,2);
+  const rotated=row(ok(await adminRouteA.rpc('rotate_table_access_context',{p_table_number:'15'}),'rotate table capability'));
+  assert.equal(rotated.table_number,'15');assert.match(rotated.token,/^[0-9a-f]{64}$/);assert.notEqual(rotated.token,multiA.token);assert.notEqual(rotated.token,multiB.token);
+  assert.equal((await db.query('SELECT count(*)::int n FROM public.table_access_contexts WHERE tenant_id=$1 AND table_number=$2 AND revoked_at IS NULL',[A,'15'])).rows[0].n,1);
+  await denied(visitorA.rpc('submit_order',{p_table_number:'15',p_client_request_id:randomUUID(),p_items:[{menu_item_id:ITEM_A,quantity:1}],p_table_token:multiA.token}),'first rotated-out token ordering');
+  await denied(visitorA.rpc('submit_service_ticket',{p_id:randomUUID(),p_table_number:'15',p_request_type:'Water',p_table_token:multiB.token}),'second rotated-out token assistance');
+  row(ok(await visitorA.rpc('submit_order',{p_table_number:'15',p_client_request_id:randomUUID(),p_items:[{menu_item_id:ITEM_A,quantity:1}],p_table_token:rotated.token}),'replacement token ordering'));
+  row(ok(await visitorA.rpc('submit_service_ticket',{p_id:randomUUID(),p_table_number:'15',p_request_type:'Water',p_table_token:rotated.token}),'replacement token assistance'));
+  await denied(visitorA.rpc('submit_order',{p_table_number:'16',p_client_request_id:randomUUID(),p_items:[{menu_item_id:ITEM_A,quantity:1}],p_table_token:rotated.token}),'replacement token cross-table replay');
+  pass('Revoke-and-replace invalidates all prior table credentials and leaves exactly one same-table replacement active');
+
   const issued8=row(ok(await adminRouteA.rpc('issue_table_access_context',{p_table_number:'8'}),'issue revocation-test table capability'));
-  const revoke=row(ok(await visitorA.rpc('submit_order',{p_table_number:'8',p_client_request_id:randomUUID(),p_items:[{menu_item_id:ITEM_A,quantity:1}],p_table_token:issued8.token}),'revocation order'));await db.query('DELETE FROM public.tenant_memberships WHERE user_id=$1',[user.id]);assert.equal(ok(await adminSpoofA.from('orders').select('id'),'revoked read').length,0);await denied(adminSpoofA.rpc('advance_order_status',{p_order_id:revoke.id,p_next_status:'accepted'}),'revoked advance');await denied(adminRouteA.rpc('issue_table_access_context',{p_table_number:'9'}),'revoked capability issue');pass('Membership revocation immediately removes order visibility, lifecycle authority, and table-capability issuance');
+  const revoke=row(ok(await visitorA.rpc('submit_order',{p_table_number:'8',p_client_request_id:randomUUID(),p_items:[{menu_item_id:ITEM_A,quantity:1}],p_table_token:issued8.token}),'revocation order'));await db.query('DELETE FROM public.tenant_memberships WHERE user_id=$1',[user.id]);assert.equal(ok(await adminSpoofA.from('orders').select('id'),'revoked read').length,0);await denied(adminSpoofA.rpc('advance_order_status',{p_order_id:revoke.id,p_next_status:'accepted'}),'revoked advance');await denied(adminRouteA.rpc('issue_table_access_context',{p_table_number:'9'}),'revoked capability issue');await denied(adminRouteA.rpc('revoke_table_access_context',{p_context_id:issued8.context_id}),'revoked capability revoke authority');await denied(adminRouteA.rpc('rotate_table_access_context',{p_table_number:'8'}),'revoked capability rotate authority');pass('Membership revocation immediately removes order visibility, lifecycle authority, and table-capability issuance/revocation/rotation');
  }finally{await Promise.allSettled([service.removeAllChannels(),visitorA.removeAllChannels(),visitorB.removeAllChannels(),adminRouteA.removeAllChannels(),adminSpoofA.removeAllChannels()]);}
 }

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
@@ -7,25 +7,41 @@ import { rehearseTing11 } from './ting11.mjs';
 
 const A='10000000-0000-4000-8000-000000000011';
 const B='10000000-0000-4000-8000-000000000012';
-const PAY1='20261008110500_pay1_payment_foundation.sql';
-const sourceSql=()=>new URL('../../migrations/'+PAY1,import.meta.url);
+const PAY1_FILES=[
+  '20261008110500_pay1_payment_foundation.sql',
+  '20261008112000_pay1_hardening.sql',
+];
+const sourceSql=name=>readFileSync(new URL('../../migrations/'+name,import.meta.url),'utf8');
 
 export async function rehearsePay1(db,status,report,command,workdir){
   const pass=label=>{report.checks.push(label);console.log('PASS: '+label);};
 
   // Reuse the already-certified ordering rehearsal so PAY-1 is always exercised
-  // on top of the complete canonical release chain and tenant boundary.
+  // against today's complete tenant/table capability boundary.
   await rehearseTing11(db,status,report,command,workdir);
 
+  // PAY-1 was historically applied before the 20261015 table-capability migrations.
+  // The disposable TING-11 rehearsal above intentionally restores today's later
+  // security state first, so asking `db push` to apply the older PAY-1 versions
+  // would correctly be rejected as out-of-order history. Replay the exact signed-off
+  // SQL against the disposable database, then repair only the local migration ledger
+  // to the same historical versions. Production history is never touched.
   const migrationDir=join(workdir,'supabase/migrations');
-  const sql=(await import('node:fs')).readFileSync(sourceSql(),'utf8');
-  writeFileSync(join(migrationDir,PAY1),sql);
-  command(['db','push','--local','--dry-run','--skip-vault','--yes']);
+  for(const name of PAY1_FILES){
+    const sql=sourceSql(name);
+    writeFileSync(join(migrationDir,name),sql);
+    await db.query(sql);
+    const [version,...rest]=name.replace(/\.sql$/,'').split('_');
+    const migrationName=rest.join('_');
+    command(['migration','repair',version,'--local','--status','applied']);
+    await db.query(
+      'UPDATE supabase_migrations.schema_migrations SET name=$2, statements=$3 WHERE version=$1',
+      [version,migrationName,[sql]],
+    );
+    assert.equal((await db.query('SELECT count(*)::int n FROM supabase_migrations.schema_migrations WHERE version=$1',[version])).rows[0].n,1);
+  }
   command(['db','push','--local','--skip-vault','--yes']);
-  command(['db','push','--local','--skip-vault','--yes']);
-  const ledger=(await db.query("SELECT count(*)::int n FROM supabase_migrations.schema_migrations WHERE version='20261008110500'")).rows[0].n;
-  assert.equal(ledger,1);
-  pass('PAY-1 migration dry-runs, applies once, and repeated push is a no-op');
+  pass('Exact PAY-1 foundation + hardening SQL replay on current hardened schema; local historical ledger repaired and repeated push is a no-op');
 
   const orderA=randomUUID(), orderB=randomUUID();
   await db.query(`INSERT INTO public.orders(id,tenant_id,table_number,status,subtotal,total,client_request_id)
@@ -77,7 +93,6 @@ export async function rehearsePay1(db,status,report,command,workdir){
     await denied(visitorB.rpc('create_payment_attempt',{p_order_id:orderA,p_requested_amount:1,p_client_request_id:randomUUID()}),'opposite cross-tenant attempt');
     pass('Cross-tenant payment attempt creation fails closed');
 
-    // Expire the second reservation to prove abandoned attempts free balance.
     await db.query("UPDATE public.payment_attempts SET reservation_expires_at=now()-interval '1 second' WHERE id=$1",[attempt2.id]);
     const req3=randomUUID();
     const replacement=ok(await visitorA.rpc('create_payment_attempt',{p_order_id:orderA,p_requested_amount:40,p_client_request_id:req3}),'replacement after expiry');
@@ -85,14 +100,12 @@ export async function rehearsePay1(db,status,report,command,workdir){
     assert.equal((await db.query('SELECT status FROM public.payment_attempts WHERE id=$1',[attempt2.id])).rows[0].status,'expired');
     pass('Expired abandoned reservations release balance for another diner');
 
-    // Trusted server confirmation: first 60 succeeds and allocates exactly once.
     await db.query("SELECT ting_private.confirm_payment_attempt($1,'test','pay_1',60,'AUD')",[attempt1.id]);
     let balance=ok(await visitorA.rpc('get_order_payment_balance',{p_order_id:orderA}),'after first confirmation');
     assert.equal(Number(balance.amount_paid),60);assert.equal(Number(balance.amount_reserved),40);assert.equal(Number(balance.amount_due),40);assert.equal(Number(balance.amount_available),0);assert.equal(balance.payment_status,'partially_paid');
     assert.equal((await db.query('SELECT payment_status FROM public.orders WHERE id=$1',[orderA])).rows[0].payment_status,'partially_paid');
     assert.equal((await db.query('SELECT count(*)::int n FROM public.payment_allocations WHERE payment_attempt_id=$1',[attempt1.id])).rows[0].n,1);
 
-    // Exact replay must be a no-op, mismatch must fail.
     await db.query("SELECT ting_private.confirm_payment_attempt($1,'test','pay_1',60,'AUD')",[attempt1.id]);
     assert.equal((await db.query('SELECT count(*)::int n FROM public.payment_allocations WHERE payment_attempt_id=$1',[attempt1.id])).rows[0].n,1);
     let mismatch=false;try{await db.query("SELECT ting_private.confirm_payment_attempt($1,'test','pay_DIFFERENT',60,'AUD')",[attempt1.id]);}catch(e){mismatch=e.code==='23514';}assert(mismatch);
@@ -105,7 +118,6 @@ export async function rehearsePay1(db,status,report,command,workdir){
     await denied(visitorA.rpc('create_payment_attempt',{p_order_id:orderA,p_requested_amount:1,p_client_request_id:randomUUID()}),'attempt after fully paid');
     pass('Successful split allocations derive partially_paid then paid and prevent further payment');
 
-    // Structural tenant coupling rejects child drift even with direct SQL.
     let fk=false;try{await db.query("UPDATE public.payment_attempts SET tenant_id=$1 WHERE id=$2",[B,attempt1.id]);}catch(e){fk=e.code==='23503';}assert(fk);
     pass('Composite tenant/order coupling structurally blocks payment tenant drift');
   } finally {

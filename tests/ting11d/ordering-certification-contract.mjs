@@ -7,11 +7,17 @@ const rehearsal = readFileSync(new URL('../../supabase/baseline/native/ting11.mj
 
 // Customer-side resilience / idempotency
 assert(cart.includes('if (submitting || !cart.size || !orderContextAvailable()) return;'), 'double-submit guard must remain fail-closed');
-assert(cart.includes('const requestId = crypto.randomUUID();'), 'checkout must create exactly one request id per submission attempt');
+assert(cart.includes('getOrCreateCheckoutRequestId(orderItems)'), 'checkout must reuse a persisted request id for the same cart');
+assert(cart.includes('checkoutAttempt = { requestId: crypto.randomUUID(), fingerprint };'), 'a fresh request id must be minted only when no matching attempt exists');
+assert(cart.includes("return `ting:checkout-attempt:${clientSlug}:${tableIdentifier}`"), 'persisted checkout identity must be route/table scoped');
+assert(cart.includes('if (checkoutAttempt) {'), 'uncertain checkout outcome must lock cart mutation until resolved');
+assert(cart.includes('if (definitiveFailure) invalidateCheckoutAttempt();'), 'definitive rejection must release the uncertain checkout lock');
 assert(cart.includes("p_client_request_id: requestId"), 'network retries must reuse the same idempotency key');
 assert(cart.includes('p_table_token: tableAccessToken'), 'order submission must carry the secured table capability');
 assert(cart.includes("params.delete('ctx')"), 'table capability must be removed from the visible URL after capture');
 assert(cart.includes('sessionStorage.setItem(storageKey, candidate)'), 'table capability must survive same-tab reload without remaining in the URL');
+assert(cart.includes('hydrateCart();'), 'cart state must survive same-tab reload for uncertain retry recovery');
+assert(cart.includes('hydrateCheckoutAttempt();'), 'checkout request identity must survive same-tab reload');
 assert(cart.includes('for (let attempt = 0; attempt < retries; attempt++)'), 'submission retry loop must remain bounded');
 assert(cart.includes("String(error.code || '').startsWith('23')"), 'database validation failures must not be blindly retried');
 assert(cart.includes("String(error.code || '') === '42501'"), 'authorization failures must not be blindly retried');
@@ -51,4 +57,4 @@ for (const proof of requiredNativeProofs) {
   assert(rehearsal.includes(proof), `native TING-11 rehearsal must retain proof: ${proof}`);
 }
 
-console.log('PASS: TING-11D ordering certification preserves table-capability possession, idempotency, stale-stock failure, tenant isolation, RPC-only lifecycle authority, and realtime tenant scoping across customer/admin layers');
+console.log('PASS: TING-11D ordering certification preserves table-capability possession, persistent retry idempotency, stale-stock failure, tenant isolation, RPC-only lifecycle authority, and realtime tenant scoping across customer/admin layers');

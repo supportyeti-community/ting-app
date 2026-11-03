@@ -1,0 +1,65 @@
+name: PAY-2 current-main recovery
+
+on:
+  pull_request:
+    paths:
+      - 'api/payments/**'
+      - 'lib/payments-server.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'supabase/migrations/*pay2*'
+      - 'supabase/baseline/native/pay1.mjs'
+      - 'supabase/baseline/native/pay2.mjs'
+      - 'supabase/baseline/native/run.mjs'
+      - 'tests/pay2/**'
+      - '.github/workflows/pay2-current-main.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pay2-current-main-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install locked payment runtime dependencies
+        run: npm ci --ignore-scripts
+      - name: Audit production dependency graph
+        run: npm audit --omit=dev --audit-level=high
+      - name: Syntax check payment server files
+        run: |
+          node --check lib/payments-server.js
+          node --check api/payments/create-intent.js
+          node --check api/payments/stripe-webhook.js
+          node --check supabase/baseline/native/pay2.mjs
+      - name: Run PAY-2 hardened contract
+        run: node tests/pay2/current-main-contract.mjs
+
+  pay2-native-rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: supabase/baseline/native/package-lock.json
+      - name: Install pinned native verification dependencies
+        working-directory: supabase/baseline/native
+        run: npm ci
+      - name: Run PAY-2 disposable Supabase rehearsal
+        working-directory: supabase/baseline/native
+        env:
+          TING_TEST_ISSUE: pay2
+        run: npm test
