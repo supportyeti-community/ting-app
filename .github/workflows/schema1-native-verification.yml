@@ -79,3 +79,23 @@ jobs:
         env:
           TING_TEST_ISSUE: ${{ matrix.issue }}
         run: node supabase/baseline/native/run.mjs
+
+  historical-pay2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          path: investigation
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: 4d12adf2ef3ca084f3a2366788c3cb31b5fc5d29
+          path: historical
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --prefix historical/supabase/baseline/native
+      - name: Reproduce pre-fix PAY-2 ordering failure with allowlisted diagnostics
+        run: node investigation/scripts/schema1-reproduce-pr42.mjs historical pay2

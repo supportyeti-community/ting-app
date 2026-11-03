@@ -87,14 +87,19 @@ async function verifyStorage(db,{admin,ordinary,visitor,service},report,pass){
  assert(!(await exists(pathA)),'Authorised object persisted');
  ok(await remove(ordinary,pathB),'B canonical DELETE');assert(!(await exists(pathB)));
  pass('Authorised A and B tenant members delete their own canonical objects through native Storage API');
- // Direct restricted-role checks cover RLS even where Storage first filters by SELECT.
- const direct=async(user,sql,params)=>{await db.query('BEGIN');try{await db.query('SET LOCAL ROLE authenticated');await db.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[user]);return await db.query(sql,params);}finally{await db.query('ROLLBACK');}};
- for(const path of malformed)assert.equal((await direct(aid,'DELETE FROM storage.objects WHERE bucket_id=$1 AND name=$2 RETURNING id',['menu-pictures',path])).rowCount,0);
+ // Managed Storage intentionally rejects direct SQL DELETE, even for an owner.
+ // Exercise that platform boundary without disabling it; API checks above prove RLS.
  const remaining=`${A}/${randomUUID()}.png`;ok(await upload(admin,remaining),'Restricted role fixture');
- assert.equal((await direct(bid,'DELETE FROM storage.objects WHERE bucket_id=$1 AND name=$2 RETURNING id',['menu-pictures',remaining])).rowCount,0);
- assert.equal((await direct(aid,'DELETE FROM storage.objects WHERE bucket_id=$1 AND name=$2 RETURNING id',['menu-pictures',remaining])).rowCount,1);
- assert.equal((await direct(aid,'UPDATE storage.objects SET name=name WHERE bucket_id=$1 AND name=$2 RETURNING id',['menu-pictures',remaining])).rowCount,0);
- pass('Native authenticated SQL role proves own DELETE, foreign/malformed denial and no UPDATE widening');
+ for(const user of [aid,bid]){
+  await db.query('BEGIN');let blocked=false;
+  try{await db.query('SET LOCAL ROLE authenticated');await db.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[user]);await db.query('DELETE FROM storage.objects WHERE bucket_id=$1 AND name=$2',['menu-pictures',remaining]);}
+  catch(e){blocked=e.message==='Direct deletion from storage tables is not allowed. Use the Storage API instead.';}
+  finally{await db.query('ROLLBACK');}
+  assert(blocked,'Managed direct-SQL deletion protection changed');
+ }
+ assert(await exists(remaining));
+ assert((await admin.storage.from('menu-pictures').upload(remaining,png,{contentType:'image/png',upsert:true})).error,'UPDATE/upsert access widened');
+ pass('Native authenticated SQL roles retain managed direct-deletion protection; API upsert remains denied');
  let rejected=false;try{await db.query(read('schema1/storage-delete-correction.sql'));}catch(e){rejected=e.message==='SCHEMA-1 policy precondition changed; stop';await db.query('ROLLBACK');}
  assert(rejected,'Repeated correction did not reject stale state');assert.deepEqual(await policy(),desired);
  assert.deepEqual((await db.query("SELECT relacl::text,relrowsecurity,relforcerowsecurity FROM pg_class WHERE oid='storage.objects'::regclass")).rows,grantsBefore);
