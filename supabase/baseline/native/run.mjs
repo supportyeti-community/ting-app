@@ -11,6 +11,7 @@ import { rehearseTing4, rehearseTing4Membership } from './ting4.mjs';
 import { rehearseTing11 } from './ting11.mjs';
 import { rehearsePay1 } from './pay1.mjs';
 import { rehearsePay2 } from './pay2.mjs';
+import { rehearseSchema1 } from './schema1.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const cli = join(root, 'node_modules/.bin/supabase');
@@ -37,7 +38,10 @@ try {
   console.log('Starting disposable local Supabase services…');
   command(['start', '-x', 'studio,edge-runtime,logflare,vector,supavisor,postgres-meta']);
   const status = JSON.parse(command(['status', '-o', 'json']));
-  if (process.env.TING_TEST_ISSUE === 'ting2') {
+  if (process.env.TING_TEST_ISSUE === 'schema1') {
+    report.scope = 'SCHEMA-1 native baseline-plus-forward reconstruction and restricted-role Storage correction; zero production writes';
+    await verify(status, report, null, (db,clients) => rehearseSchema1(db,clients,status,report,command,workdir));
+  } else if (process.env.TING_TEST_ISSUE === 'ting2') {
     report.scope = 'TING-2 settings/table-link release rehearsal on disposable native Supabase';
     await verify(status, report, null, db => rehearseTing2(db,status,report,command,workdir));
   } else if (process.env.TING_TEST_ISSUE === 'ting4') {

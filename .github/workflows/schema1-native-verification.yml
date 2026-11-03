@@ -1,0 +1,81 @@
+name: SCHEMA-1 native verification
+on:
+  push:
+    branches: ['codex/schema1-native-verification']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: schema1-native-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  schema1:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --prefix supabase/baseline/native
+      - name: Native chronological bootstrap and Storage verification
+        env:
+          TING_TEST_ISSUE: schema1
+        run: node supabase/baseline/native/run.mjs
+      - name: Sanitized metadata evidence
+        if: always()
+        run: |
+          if test -f supabase/baseline/native/schema1/native-catalogue.json; then
+            echo SCHEMA1_CATALOGUE_BEGIN
+            cat supabase/baseline/native/schema1/native-catalogue.json
+            echo SCHEMA1_CATALOGUE_END
+          fi
+  historical-pay1:
+    strategy:
+      fail-fast: false
+      matrix:
+        repetition: [1, 2]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          path: investigation
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          ref: 8d6c834a924a48dd08bfa85b592889283891c92a
+          path: historical
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --prefix historical/supabase/baseline/native
+      - name: Reproduce exact PR42 merge-SHA failure with allowlisted diagnostics
+        run: node investigation/scripts/schema1-reproduce-pr42.mjs historical
+  current-payment-regressions:
+    strategy:
+      fail-fast: false
+      matrix:
+        issue: [pay1, pay2]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --prefix supabase/baseline/native
+      - name: Affected contracts
+        run: |
+          node tests/pay1/payment-foundation-contract.mjs
+          node tests/pay1/payment-hardening-contract.mjs
+          node tests/pay2/current-main-contract.mjs
+      - name: Current payment native regression
+        env:
+          TING_TEST_ISSUE: ${{ matrix.issue }}
+        run: node supabase/baseline/native/run.mjs
