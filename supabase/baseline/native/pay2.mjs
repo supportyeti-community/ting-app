@@ -22,14 +22,22 @@ export async function rehearsePay2(db,status,report,command,workdir){
   const pass=label=>{report.checks.push(label);console.log('PASS: '+label);};
   await rehearsePay1(db,status,report,command,workdir);
 
+  // This stage follows current ordering/CAP-1 state. PAY-2 has earlier IDs;
+  // replay exact source SQL only on this disposable loopback target, as PAY-1 does.
+  // Include the account-check follow-up so the regression exercises current main.
   const migrationDir=join(workdir,'supabase/migrations');
-  writeFileSync(join(migrationDir,PAY2),sourceSql());
-  command(['db','push','--local','--dry-run','--skip-vault','--yes']);
+  const pay2Files=[PAY2,'20261031104500_pay2_unbound_confirmation_account_check.sql'];
+  for(const name of pay2Files){
+    const sql=readFileSync(new URL('../../migrations/'+name,import.meta.url),'utf8');
+    writeFileSync(join(migrationDir,name),sql);
+    await db.query(sql);
+    const [version,...rest]=name.replace(/\.sql$/,'').split('_');
+    command(['migration','repair',version,'--local','--status','applied']);
+    await db.query('UPDATE supabase_migrations.schema_migrations SET name=$2,statements=$3 WHERE version=$1',[version,rest.join('_'),[sql]]);
+    assert.equal((await db.query('SELECT count(*)::int n FROM supabase_migrations.schema_migrations WHERE version=$1',[version])).rows[0].n,1);
+  }
   command(['db','push','--local','--skip-vault','--yes']);
-  command(['db','push','--local','--skip-vault','--yes']);
-  const ledger=(await db.query("SELECT count(*)::int n FROM supabase_migrations.schema_migrations WHERE version='20261015020000'")).rows[0].n;
-  assert.equal(ledger,1);
-  pass('PAY-2 recovery migration dry-runs, applies once, and repeated push is a no-op');
+  pass('Exact PAY-2 recovery and account-check SQL replay; local history recorded; repeated push is a no-op');
 
   const orderA=randomUUID(), orderB=randomUUID();
   await db.query(`INSERT INTO public.orders(id,tenant_id,table_number,status,subtotal,total,client_request_id)
