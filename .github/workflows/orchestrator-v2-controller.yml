@@ -1,0 +1,61 @@
+name: TinG orchestrator v2 controller
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Audit or claim (no code execution)
+        required: true
+        type: choice
+        default: audit
+        options:
+          - audit
+          - claim
+      enable_claim:
+        description: Explicitly enable one persistent task claim
+        required: true
+        type: boolean
+        default: false
+  schedule:
+    - cron: '20 21 * * *'
+
+concurrency:
+  group: ting-orchestrator-v2-controller
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    if: github.event_name == 'schedule' || inputs.operation == 'audit'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: node tools/orchestrator-v2/run.mjs audit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  claim:
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'claim' && inputs.enable_claim == true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      issues: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: node tools/orchestrator-v2/run.mjs claim
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TING_ORCHESTRATOR_CLAIM_ENABLED: 'true'
