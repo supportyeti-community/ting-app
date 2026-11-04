@@ -34,3 +34,14 @@ test('verified and recorded implementation stops at review',async()=>{
  for(const state of ['dispatched','verified','recorded','review'])t=await o.transition(t,state);
  assert.equal(t.state,'review');assert.equal(await o.acquire(t.id,'B'),null);
 });
+test('quarantine between successful CAS and readback cannot lend new fence to stale worker',async()=>{
+ const s=new Store();const original=s.cas.bind(s);
+ s.cas=async(id,old,next)=>{const ok=await original(id,old,next);if(ok)s.rows.set(id,{...next,fence:'revoked',version:next.version+1,state:'quarantined'});return ok};
+ await assert.rejects(new Ownership(s).acquire('WRK-100','A'),/readback/);
+});
+test('lost acquisition acknowledgement blocks retry instead of duplicating ownership',async()=>{
+ const s=new Store();const original=s.cas.bind(s);
+ s.cas=async(...args)=>{await original(...args);throw Error('lost acknowledgement')};
+ const o=new Ownership(s);await assert.rejects(o.acquire('WRK-100','A'),/acknowledgement/);
+ assert.equal(await o.acquire('WRK-100','A'),null);
+});

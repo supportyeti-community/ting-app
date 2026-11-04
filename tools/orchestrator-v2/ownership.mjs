@@ -13,7 +13,10 @@ export class Ownership {
   const old=await this.store.read(id);
   if(old)return null; // Includes failed, expired and review records: no automatic replay.
   const row={id,owner,fence:randomUUID(),version:1,state:'claimed',expires:this.clock()+this.leaseMs,events:[{state:'claimed',at:this.clock()}]};
-  return await this.store.cas(id,null,row)?await this.store.read(id):null;
+  if(!await this.store.cas(id,null,row))return null;
+  const saved=await this.store.read(id);
+  if(saved?.fence!==row.fence||saved.version!==row.version||saved.state!==row.state)throw Error('ownership changed during readback');
+  return saved;
  }
  async transition(token,state,detail={}) {
   const allowed={claimed:['dispatched','failed','released'],dispatched:['verified','failed'],verified:['recorded','failed'],recorded:['review'],review:[],failed:[],released:[]};
@@ -22,7 +25,9 @@ export class Ownership {
   if(!allowed[old.state]?.includes(state))throw Error('invalid transition');
   const next={...old,version:old.version+1,state,detail,events:[...old.events,{state,at:this.clock()}]};
   if(!await this.store.cas(token.id,old,next))throw Error('ownership conflict');
-  return await this.store.read(token.id);
+  const saved=await this.store.read(token.id);
+  if(saved?.fence!==next.fence||saved.version!==next.version||saved.state!==next.state)throw Error('ownership changed during readback');
+  return saved;
  }
  async quarantine(id) {
   const old=await this.store.read(id);
