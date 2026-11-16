@@ -117,7 +117,17 @@
           const sig=new Uint8Array(await file.slice(0,4).arrayBuffer());
           if(sig[0]!==0x50||sig[1]!==0x4b) throw Error('Invalid XLSX ZIP signature');
           await inspectXlsx(file);
-          grid=await readXlsxFile(file);
+          const workbookRows = await readXlsxFile(file);
+          // The pinned browser bundle exposes [{sheet, data}] for workbook sheets.
+          // Refuse ambiguous multi-sheet imports rather than silently importing the wrong menu.
+          if (Array.isArray(workbookRows) && workbookRows.length === 1 &&
+              workbookRows[0] && Array.isArray(workbookRows[0].data)) {
+            grid = workbookRows[0].data;
+          } else if (Array.isArray(workbookRows) && workbookRows.every(Array.isArray)) {
+            grid = workbookRows;
+          } else {
+            throw Error('XLSX must contain one readable menu worksheet');
+          }
         } else throw Error('Only CSV and XLSX files are supported');
         if(grid.length<2||grid.length-1>MAX_ROWS) throw Error('Provide 1–500 dish rows plus a heading row');
         if(grid.some(r=>r.length>40)) throw Error('Too many columns');
