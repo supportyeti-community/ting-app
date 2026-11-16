@@ -86,6 +86,19 @@ export async function rehearseFs01b(db,status,report,command,workdir){
   assert(racing.every(x=>!x.error));assert.deepEqual(racing[0].data,racing[1].data);
   assert.equal(Number((await db.query("SELECT count(*) n FROM public.menu_items WHERE name='Concurrent single'")).rows[0].n),1);
   pass('Concurrent same-key request single-winner and stable replay result');
+  const conflictRows=[{category:'Special',name:'Cross-key concurrent',price:'9.20',available:true}];
+  const firstForPublish=()=>saved.rows[0].id;
+  const crossKey=await Promise.all([
+    owner.rpc('import_menu_draft',{p_request_id:randomUUID(),p_rows:conflictRows}),
+    owner.rpc('import_menu_draft',{p_request_id:randomUUID(),p_rows:conflictRows})
+  ]);
+  assert.equal(crossKey.filter(x=>!x.error).length,1,'different request IDs must not both insert same dish');
+  assert.equal(Number((await db.query("SELECT count(*) n FROM public.menu_items WHERE name='Cross-key concurrent'")).rows[0].n),1);
+  pass('Tenant-wide serialized concurrent distinct-key duplicate rejection');
+  await denied(owner.from('menu_items').update({import_draft:false,is_out_of_stock:false}).eq('id',firstForPublish()),'direct unverified publish');
+  await denied(owner.from('menu_items').update({is_out_of_stock:false}).eq('id',firstForPublish()),'draft made orderable');
+  pass('Unverified imported drafts cannot publish or become orderable through direct updates');
+
   assert.deepEqual((await db.query('SELECT id,subtotal,total,status FROM public.orders ORDER BY id')).rows,beforeOrders);
   for(const old of beforeItems){
    const current=(await db.query('SELECT id,tenant_id,name,price FROM public.menu_items WHERE id=$1',[old.id])).rows[0];
