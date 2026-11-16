@@ -5,6 +5,10 @@ SET LOCAL statement_timeout = '60s';
 
 ALTER TABLE public.menu_items ADD COLUMN import_draft boolean NOT NULL DEFAULT false;
 ALTER TABLE public.menu_items ADD COLUMN import_requested_available boolean NOT NULL DEFAULT true;
+-- Exclude drafts even from legacy Guest clients; manager read stays independently authorised.
+DROP POLICY menu_items_public_route ON public.menu_items;
+CREATE POLICY menu_items_public_route ON public.menu_items FOR SELECT TO anon,authenticated
+ USING (tenant_id = (SELECT ting_private.request_tenant_id()) AND import_draft = false);
 
 CREATE TABLE public.menu_import_batches (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
