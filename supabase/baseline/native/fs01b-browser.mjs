@@ -191,6 +191,8 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
   guest.on('pageerror',e=>errors.push('guest:'+String(e.message).slice(0,140)));
   await guest.goto(guestUrl,{waitUntil:'domcontentloaded'});
   await poll(guest,'.menu-card[data-id="'+published.id+'"]');
+  await guest.getByRole('button',{name:'View Live Menu'}).click();
+  await guest.locator('#splash').waitFor({state:'hidden',timeout});
   const dish=guest.locator('.menu-card[data-id="'+published.id+'"]');
   await guest.locator('#fs01b-allergy-picker summary').click();
   await guest.getByLabel('Allergy: Milk').check();
