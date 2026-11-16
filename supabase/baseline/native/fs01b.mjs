@@ -62,6 +62,12 @@ export async function rehearseFs01b(db,status,report,command,workdir){
   const review=(await db.query('SELECT verified_version FROM public.menu_item_allergen_reviews WHERE menu_item_id=ANY($1::uuid[])',[saved.rows.map(x=>x.id)])).rows;
   assert.equal(review.length,120);assert(review.every(x=>x.verified_version===null));
   pass('120-row real REST owner import, tenant-owned categories, draft/out-of-stock, unverified review triggers');
+  const guestStatuses=ok(await anonymous.rpc('get_menu_allergen_status'),'guest allergen status');
+  const savedIds=new Set(saved.rows.map(x=>x.id));
+  assert(!guestStatuses.some(x=>savedIds.has(x.menu_item_id)),
+     'security definer allergen projection exposed unpublished draft item IDs');
+  pass('Guest allergen-status security-definer RPC excludes all unpublished imported draft IDs');
+
   assert.deepEqual(ok(await owner.rpc('import_menu_draft',{p_request_id:request,p_rows:rows}),'retry'),result);
   await denied(owner.rpc('import_menu_draft',{p_request_id:request,p_rows:rows.slice(0,119)}),'conflicting retry');
   await denied(wrongRoute.rpc('import_menu_draft',{p_request_id:request,p_rows:rows}),'cross-route tenant');
