@@ -6,6 +6,9 @@ on:
       - 'supabase/migrations/20261117000000_fs01b_bulk_menu_draft_import.sql'
       - 'supabase/baseline/native/fs01a.mjs'
       - 'supabase/baseline/native/fs01b.mjs'
+      - 'supabase/baseline/native/fs01b-browser.mjs'
+      - 'fs01b-guest-allergy.js'
+      - 'ting11b-cart.js'
       - 'supabase/baseline/native/run-fs01b.mjs'
       - 'admin.html'
       - 'index.html'
@@ -21,12 +24,13 @@ concurrency:
 jobs:
   disposable-import:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     env:
       TING_TEST_ISSUE: fs01b
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
+          fetch-depth: 0 # previous main application artifact for restoration rehearsal
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -35,10 +39,17 @@ jobs:
         run: |
           node --check fs01b-menu-import.js
           node --check fs01b-allergen-review.js
+          node --check fs01b-guest-allergy.js
+          node --check ting11b-cart.js
+          node --check supabase/baseline/native/fs01b-browser.mjs
           node --check supabase/baseline/native/fs01b.mjs
           node --check supabase/baseline/native/run-fs01b.mjs
       - name: Install pinned disposable harness
         run: npm ci --prefix supabase/baseline/native
+      - name: Install pinned browser E2E dependencies (disposable)
+        run: |
+          npm install --no-save --ignore-scripts --prefix supabase/baseline/native playwright@1.65.1 papaparse@5.7.1 read-excel-file@9.3.14
+          supabase/baseline/native/node_modules/.bin/playwright install --with-deps chromium
       - name: Execute native FS-01A + FS-01B rehearsal
         run: node supabase/baseline/native/run-fs01b.mjs
       - name: Sanitized execution report
