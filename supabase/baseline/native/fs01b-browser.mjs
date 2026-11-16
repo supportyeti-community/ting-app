@@ -112,6 +112,7 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
   await admin.locator('#authEmail').fill(email);
   await admin.locator('#authPassword').fill(password);
   await admin.locator('#adminAuthForm button[type=submit]').click();
+  await admin.locator('summary').filter({hasText:'Menu onboarding'}).click();
   await poll(admin,'#fs01b-menu-import input[type=file]');
   // CSV mapping and editable preview, deliberate invalid price then repair.
   const upload=admin.locator('#fs01b-menu-import input[type=file]');
@@ -176,6 +177,7 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
   await guest.goto(guestUrl,{waitUntil:'domcontentloaded'});
   await poll(guest,'.menu-card[data-id="'+published.id+'"]');
   const dish=guest.locator('.menu-card[data-id="'+published.id+'"]');
+  await guest.locator('#fs01b-allergy-picker summary').click();
   await guest.getByLabel('Allergy: Milk').check();
   await guest.waitForFunction(id=>document.querySelector('.menu-card[data-id="'+id+'"]')?.dataset.allergyBlocked==='true',published.id);
   assert((await dish.locator('.fs01b-allergy-warning').innerText()).includes('contains'));
@@ -185,6 +187,7 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
   assert(await guest.locator('#pagerModal').isVisible());
   assert(await guest.evaluate(id=>window.tingFs01Allergy.blocked(id),published.id),'Ask Staff must not bypass block');
   label('Playwright Guest contains warning, no add button and Ask Staff without override',report);
+  await guest.evaluate(()=>window.toggleModal(false));
 
   await guest.getByLabel('Allergy: Milk').uncheck();
   await guest.getByLabel('Allergy: Egg').check();
