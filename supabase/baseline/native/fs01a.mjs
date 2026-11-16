@@ -76,7 +76,7 @@ export async function rehearseFs01a(db,status,report,command,workdir) {
   await db.query("INSERT INTO public.menu_categories(tenant_id,name) VALUES ($1,'Tenant B Specials')",[B]);
   assert.equal(ok(await anonA.from('menu_categories').select('name'),'route A category list').length,1);
   assert.equal(ok(await anonB.from('menu_categories').select('name'),'route B category list').length,1);
-  assert.equal(ok(await ownerWrongRoute.from('menu_categories').select('id'),'wrong route member categories').length,1,'wrong route should only reveal owner A category through membership');
+  assert.equal(ok(await ownerWrongRoute.from('menu_categories').select('id'),'wrong route plus membership categories').length,2,'public route B plus owner membership A should be independently scoped');
   const foreignCat=(await db.query("SELECT id FROM public.menu_categories WHERE tenant_id=$1",[B])).rows[0].id;
   await denied(ownerA.from('menu_items').update({category_id:foreignCat}).eq('id',ITEM_A),'cross tenant category FK');
   ok(await ownerA.from('menu_items').update({category_id:cat.id}).eq('id',ITEM_A).select().single(),'same tenant assignment');
