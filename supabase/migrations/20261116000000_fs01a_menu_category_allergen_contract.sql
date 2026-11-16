@@ -209,6 +209,8 @@ BEGIN
   WHERE tenant_id=v_tenant AND menu_item_id=p_item_id FOR UPDATE;
  IF v_version IS DISTINCT FROM p_expected_version THEN
   RAISE EXCEPTION 'stale safety version' USING ERRCODE='40001'; END IF;
+ IF length(coalesce(p_recipe,''))>12000 OR length(coalesce(p_preparation,''))>12000 THEN
+  RAISE EXCEPTION 'safety context too large' USING ERRCODE='22023'; END IF;
  UPDATE public.menu_item_allergen_reviews SET recipe_context=p_recipe,
   preparation_context=p_preparation,safety_version=safety_version+1,
   verified_version=NULL,verified_by=NULL,verified_at=NULL,updated_at=now()
@@ -227,6 +229,14 @@ BEGIN
  SELECT safety_version INTO v_version FROM public.menu_item_allergen_reviews
   WHERE tenant_id=v_tenant AND menu_item_id=p_item_id FOR UPDATE;
  IF v_version IS DISTINCT FROM p_expected_version THEN RAISE EXCEPTION 'stale safety version' USING ERRCODE='40001'; END IF;
+ IF NOT EXISTS(
+   SELECT 1 FROM public.menu_item_allergen_reviews
+   WHERE tenant_id=v_tenant AND menu_item_id=p_item_id
+     AND NULLIF(btrim(recipe_context),'') IS NOT NULL
+     AND NULLIF(btrim(preparation_context),'') IS NOT NULL
+ ) THEN
+   RAISE EXCEPTION 'recipe and preparation context required for verification' USING ERRCODE='23514';
+ END IF;
  SELECT count(*) INTO v_required FROM public.menu_allergen_codes WHERE active;
  SELECT count(*) INTO v_count FROM public.menu_item_allergen_assessments a
  JOIN public.menu_allergen_codes c ON c.code=a.allergen_code AND c.active
