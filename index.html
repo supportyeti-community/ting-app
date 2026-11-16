@@ -142,15 +142,15 @@
             <div id="promoCardsWrapper" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px;"></div>
         </div>
 
-        <div id="disclaimer" class="disclaimer">🛡️ <strong>Celiac-Safe Protocol Engaged:</strong> Kitchen running separate isolation prep stations and dedicated utensils.</div>
+        <div id="disclaimer" class="disclaimer">Dietary labels are not verified allergen assessments. Ask venue staff about ingredients and preparation.</div>
 
         <div class="filter-grid">
             <button class="filter-btn active" onclick="filterMenu('all', this)"><span>🍽️</span>Full Menu</button>
-            <button class="filter-btn" onclick="filterMenu('celiac', this)"><span>🌾</span>Celiac-Safe</button>
-            <button class="filter-btn" onclick="filterMenu('gf', this)"><span>🌱</span>Gluten-Free</button>
+            
             <button class="filter-btn" onclick="filterMenu('veg', this)"><span>🥦</span>Vegetarian</button>
         </div>
 
+        <section id="fs01b-allergy-picker" aria-label="Allergy selections" style="padding:14px;background:white;border:1px solid #fed7aa;border-radius:12px;margin-bottom:16px"></section>
         <div id="menu-wrapper">
             <div style="display:flex; flex-direction:column;">
                 <div class="skeleton-block"></div>
@@ -314,6 +314,8 @@
                 .order('sort_order', { ascending: true });
 
             if (error) throw error;
+            if (!window.tingFs01Allergy) throw new Error('Allergen safety module unavailable');
+            await window.tingFs01Allergy.refresh(supabaseInstance);
 
             wrapper.innerHTML = '';
 
@@ -325,8 +327,8 @@
             const fragment = document.createDocumentFragment();
 
             items.forEach(dish => {
-                let tagClass = dish.tags.includes('celiac') ? 'tag-celiac' : (dish.tags.includes('gf') ? 'tag-gf' : 'tag-mod');
-                let tagLabel = dish.tags.includes('celiac') ? 'Celiac Verified' : (dish.tags.includes('gf') ? 'Gluten Free' : 'Dietary Option');
+                let tagClass = 'tag-mod';
+                let tagLabel = 'Dietary claim — ask staff';
 
                 const basePriceStr = `$${parseFloat(dish.price).toFixed(2)}`;
                 const renderedPriceString = dish.is_promo && dish.promo_price
@@ -366,6 +368,7 @@
             });
 
             wrapper.appendChild(fragment);
+            window.tingFs01Allergy.apply();
 
         } catch (err) {
             wrapper.innerHTML = `
@@ -538,6 +541,7 @@
         }
     }
 </script>
+    <script src="fs01b-guest-allergy.js"></script>
     <script src="ting11b-cart.js"></script>
 </body>
 </html>
