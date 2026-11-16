@@ -5,7 +5,7 @@ on:
       - 'supabase/migrations/20261116000000_fs01a_menu_category_allergen_contract.sql'
       - 'supabase/tests/fs01a/**'
       - 'supabase/baseline/native/fs01a.mjs'
-      - 'supabase/baseline/native/run.mjs'
+      - 'supabase/baseline/native/run-fs01a.mjs'
       - '.github/workflows/fs01a-native.yml'
   workflow_dispatch:
 
@@ -34,7 +34,7 @@ jobs:
       - name: Install pinned native harness dependencies
         run: npm ci --prefix supabase/baseline/native
       - name: Reconstruct and exercise FS-01A only in disposable local Supabase
-        run: node supabase/baseline/native/run.mjs
+        run: node supabase/baseline/native/run-fs01a.mjs
       - name: Report sanitized result
         if: always()
         shell: bash
