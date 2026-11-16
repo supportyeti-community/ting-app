@@ -83,7 +83,7 @@ CREATE TABLE public.menu_item_allergen_reviews (
  menu_item_id uuid NOT NULL,
  safety_version bigint NOT NULL DEFAULT 1 CHECK(safety_version>0),
  verified_version bigint NULL,
- verified_by uuid NULL REFERENCES auth.users(id) ON DELETE SET NULL,
+ verified_by uuid NULL, -- retain historical reviewer identity even if Auth user is retired
  verified_at timestamptz NULL,
  recipe_context text NULL,
  preparation_context text NULL,
@@ -141,6 +141,32 @@ CREATE TRIGGER menu_items_safety_creation AFTER INSERT ON public.menu_items
 CREATE TRIGGER menu_items_safety_description AFTER UPDATE OF description ON public.menu_items
  FOR EACH ROW EXECUTE FUNCTION ting_private.track_menu_item_safety();
 
+-- Every assessment write invalidates the previous review, including privileged maintenance writes.
+-- Lock ordering is item row then review row in the RPC; privileged maintenance must
+-- use the same lock order when changing multiple items.
+CREATE OR REPLACE FUNCTION ting_private.invalidate_allergen_review() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
+DECLARE v_tenant uuid; v_item uuid;
+BEGIN
+ IF TG_OP = 'DELETE' THEN
+  v_tenant:=OLD.tenant_id;v_item:=OLD.menu_item_id;
+ ELSE
+  v_tenant:=NEW.tenant_id;v_item:=NEW.menu_item_id;
+ END IF;
+ UPDATE public.menu_item_allergen_reviews
+  SET safety_version=safety_version+1,verified_version=NULL,
+      verified_by=NULL,verified_at=NULL,updated_at=now()
+ WHERE tenant_id=v_tenant AND menu_item_id=v_item;
+ IF NOT FOUND THEN
+  RAISE EXCEPTION 'missing safety review for allergen assessment' USING ERRCODE='23514';
+ END IF;
+ RETURN NULL; -- AFTER row trigger; return is ignored.
+END $f$;
+REVOKE ALL ON FUNCTION ting_private.invalidate_allergen_review() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER menu_item_allergen_assessment_invalidation
+ AFTER INSERT OR UPDATE OR DELETE ON public.menu_item_allergen_assessments
+ FOR EACH ROW EXECUTE FUNCTION ting_private.invalidate_allergen_review();
+
 -- Guarded writes always derive the caller, tenant and version server-side.
 CREATE FUNCTION public.set_menu_item_allergen(
  p_item_id uuid,p_code text,p_state text,p_evidence_note text,p_expected_version bigint)
@@ -162,9 +188,8 @@ BEGIN
  VALUES (v_tenant,p_item_id,p_code,p_state,p_evidence_note)
  ON CONFLICT(tenant_id,menu_item_id,allergen_code) DO UPDATE
   SET state=excluded.state,evidence_note=excluded.evidence_note,updated_at=now();
- UPDATE public.menu_item_allergen_reviews
- SET safety_version=safety_version+1,verified_version=NULL,verified_by=NULL,verified_at=NULL,updated_at=now()
- WHERE tenant_id=v_tenant AND menu_item_id=p_item_id RETURNING safety_version INTO v_version;
+ SELECT safety_version INTO v_version FROM public.menu_item_allergen_reviews
+ WHERE tenant_id=v_tenant AND menu_item_id=p_item_id;
  RETURN v_version;
 END $f$;
 
