@@ -29,6 +29,31 @@
       return { row: i + 2, errors };
     });
   }
+  // Inspect ZIP central directory before decompressing XLSX. Reject zip bombs and macro/external-link payloads.
+  async function inspectXlsx(file) {
+    const data = new DataView(await file.arrayBuffer());
+    let end = -1;
+    for (let i=data.byteLength-22;i>=Math.max(0,data.byteLength-65557);i--) {
+      if (data.getUint32(i,true)===0x06054b50) {end=i;break;}
+    }
+    if(end<0)throw Error('Invalid XLSX ZIP directory');
+    const count=data.getUint16(end+10,true),size=data.getUint32(end+12,true),offset=data.getUint32(end+16,true);
+    if(count===0||count>500||offset+size>data.byteLength)throw Error('XLSX archive exceeds safe limits');
+    let pos=offset,total=0;
+    for(let i=0;i<count;i++){
+      if(pos+46>data.byteLength||data.getUint32(pos,true)!==0x02014b50)throw Error('Malformed XLSX archive');
+      const flags=data.getUint16(pos+8,true),unpacked=data.getUint32(pos+24,true);
+      const nameLength=data.getUint16(pos+28,true),extra=data.getUint16(pos+30,true),comment=data.getUint16(pos+32,true);
+      if(flags&1||unpacked===0xffffffff)throw Error('Encrypted or ZIP64 XLSX not supported');
+      if(pos+46+nameLength+extra+comment>data.byteLength)throw Error('Malformed ZIP entry');
+      total+=unpacked;
+      if(total>8*1024*1024)throw Error('XLSX exceeds 8 MB uncompressed safety limit');
+      const name=new TextDecoder().decode(new Uint8Array(data.buffer,pos+46,nameLength)).toLowerCase();
+      if(name.includes('vbaproject.bin')||name.startsWith('xl/externallinks/'))throw Error('XLSX macro or external-link content not permitted');
+      pos+=46+nameLength+extra+comment;
+    }
+    if(pos!==offset+size)throw Error('Inconsistent XLSX directory');
+  }
   function parseAvailable(value) {
     return !['false','no','0','out of stock'].includes(norm(value));
   }
@@ -91,6 +116,7 @@
           if(typeof readXlsxFile!=='function') throw Error('XLSX parser unavailable');
           const sig=new Uint8Array(await file.slice(0,4).arrayBuffer());
           if(sig[0]!==0x50||sig[1]!==0x4b) throw Error('Invalid XLSX ZIP signature');
+          await inspectXlsx(file);
           grid=await readXlsxFile(file);
         } else throw Error('Only CSV and XLSX files are supported');
         if(grid.length<2||grid.length-1>MAX_ROWS) throw Error('Provide 1–500 dish rows plus a heading row');
