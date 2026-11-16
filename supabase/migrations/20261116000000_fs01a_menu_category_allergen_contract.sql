@@ -148,6 +148,9 @@ CREATE OR REPLACE FUNCTION ting_private.invalidate_allergen_review() RETURNS tri
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $f$
 DECLARE v_tenant uuid; v_item uuid;
 BEGIN
+ IF TG_OP = 'UPDATE' AND (NEW.tenant_id IS DISTINCT FROM OLD.tenant_id OR NEW.menu_item_id IS DISTINCT FROM OLD.menu_item_id OR NEW.allergen_code IS DISTINCT FROM OLD.allergen_code) THEN
+  RAISE EXCEPTION 'allergen assessment identity is immutable' USING ERRCODE='23514';
+ END IF;
  IF TG_OP = 'DELETE' THEN
   v_tenant:=OLD.tenant_id;v_item:=OLD.menu_item_id;
  ELSE
@@ -157,7 +160,7 @@ BEGIN
   SET safety_version=safety_version+1,verified_version=NULL,
       verified_by=NULL,verified_at=NULL,updated_at=now()
  WHERE tenant_id=v_tenant AND menu_item_id=v_item;
- IF NOT FOUND THEN
+ IF NOT FOUND AND EXISTS (SELECT 1 FROM public.menu_items i WHERE i.tenant_id=v_tenant AND i.id=v_item) THEN
   RAISE EXCEPTION 'missing safety review for allergen assessment' USING ERRCODE='23514';
  END IF;
  RETURN NULL; -- AFTER row trigger; return is ignored.
