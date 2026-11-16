@@ -4,6 +4,7 @@ SET LOCAL lock_timeout = '5s';
 SET LOCAL statement_timeout = '60s';
 
 ALTER TABLE public.menu_items ADD COLUMN import_draft boolean NOT NULL DEFAULT false;
+ALTER TABLE public.menu_items ADD COLUMN import_requested_available boolean NOT NULL DEFAULT true;
 
 CREATE TABLE public.menu_import_batches (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -111,12 +112,12 @@ BEGIN
   FROM jsonb_array_elements(p_rows) WITH ORDINALITY AS x(r,ord)
  ), created AS (
   INSERT INTO public.menu_items(id,tenant_id,client_slug,category_id,name,description,price,image_url,
-                               is_out_of_stock,is_promo,sort_order,import_draft)
+                               is_out_of_stock,is_promo,sort_order,import_draft,import_requested_available)
   SELECT p.id,v_tenant,v_slug,c.id,btrim(p.r->>'name'),
          NULLIF(btrim(COALESCE(p.r->>'description','')),''),
          (p.r->>'price')::numeric,
          NULLIF(p.r->>'image_url',''),
-         true,false,p.n,true
+         true,false,p.n,true,COALESCE((p.r->>'available')::boolean,true)
   FROM parsed p JOIN public.menu_categories c
     ON c.tenant_id=v_tenant AND lower(btrim(c.name))=lower(btrim(p.r->>'category'))
   RETURNING id
