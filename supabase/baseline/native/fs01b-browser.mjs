@@ -225,9 +225,15 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
   await poll(legacy,'.menu-card[data-id="'+published.id+'"]');
   assert.equal(await legacy.locator('.menu-card').filter({hasText:'Browser XLSX dish'}).count(),0,'legacy app must not see draft via RLS');
   assert.equal(await legacy.locator('.menu-card').filter({hasText:'Browser CSV dish'}).count(),1);
+  await legacy.getByRole('button',{name:'View Live Menu'}).click();
+  await legacy.locator('.menu-card[data-id="'+published.id+'"] .ting-add-btn').click();
+  await legacy.getByText('View Cart',{exact:false}).click();
+  await legacy.getByRole('button',{name:'Place Order'}).click();
+  await legacy.getByText('Order received',{exact:false}).waitFor({timeout});
+  assert.equal(Number((await db.query('SELECT count(*) n FROM public.order_items WHERE menu_item_id=$1',[published.id])).rows[0].n),1);
   assert.equal((await db.query('SELECT verified_version,safety_version FROM public.menu_item_allergen_reviews WHERE menu_item_id=$1',[published.id])).rows[0].verified_version,versionedBefore.verified_version);
   assert((await db.query("SELECT to_regclass('public.menu_import_batches') AS v")).rows[0].v,'expanded schema lost during legacy app restore');
-  label('Playwright prior main application restored against expanded schema; safety reviews retained and drafts hidden',report);
+  label('Playwright restored prior-main application submits real order with expanded schema, reviews retained and drafts hidden',report);
   assert.deepEqual(errors,[],'Browser application page errors: '+errors.join(' | '));
  }finally {
   if(browser)await browser.close();
