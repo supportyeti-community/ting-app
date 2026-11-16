@@ -17,6 +17,7 @@ on:
       - 'index.html'
       - 'fs01b-menu-import.js'
       - 'fs01b-allergen-review.js'
+      - 'fs01b-category-editor.js'
       - '.github/workflows/fs01b-native.yml'
   workflow_dispatch:
 permissions:
@@ -42,6 +43,7 @@ jobs:
         run: |
           node --check fs01b-menu-import.js
           node --check fs01b-allergen-review.js
+          node --check fs01b-category-editor.js
           node --check fs01b-guest-allergy.js
           node --check ting11b-cart.js
           node --check supabase/baseline/native/fs01b-browser.mjs
