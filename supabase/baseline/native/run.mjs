@@ -11,6 +11,7 @@ import { rehearseTing4, rehearseTing4Membership } from './ting4.mjs';
 import { rehearseTing11 } from './ting11.mjs';
 import { rehearsePay1 } from './pay1.mjs';
 import { rehearsePay2 } from './pay2.mjs';
+import { rehearseFs01a } from './fs01a.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const cli = join(root, 'node_modules/.bin/supabase');
@@ -52,6 +53,9 @@ try {
   } else if (process.env.TING_TEST_ISSUE === 'pay1') {
     report.scope = 'PAY-1 split-aware payment behavior and tenant-isolation rehearsal on disposable native Supabase';
     await verify(status, report, null, db => rehearsePay1(db,status,report,command,workdir));
+  } else if (process.env.TING_TEST_ISSUE === 'fs01a') {
+    report.scope = 'FS-01A isolated native Supabase menu categories and allergen review rehearsal';
+    await verify(status, report, null, db => rehearseFs01a(db,status,report,command,workdir));
   } else if (process.env.TING_TEST_ISSUE === 'pay2') {
     report.scope = 'PAY-2 Stripe Connect table-capability and processor-boundary rehearsal on disposable native Supabase';
     await verify(status, report, null, db => rehearsePay2(db,status,report,command,workdir));
