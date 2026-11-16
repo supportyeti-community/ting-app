@@ -11,6 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/read-excel-file@9.3.14/bundle/read-excel-file.min.js"></script>
     <script src="fs01b-menu-import.js"></script>
     <script src="fs01b-allergen-review.js"></script>
+    <script src="fs01b-category-editor.js"></script>
     <style>
         :root { 
             --dark-bg: #0b1329; 
@@ -259,6 +260,12 @@
         
         renderMainWorkspaceShellMarkup();
         // Browser preview never asserts authority: the import/review RPCs check membership in PostgreSQL.
+        if (typeof window.mountFs01bCategories === 'function') {
+            await window.mountFs01bCategories(
+                document.getElementById('fs01b-category-editor'),
+                () => supabaseInstance, () => tenantId, loadLiveMenuFromDatabase
+            );
+        }
         const reviewRoot = document.getElementById('fs01b-allergen-review');
         let fs01bReview = null;
         if (typeof window.mountFs01bAllergenReview === 'function') {
@@ -367,6 +374,7 @@
 
                     <details style="background:#10172a;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:20px;">
                         <summary style="cursor:pointer;font-weight:800;">Menu onboarding — CSV / Excel import &amp; allergen review</summary>
+                        <div id="fs01b-category-editor"></div>
                         <div id="fs01b-menu-import"></div>
                         <hr style="border:0;border-top:1px solid #334155;margin:20px 0;">
                         <div id="fs01b-allergen-review"></div>
