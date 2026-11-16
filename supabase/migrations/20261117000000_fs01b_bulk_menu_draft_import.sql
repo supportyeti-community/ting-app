@@ -162,6 +162,26 @@ END
 $fn$;
 REVOKE ALL ON FUNCTION public.import_menu_draft(uuid,jsonb) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.import_menu_draft(uuid,jsonb) TO authenticated;
+-- FS-01A guest projection predates import_draft. Prevent SECURITY DEFINER
+-- from leaking unpublished dish IDs and assessment states.
+CREATE OR REPLACE FUNCTION public.get_menu_allergen_status()
+RETURNS TABLE(menu_item_id uuid,allergen_code text,state text,review_current boolean)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $status$
+ SELECT i.id,c.code,
+        COALESCE(a.state,'unknown') AS state,
+        (r.verified_version IS NOT NULL AND r.verified_version=r.safety_version) AS review_current
+ FROM public.menu_items i
+ CROSS JOIN public.menu_allergen_codes c
+ JOIN public.menu_item_allergen_reviews r
+   ON r.tenant_id=i.tenant_id AND r.menu_item_id=i.id
+ LEFT JOIN public.menu_item_allergen_assessments a
+   ON a.tenant_id=i.tenant_id AND a.menu_item_id=i.id AND a.allergen_code=c.code
+ WHERE i.tenant_id=(SELECT ting_private.request_tenant_id())
+   AND i.import_draft IS FALSE AND c.active;
+$status$;
+REVOKE ALL ON FUNCTION public.get_menu_allergen_status() FROM PUBLIC,anon,authenticated,service_role;
+GRANT EXECUTE ON FUNCTION public.get_menu_allergen_status() TO anon,authenticated;
+
 COMMENT ON FUNCTION public.import_menu_draft(uuid,jsonb) IS
  'Atomic tenant-routed owner/admin CSV/XLSX batch import; out-of-stock draft and unverified FS-01A reviews. No reconcile or allergen auto-verification.';
 COMMIT;
