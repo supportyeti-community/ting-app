@@ -34,6 +34,9 @@ export async function rehearseFs01a(db,status,report,command,workdir) {
  assert(applied.includes('20261116000000'),'migration ledger did not record FS-01A');
  command(['db','push','--local','--skip-vault','--yes']);
  assert.deepEqual((await db.query('SELECT version FROM supabase_migrations.schema_migrations ORDER BY version')).rows.map(x=>x.version),applied,'repeated push changed migration ledger');
+ const assertions=readFileSync(new URL('../../tests/fs01a/menu-allergen-contract.sql',import.meta.url),'utf8');
+ await db.query(assertions);
+ pass('FS-01A disposable SQL grant, RLS and schema assertions');
  pass('FS-01A CLI dry-run, native apply, ledger and repeated no-op');
 
  assert.equal((await db.query('SELECT count(*)::int n FROM public.menu_item_allergen_reviews')).rows[0].n,
@@ -95,7 +98,7 @@ export async function rehearseFs01a(db,status,report,command,workdir) {
   assert.equal(v,2);
   v=ok(await ownerA.rpc('set_menu_item_allergen',{p_item_id:ITEM_A,p_code:'milk',p_state:'assessed_absent',p_evidence_note:'supplier checked',p_expected_version:v}),'milk assessment');
   assert.equal(v,3);
-  await denied(ownerA.rpc('set_menu_item_allergen',{p_item_id:ITEM_A,p_code:'egg',p_state:'contains',p_expected_version:2}),'stale assessment');
+  await denied(ownerA.rpc('set_menu_item_allergen',{p_item_id:ITEM_A,p_code:'egg',p_state:'contains',p_evidence_note:null,p_expected_version:2}),'stale assessment');
   await denied(ownerA.rpc('verify_menu_item_allergens',{p_item_id:ITEM_A,p_expected_version:v}),'incomplete review');
   // Service-side fixture seeding is deliberately privileged: trigger must invalidate too.
   await db.query("INSERT INTO public.menu_item_allergen_assessments(tenant_id,menu_item_id,allergen_code,state) SELECT $1,$2,code,'assessed_absent' FROM public.menu_allergen_codes WHERE code <> 'milk'",[A,ITEM_A]);
@@ -117,6 +120,17 @@ export async function rehearseFs01a(db,status,report,command,workdir) {
   assert(ok(await anonA.rpc('get_menu_allergen_status'),'guest after invalidation').some(x=>x.menu_item_id===ITEM_A&&x.review_current===false));
   await denied(ownerA.rpc('verify_menu_item_allergens',{p_item_id:ITEM_B,p_expected_version:1}),'foreign tenant review');
   await denied(ownerWrongRoute.rpc('verify_menu_item_allergens',{p_item_id:ITEM_B,p_expected_version:1}),'route spoof foreign review');
+  await denied(floorA.rpc('set_menu_item_allergen',{p_item_id:ITEM_A,p_code:'milk',p_state:'contains',p_evidence_note:null,p_expected_version:Number(invalidated.safety_version)}),'Floor forge assessment');
+  await denied(ownerA.rpc('set_menu_item_allergen',{p_item_id:ITEM_B,p_code:'milk',p_state:'contains',p_evidence_note:null,p_expected_version:1}),'cross-tenant assessment');
+  const expected=Number(invalidated.safety_version);
+  const competing=await Promise.all([
+    ownerA.rpc('set_menu_item_allergen',{p_item_id:ITEM_A,p_code:'milk',p_state:'contains',p_evidence_note:null,p_expected_version:expected}),
+    ownerA.rpc('set_menu_item_allergen',{p_item_id:ITEM_A,p_code:'egg',p_state:'may_contain',p_evidence_note:null,p_expected_version:expected})
+  ]);
+  assert.equal(competing.filter(x=>!x.error).length,1,'exactly one concurrent expected-version write should win');
+  assert.equal(competing.filter(x=>x.error).length,1,'stale competing write was not rejected');
+  assert.equal(Number((await db.query('SELECT safety_version FROM public.menu_item_allergen_reviews WHERE menu_item_id=$1',[ITEM_A])).rows[0].safety_version),expected+1);
+  pass('Role and cross-tenant assessment denial, concurrent write fencing');
   pass('Description-change invalidation, cross-tenant review denial and stale guest status');
  } finally {
   await Promise.allSettled([service.removeAllChannels(),anonA.removeAllChannels(),anonB.removeAllChannels(),ownerA.removeAllChannels(),ownerWrongRoute.removeAllChannels(),floorA.removeAllChannels(),ordinary.removeAllChannels()]);
