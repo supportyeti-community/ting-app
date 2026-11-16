@@ -110,14 +110,28 @@ if (!findings.length) {
 const comments = await paged(`/repos/${owner}/${name}/issues/${current.number}/comments`);
 const previous = comments.find(comment => comment.body?.includes(marker) && comment.user?.type === 'Bot');
 
-if (previous) {
-  await api(`/repos/${owner}/${name}/issues/comments/${previous.id}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ body })
-  });
-} else {
-  await api(`/repos/${owner}/${name}/issues/${current.number}/comments`, {
-    method: 'POST',
-    body: JSON.stringify({ body })
-  });
+// A bot comment is useful but does not determine whether this advisory
+// risk analysis actually ran. If repository/org Actions settings refuse
+// comments despite the requested token scope, surface the findings in the
+// check's job summary instead of losing them behind a 403.
+try {
+  if (previous) {
+    await api(`/repos/${owner}/${name}/issues/comments/${previous.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ body })
+    });
+  } else {
+    await api(`/repos/${owner}/${name}/issues/${current.number}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ body })
+    });
+  }
+} catch (error) {
+  if (!String(error.message).startsWith('403 ') || !process.env.GITHUB_STEP_SUMMARY) throw error;
+  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+    '## PR comment unavailable (GitHub token 403)\\n\\n' +
+    'The advisory check completed. GitHub rejected the bot comment; risk findings follow below. ' +
+    'Inspect repository/org token permissions before relying on PR comments.\\n\\n' +
+    body + '\\n');
+  console.warn('Parallel PR analysis completed; comment denied (403); published the findings in the job summary.');
 }
