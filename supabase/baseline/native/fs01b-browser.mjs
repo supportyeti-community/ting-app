@@ -218,6 +218,10 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
   await guest.getByLabel('Allergy: Egg').uncheck();
   await guest.getByLabel('Allergy: Peanut').check();
   await guest.waitForFunction(id=>document.querySelector('.menu-card[data-id="'+id+'"]')?.dataset.allergyBlocked==='false',published.id);
+  const legacyUnreviewedId='30000000-0000-4000-8000-000000000012';
+  await guest.waitForFunction(id=>document.querySelector('.menu-card[data-id="'+id+'"] .fs01b-allergy-warning')?.textContent.includes('unknown'),legacyUnreviewedId);
+  assert(await guest.evaluate(id=>window.tingFs01Allergy.blocked(id),legacyUnreviewedId),
+    'unreviewed legacy dish must stay blocked for selected peanut allergy');
   await guest.getByLabel('Allergy: Peanut').uncheck();
   await guest.getByLabel('Allergy: Wheat').check();
   await guest.waitForFunction(id=>document.querySelector('.menu-card[data-id="'+id+'"]')?.dataset.allergyBlocked==='false',published.id);
