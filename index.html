@@ -310,6 +310,7 @@
                 .from('menu_items')
                 .select('*')
                 .eq('tenant_id', tenantId)
+                .eq('import_draft', false)
                 .order('sort_order', { ascending: true });
 
             if (error) throw error;
