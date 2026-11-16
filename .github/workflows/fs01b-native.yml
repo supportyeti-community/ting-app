@@ -1,5 +1,7 @@
 name: FS-01A plus FS-01B disposable native import
 on:
+  push:
+    branches: ['fs-01b-bulk-menu-import'] # non-production head verification when GitHub PR checks lag
   pull_request:
     paths:
       - 'supabase/migrations/20261116000000_fs01a_menu_category_allergen_contract.sql'
