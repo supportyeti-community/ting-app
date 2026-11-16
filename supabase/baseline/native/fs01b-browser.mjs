@@ -188,11 +188,19 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
   await guest.waitForFunction(id=>document.querySelector('.menu-card[data-id="'+id+'"]')?.dataset.allergyBlocked==='true',published.id);
   assert((await dish.locator('.fs01b-allergy-warning').innerText()).includes('contains'));
   assert(await dish.locator('.ting-add-btn').count()===0,'blocked dish must not expose Add');
+  const ticketsBefore=Number((await db.query("SELECT count(*) n FROM public.service_tickets WHERE tenant_id='10000000-0000-4000-8000-000000000011'")).rows[0].n);
   await dish.getByRole('button',{name:'Ask Staff'}).click();
   await poll(guest,'#pagerModal');
   assert(await guest.locator('#pagerModal').isVisible());
+  await guest.locator('#modalContent button.opt-btn').filter({hasText:'Medical Allergy Inquiry'}).click();
+  let ticketsAfter=ticketsBefore;
+  for(let t=0;t<20&&ticketsAfter===ticketsBefore;t++){
+    await guest.waitForTimeout(250);
+    ticketsAfter=Number((await db.query("SELECT count(*) n FROM public.service_tickets WHERE tenant_id='10000000-0000-4000-8000-000000000011'")).rows[0].n);
+  }
+  assert.equal(ticketsAfter,ticketsBefore+1,'Ask Staff must create one real authenticated-table service ticket');
   assert(await guest.evaluate(id=>window.tingFs01Allergy.blocked(id),published.id),'Ask Staff must not bypass block');
-  label('Playwright Guest contains warning, no add button and Ask Staff without override',report);
+  label('Playwright Guest contains warning, real Ask Staff ticket and no bypass',report);
   await guest.evaluate(()=>window.toggleModal(false));
 
   await guest.getByLabel('Allergy: Milk').uncheck();
