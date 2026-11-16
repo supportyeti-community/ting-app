@@ -167,9 +167,9 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
   await admin.getByRole('button',{name:'Save recipe and preparation context'}).click();
   for(const [code,name] of codeLabels){
    const selector=admin.getByLabel(name+' classification',{exact:true});
-   await selector.selectOption(code==='milk'?'contains':code==='egg'?'may_contain':'assessed_absent');
+   await selector.selectOption(code==='milk'?'contains':code==='egg'?'may_contain':code==='peanut'?'unknown':'assessed_absent');
    await selector.locator('..').getByRole('button',{name:'Save assessment'}).click();
-   await admin.locator('#fs01b-allergen-review [role=status]').getByText(name+' saved.',{exact:false}).waitFor({timeout});
+   await admin.waitForFunction(expected => document.querySelector('#fs01b-allergen-review [role=status]')?.textContent?.includes(expected),name+' saved.',{timeout});
   }
   await admin.getByRole('button',{name:'Verify complete allergen assessment'}).click();
   try { await admin.getByText('Verified. Publish only after checking',{exact:false}).waitFor({timeout}); }
