@@ -5,6 +5,26 @@ SET LOCAL statement_timeout = '60s';
 
 ALTER TABLE public.menu_items ADD COLUMN import_draft boolean NOT NULL DEFAULT false;
 ALTER TABLE public.menu_items ADD COLUMN import_requested_available boolean NOT NULL DEFAULT true;
+ALTER TABLE public.menu_items ADD CONSTRAINT menu_import_draft_unorderable CHECK (NOT import_draft OR is_out_of_stock IS TRUE);
+
+CREATE OR REPLACE FUNCTION ting_private.require_verified_import_publish()
+RETURNS trigger LANGUAGE plpgsql SET search_path='' AS $guard$
+BEGIN
+ IF OLD.import_draft AND NOT NEW.import_draft THEN
+  IF NEW.description IS DISTINCT FROM OLD.description THEN
+   RAISE EXCEPTION 'edit recipe before publishing, then reverify' USING ERRCODE='23514';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.menu_item_allergen_reviews r
+   WHERE r.tenant_id=NEW.tenant_id AND r.menu_item_id=NEW.id
+     AND r.verified_version IS NOT NULL AND r.verified_version=r.safety_version) THEN
+   RAISE EXCEPTION 'complete current allergen review required before publishing' USING ERRCODE='23514';
+  END IF;
+ END IF;
+ RETURN NEW;
+END $guard$;
+REVOKE ALL ON FUNCTION ting_private.require_verified_import_publish() FROM PUBLIC,anon,authenticated,service_role;
+CREATE TRIGGER menu_items_import_publish_guard BEFORE UPDATE OF import_draft,description
+ ON public.menu_items FOR EACH ROW EXECUTE FUNCTION ting_private.require_verified_import_publish();
 -- Exclude drafts even from legacy Guest clients; manager read stays independently authorised.
 DROP POLICY menu_items_public_route ON public.menu_items;
 CREATE POLICY menu_items_public_route ON public.menu_items FOR SELECT TO anon,authenticated
@@ -57,8 +77,8 @@ BEGIN
   RAISE EXCEPTION 'menu import exceeds limits' USING ERRCODE='22023';
  END IF;
  v_hash := encode(pg_catalog.sha256(pg_catalog.convert_to(p_rows::text,'UTF8')),'hex');
- -- Serialise identical keys in a tenant; lock is held until this transaction finishes.
- PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_tenant::text||':'||p_request_id::text,0));
+ -- Serialise all imports for this tenant; different keys cannot race past duplicate checks.
+ PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_tenant::text,0));
  SELECT * INTO v_prior FROM public.menu_import_batches
  WHERE tenant_id=v_tenant AND request_id=p_request_id;
  IF FOUND THEN
