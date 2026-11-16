@@ -138,7 +138,16 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
   try { await poll(admin,'#fs01b-menu-import table'); }
   catch(error) {
     const displayed=await admin.locator('#fs01b-menu-import [role=status]').innerText().catch(()=>'(no UI status)');
-    throw new Error('XLSX preview unavailable: '+displayed.slice(0,350)+'; browser errors: '+errors.join(' | '));
+    const diag=await admin.evaluate(async()=>{
+      const file=document.querySelector('#fs01b-menu-import input[type=file]')?.files?.[0];
+      try {
+        const parsed=file&&typeof readXlsxFile==='function'?await readXlsxFile(file):null;
+        return {fileSize:file?.size,parser:typeof readXlsxFile,rowCount:parsed?.length,
+          columns:parsed?.[0]?.length,
+          sample:parsed?.slice(0,2)?.map(row=>row.slice(0,4).map(v=>String(v??'').slice(0,20)))};
+      }catch(e){return {fileSize:file?.size,parser:typeof readXlsxFile,parseError:String(e.message).slice(0,180)};}
+    });
+    throw new Error('XLSX preview unavailable: '+displayed.slice(0,350)+'; parser diagnostic: '+JSON.stringify(diag)+'; browser errors: '+errors.join(' | '));
   }
   assert(!(await save.isDisabled()),'valid XLSX should enable draft save');
   await save.click();
