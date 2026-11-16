@@ -109,7 +109,7 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
   await categoryRoot.getByLabel('Category Browser Courses').waitFor({timeout});
   await categoryRoot.getByLabel('Category Browser Courses').fill('Browser Starters');
   await categoryRoot.getByLabel('Sort Browser Courses').fill('4');
-  await categoryRoot.getByRole('button',{name:'Save category'}).click();
+  await categoryRoot.getByLabel('Category Browser Courses').locator('..').getByRole('button',{name:'Save category'}).click();
   await categoryRoot.getByLabel('Category Browser Starters').waitFor({timeout});
   const categoryNamed=(await db.query("SELECT name,sort_order FROM public.menu_categories WHERE tenant_id='10000000-0000-4000-8000-000000000011' AND name='Browser Starters'")).rows;
   assert.equal(categoryNamed.length,1);assert.equal(categoryNamed[0].sort_order,4);
