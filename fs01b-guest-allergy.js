@@ -32,8 +32,10 @@
     const reasons = [];
     for (const code of selected) {
       const row = item.get(code);
-      if (!row || row.review_current !== true) {
-        reasons.push(label[code] + ': unverified or missing assessment');
+      if (!row) {
+        reasons.push(label[code] + ': unknown or missing assessment (unverified)');
+      } else if (row.review_current !== true) {
+        reasons.push(label[code] + ': unverified assessment (' + String(row.state || 'unknown').replaceAll('_',' ') + ')');
       } else if (row.state === 'contains') {
         reasons.push(label[code] + ': contains this allergen');
       } else if (row.state === 'may_contain') {
