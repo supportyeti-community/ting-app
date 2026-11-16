@@ -8,6 +8,7 @@ on:
       - 'supabase/baseline/native/fs01b.mjs'
       - 'supabase/baseline/native/run-fs01b.mjs'
       - 'admin.html'
+      - 'index.html'
       - 'fs01b-menu-import.js'
       - 'fs01b-allergen-review.js'
       - '.github/workflows/fs01b-native.yml'
