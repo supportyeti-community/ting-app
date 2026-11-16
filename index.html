@@ -316,6 +316,13 @@
             if (error) throw error;
             if (!window.tingFs01Allergy) throw new Error('Allergen safety module unavailable');
             await window.tingFs01Allergy.refresh(supabaseInstance);
+            const { data: categories, error: categoryError } = await supabaseInstance
+                .from('menu_categories')
+                .select('id,name,sort_order')
+                .eq('tenant_id', tenantId)
+                .order('sort_order', { ascending: true })
+                .order('id', { ascending: true });
+            if (categoryError) throw categoryError;
 
             wrapper.innerHTML = '';
 
@@ -338,6 +345,7 @@
                 const card = document.createElement('div');
                 card.className = 'menu-card';
                 card.setAttribute('data-id', dish.id);
+                card.dataset.categoryId = dish.category_id || '';
                 card.setAttribute('data-tags', dish.tags.join(' '));
                 card.style.opacity = dish.is_out_of_stock ? '0.25' : '1';
                 card.style.pointerEvents = dish.is_out_of_stock ? 'none' : 'auto';
@@ -367,7 +375,23 @@
                 logTelemetryAnalyticsEvent('item_viewed', dish.id);
             });
 
-            wrapper.appendChild(fragment);
+            const grouped = document.createDocumentFragment();
+            const appendGroup = (name, id) => {
+                const cards = Array.from(fragment.querySelectorAll('.menu-card')).filter(card =>
+                    id === null ? !card.dataset.categoryId : card.dataset.categoryId === id
+                );
+                if (!cards.length) return;
+                const section = document.createElement('section');
+                section.className = 'menu-category-section';
+                const title = document.createElement('h3');
+                title.textContent = name;
+                section.appendChild(title);
+                cards.forEach(card => section.appendChild(card));
+                grouped.appendChild(section);
+            };
+            categories.forEach(category => appendGroup(category.name, category.id));
+            appendGroup('Uncategorised', null);
+            wrapper.appendChild(grouped);
             window.tingFs01Allergy.apply();
 
         } catch (err) {
