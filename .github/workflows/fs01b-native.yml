@@ -53,7 +53,7 @@ jobs:
         run: npm ci --prefix supabase/baseline/native
       - name: Install pinned browser E2E dependencies (disposable)
         run: |
-          npm install --no-save --ignore-scripts --prefix supabase/baseline/native playwright@1.65.1 papaparse@5.7.1 read-excel-file@9.3.14
+          npm install --no-save --ignore-scripts --prefix supabase/baseline/native playwright@1.65.1 papaparse@5.7.1 read-excel-file@9.3.14 exceljs@4.4.0
           supabase/baseline/native/node_modules/.bin/playwright install --with-deps chromium
       - name: Execute native FS-01A + FS-01B rehearsal
         run: node supabase/baseline/native/run-fs01b.mjs
