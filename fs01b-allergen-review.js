@@ -17,7 +17,7 @@ async function mount(root,getClient,onChanged){
   try{
    const client=getClient();if(!client)return;
    const [a,b]=await Promise.all([
-    client.from('menu_items').select('id,name,import_draft,is_out_of_stock').order('created_at',{ascending:false}).limit(1000),
+    client.from('menu_items').select('id,name,import_draft,import_requested_available,is_out_of_stock').order('created_at',{ascending:false}).limit(1000),
     client.from('menu_allergen_codes').select('code,label').eq('active',true).order('label')
    ]);
    if(a.error||b.error)throw Error('Unable to load tenant menu and allergen vocabulary');
@@ -87,7 +87,7 @@ async function mount(root,getClient,onChanged){
     const {data:review,error:re}=await client.from('menu_item_allergen_reviews').select('safety_version,verified_version').eq('menu_item_id',id).single();
     if(re||!review||review.verified_version===null||Number(review.safety_version)!==Number(review.verified_version))
       throw Error('Review is no longer current. Reverify before publishing.');
-    const {error}=await client.from('menu_items').update({import_draft:false,is_out_of_stock:false}).eq('id',id).eq('import_draft',true);
+    const {error}=await client.from('menu_items').update({import_draft:false,is_out_of_stock:!(items.find(i=>i.id===id)?.import_requested_available??true)}).eq('id',id).eq('import_draft',true);
     if(error)throw Error(error.message);
     publish.disabled=true;status.textContent='Dish published. Allergen warnings remain governed by verified classification.';
     if(onChanged)await onChanged();
