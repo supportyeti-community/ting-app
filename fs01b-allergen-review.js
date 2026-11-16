@@ -44,8 +44,8 @@ async function mount(root,getClient,onChanged){
   const list=el('div');
   const states=['unknown','contains','may_contain','assessed_absent'];
   const values=new Map(aa.data.map(a=>[a.allergen_code,a]));
-  let pending=false;
-  const busy=v=>{pending=v;contextButton.disabled=v;for(const button of list.querySelectorAll('button'))button.disabled=v;};
+  let pending=false, verifyButton=null;
+  const busy=v=>{pending=v;contextButton.disabled=v;for(const button of list.querySelectorAll('button'))button.disabled=v;if(verifyButton)verifyButton.disabled=v;};
   contextButton.addEventListener('click',async()=>{
    if(pending)return;busy(true);
    try{const {data,error}=await client.rpc('set_menu_item_safety_context',{p_item_id:id,p_recipe:recipe.value,p_preparation:preparation.value,p_expected_version:version});
@@ -70,7 +70,7 @@ async function mount(root,getClient,onChanged){
     });
     wrapper.append(select,note,apply);list.append(wrapper,el('br'));
   }
-  const verify=el('button','Verify complete allergen assessment');verify.type='button';
+  const verify=el('button','Verify complete allergen assessment');verify.type='button';verifyButton=verify;
   const publish=el('button','Publish reviewed dish');publish.type='button';publish.disabled=true;
   verify.addEventListener('click',async()=>{
    if(pending)return;busy(true);
