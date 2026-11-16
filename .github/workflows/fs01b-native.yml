@@ -3,6 +3,7 @@ on:
   push:
     branches: ['fs-01b-bulk-menu-import'] # non-production head verification when GitHub PR checks lag
   pull_request:
+    types: [opened, reopened, synchronize, edited]
     paths:
       - 'supabase/migrations/20261116000000_fs01a_menu_category_allergen_contract.sql'
       - 'supabase/migrations/20261117000000_fs01b_bulk_menu_draft_import.sql'
