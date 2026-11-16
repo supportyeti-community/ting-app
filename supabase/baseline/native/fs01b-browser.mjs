@@ -59,7 +59,7 @@ function makeServer() {
   if(p==='legacy/index.html')body=oldIndex;
   else if(p==='legacy/ting11b-cart.js')body=oldCart;
   else if(['index.html','admin.html','fs01b-guest-allergy.js','fs01b-menu-import.js',
-           'fs01b-allergen-review.js','ting11b-cart.js','ting11c-order-board.js'].includes(p))
+           'fs01b-allergen-review.js','fs01b-category-editor.js','ting11b-cart.js','ting11c-order-board.js'].includes(p))
     body=source(p);
   else{res.writeHead(404);return res.end('Not found');}
   res.writeHead(200,{'Content-Type':p.endsWith('.js')?'text/javascript; charset=utf-8':'text/html; charset=utf-8',
@@ -116,6 +116,17 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
   await admin.locator('#adminAuthForm button[type=submit]').click();
   await admin.locator('summary').filter({hasText:'Menu onboarding'}).click();
   await poll(admin,'#fs01b-menu-import input[type=file]');
+  const categoryRoot=admin.locator('#fs01b-category-editor');
+  await categoryRoot.getByLabel('New category name').fill('Browser Courses');
+  await categoryRoot.getByRole('button',{name:'Add category'}).click();
+  await categoryRoot.getByLabel('Category Browser Courses').waitFor({timeout});
+  await categoryRoot.getByLabel('Category Browser Courses').fill('Browser Starters');
+  await categoryRoot.getByLabel('Sort Browser Courses').fill('4');
+  await categoryRoot.getByRole('button',{name:'Save category'}).click();
+  await categoryRoot.getByLabel('Category Browser Starters').waitFor({timeout});
+  const categoryNamed=(await db.query("SELECT name,sort_order FROM public.menu_categories WHERE tenant_id='10000000-0000-4000-8000-000000000011' AND name='Browser Starters'")).rows;
+  assert.equal(categoryNamed.length,1);assert.equal(categoryNamed[0].sort_order,4);
+  label('Playwright Admin category creation, rename and ordered tenant persistence',report);
   // CSV mapping and editable preview, deliberate invalid price then repair.
   const upload=admin.locator('#fs01b-menu-import input[type=file]');
   const csv='category,name,description,price,available\nMains,Browser CSV dish,Allergen review required,abc,yes\n';
