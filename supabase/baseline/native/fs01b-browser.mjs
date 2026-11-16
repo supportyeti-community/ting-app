@@ -8,6 +8,7 @@ import {join,dirname,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
 import {chromium} from 'playwright';
+import ExcelJS from 'exceljs';
 
 const root=fileURLToPath(new URL('../../../',import.meta.url));
 const native=fileURLToPath(new URL('.',import.meta.url));
@@ -23,28 +24,14 @@ const codeLabels=[
  ['macadamia','Macadamia'],['pecan','Pecan'],['pine_nut','Pine nut'],
  ['pistachio','Pistachio'],['walnut','Walnut'],['sulphites','Sulphites']
 ];
-function minimalXlsx() {
- const dir=mkdtempSync(join(tmpdir(),'fs01b-xlsx-'));
- const put=(p,s)=>{const dest=join(dir,p);mkdirSync(dirname(dest),{recursive:true});writeFileSync(dest,s);};
- const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
- const rows=[['category','name','price','available'],['Sides','Browser XLSX dish','14.20','no']];
- const strings=[...new Set(rows.flat())];
- const xmlRows=rows.map((values,i)=>'<row r="'+(i+1)+'">'+values.map((v,j)=>{
-   const col=String.fromCharCode(65+j),position=col+(i+1);
-   return '<c r="'+position+'" t="s"><v>'+strings.indexOf(v)+'</v></c>';
- }).join('')+'</row>').join('');
- put('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/></Types>');
- put('_rels/.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
- put('xl/workbook.xml','<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Menu" sheetId="1" r:id="rId1"/></sheets></workbook>');
- put('xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/></Relationships>');
- put('xl/sharedStrings.xml','<?xml version="1.0" encoding="UTF-8"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'+strings.length+'" uniqueCount="'+strings.length+'">'+strings.map(v=>'<si><t>'+esc(v)+'</t></si>').join('')+'</sst>');
- put('xl/worksheets/sheet1.xml','<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:D2"/><sheetData>'+xmlRows+'</sheetData></worksheet>');
- const zip=join(tmpdir(),'fs01b-'+process.pid+'.xlsx');
- const task=spawnSync('zip',['-qr',zip,'.'],{cwd:dir,encoding:'utf8'});
- if(task.status!==0)throw Error('zip fixture command failed');
- const bytes=readFileSync(zip);rmSync(dir,{recursive:true,force:true});rmSync(zip,{force:true});
- return bytes;
+async function minimalXlsx() {
+ const workbook=new ExcelJS.Workbook();
+ const sheet=workbook.addWorksheet('Menu');
+ sheet.addRow(['category','name','price','available']);
+ sheet.addRow(['Sides','Browser XLSX dish','14.20','no']);
+ return Buffer.from(await workbook.xlsx.writeBuffer());
 }
+
 function legacyFile(path) {
  const result=spawnSync('git',['show','origin/main:'+path],{cwd:root,encoding:null,maxBuffer:4*1024*1024});
  if(result.status!==0)throw Error('Could not read recorded previous application from origin/main: '+path);
@@ -147,7 +134,7 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
   // XLSX fixture is a real XLSX ZIP with a worksheet, not a CSV renamed .xlsx.
   await admin.getByRole('button',{name:'Start another import'}).click();
   await upload.setInputFiles({name:'menu.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    buffer:minimalXlsx()});
+    buffer:await minimalXlsx()});
   try { await poll(admin,'#fs01b-menu-import table'); }
   catch(error) {
     const displayed=await admin.locator('#fs01b-menu-import [role=status]').innerText().catch(()=>'(no UI status)');
