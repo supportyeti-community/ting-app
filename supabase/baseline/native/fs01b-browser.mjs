@@ -135,7 +135,11 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
   await admin.getByRole('button',{name:'Start another import'}).click();
   await upload.setInputFiles({name:'menu.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     buffer:minimalXlsx()});
-  await poll(admin,'#fs01b-menu-import table');
+  try { await poll(admin,'#fs01b-menu-import table'); }
+  catch(error) {
+    const displayed=await admin.locator('#fs01b-menu-import [role=status]').innerText().catch(()=>'(no UI status)');
+    throw new Error('XLSX preview unavailable: '+displayed.slice(0,350)+'; browser errors: '+errors.join(' | '));
+  }
   assert(!(await save.isDisabled()),'valid XLSX should enable draft save');
   await save.click();
   await admin.getByText('1 dishes saved as unverified',{exact:false}).waitFor({timeout});
