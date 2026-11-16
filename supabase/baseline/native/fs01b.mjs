@@ -52,9 +52,12 @@ export async function rehearseFs01b(db,status,report,command,workdir){
   }
   assert(result,'import RPC not visible');
   assert.equal(result.saved,120);assert.equal(result.items.length,120);
-  const saved=await db.query('SELECT id,tenant_id,import_draft,is_out_of_stock FROM public.menu_items WHERE name LIKE $1',['Import test dish %']);
+  const saved=await db.query('SELECT id,tenant_id,import_draft,import_requested_available,is_out_of_stock FROM public.menu_items WHERE name LIKE $1',['Import test dish %']);
   assert.equal(saved.rows.length,120);
   assert(saved.rows.every(x=>x.tenant_id===A&&x.import_draft===true&&x.is_out_of_stock===true));
+  assert.equal(saved.rows.filter(x=>x.import_requested_available).length,60);
+  assert.equal(ok(await anonymous.from('menu_items').select('id').like('name','Import test dish %'),'guest draft read').length,0);
+  assert.equal(ok(await owner.from('menu_items').select('id').like('name','Import test dish %'),'owner draft read').length,120);
   const review=(await db.query('SELECT verified_version FROM public.menu_item_allergen_reviews WHERE menu_item_id=ANY($1::uuid[])',[saved.rows.map(x=>x.id)])).rows;
   assert.equal(review.length,120);assert(review.every(x=>x.verified_version===null));
   pass('120-row real REST owner import, tenant-owned categories, draft/out-of-stock, unverified review triggers');
