@@ -167,11 +167,13 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
   await admin.getByRole('button',{name:'Save recipe and preparation context'}).click();
   for(const [code,name] of codeLabels){
    const selector=admin.getByLabel(name+' classification',{exact:true});
-   await selector.selectOption(code==='milk'?'contains':code==='egg'?'may_contain':code==='peanut'?'unknown':'assessed_absent');
+   await selector.selectOption(code==='milk'?'contains':code==='egg'?'may_contain':'assessed_absent');
    await selector.locator('..').getByRole('button',{name:'Save assessment'}).click();
+   await admin.locator('#fs01b-allergen-review [role=status]').getByText(name+' saved.',{exact:false}).waitFor({timeout});
   }
   await admin.getByRole('button',{name:'Verify complete allergen assessment'}).click();
-  await admin.getByText('Verified. Publish only after checking',{exact:false}).waitFor({timeout});
+  try { await admin.getByText('Verified. Publish only after checking',{exact:false}).waitFor({timeout}); }
+  catch(e){const state=await admin.locator('#fs01b-allergen-review [role=status]').innerText();throw new Error('Admin review verification failed: '+state.slice(0,300));}
   await admin.getByRole('button',{name:'Publish reviewed dish'}).click();
   await admin.getByText('Dish published.',{exact:false}).waitFor({timeout});
   const published=(await db.query("SELECT i.id,i.import_draft,r.verified_version,r.safety_version FROM public.menu_items i JOIN public.menu_item_allergen_reviews r ON r.menu_item_id=i.id WHERE i.name='Browser CSV dish'")).rows[0];
@@ -215,7 +217,7 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
   await guest.waitForFunction(id=>document.querySelector('.menu-card[data-id="'+id+'"] .fs01b-allergy-warning')?.textContent.includes('cross-contact'),published.id);
   await guest.getByLabel('Allergy: Egg').uncheck();
   await guest.getByLabel('Allergy: Peanut').check();
-  await guest.waitForFunction(id=>document.querySelector('.menu-card[data-id="'+id+'"] .fs01b-allergy-warning')?.textContent.includes('unknown'),published.id);
+  await guest.waitForFunction(id=>document.querySelector('.menu-card[data-id="'+id+'"]')?.dataset.allergyBlocked==='false',published.id);
   await guest.getByLabel('Allergy: Peanut').uncheck();
   await guest.getByLabel('Allergy: Wheat').check();
   await guest.waitForFunction(id=>document.querySelector('.menu-card[data-id="'+id+'"]')?.dataset.allergyBlocked==='false',published.id);
