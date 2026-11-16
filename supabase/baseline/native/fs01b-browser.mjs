@@ -144,7 +144,7 @@ export async function rehearseFs01bBrowser({db,status,owner,email,password,repor
         const parsed=file&&typeof readXlsxFile==='function'?await readXlsxFile(file):null;
         return {fileSize:file?.size,parser:typeof readXlsxFile,rowCount:parsed?.length,
           columns:parsed?.[0]?.length,
-          sample:parsed?.slice(0,2)?.map(row=>row.slice(0,4).map(v=>String(v??'').slice(0,20)))};
+          sample:Array.isArray(parsed)?parsed.slice(0,2).map(row=>({rowType:typeof row,isArray:Array.isArray(row),sample:JSON.stringify(row).slice(0,300)})):JSON.stringify(parsed).slice(0,400)};
       }catch(e){return {fileSize:file?.size,parser:typeof readXlsxFile,parseError:String(e.message).slice(0,180)};}
     });
     throw new Error('XLSX preview unavailable: '+displayed.slice(0,350)+'; parser diagnostic: '+JSON.stringify(diag)+'; browser errors: '+errors.join(' | '));
