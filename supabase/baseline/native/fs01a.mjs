@@ -103,7 +103,7 @@ export async function rehearseFs01a(db,status,report,command,workdir) {
   assert.equal(v,25,'privileged assessment writes did not invalidate once per row');
   ok(await ownerA.rpc('verify_menu_item_allergens',{p_item_id:ITEM_A,p_expected_version:v}),'owner verify');
   const verified=(await db.query('SELECT safety_version,verified_version,verified_by,verified_at FROM public.menu_item_allergen_reviews WHERE menu_item_id=$1',[ITEM_A])).rows[0];
-  assert.equal(verified.safety_version,Number(verified.verified_version));assert.equal(verified.verified_by,owner.user.id);assert(verified.verified_at);
+  assert.equal(Number(verified.safety_version),Number(verified.verified_version));assert.equal(verified.verified_by,owner.user.id);assert(verified.verified_at);
   const statuses=ok(await anonA.rpc('get_menu_allergen_status'),'guest verified status');
   assert.equal(statuses.filter(x=>x.menu_item_id===ITEM_A&&x.review_current).length,23);
   assert(statuses.every(x=>!('recipe_context'in x)&&!('verified_by'in x)&&!('evidence_note'in x)));
