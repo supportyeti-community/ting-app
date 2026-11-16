@@ -4,6 +4,7 @@ import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {createClient} from '@supabase/supabase-js';
 import {rehearseFs01a} from './fs01a.mjs';
+import {rehearseFs01bBrowser} from './fs01b-browser.mjs';
 const A='10000000-0000-4000-8000-000000000011';
 const B='10000000-0000-4000-8000-000000000012';
 const MIGRATION='20261117000000_fs01b_bulk_menu_draft_import.sql';
@@ -109,5 +110,6 @@ export async function rehearseFs01b(db,status,report,command,workdir){
   assert((await db.query('SELECT verified_version FROM public.menu_item_allergen_reviews WHERE menu_item_id=$1',[first])).rows[0].verified_version===null);
   await denied(owner.rpc('verify_menu_item_allergens',{p_item_id:first,p_expected_version:1}),'verify unassessed dish');
   pass('Imported dish requires FS-01A complete structured assessment and authorised verification');
+  await rehearseFs01bBrowser({db,status,owner,email:o.email,password,report});
  }finally{await Promise.allSettled([svc.removeAllChannels(),owner.removeAllChannels(),floor.removeAllChannels(),outsider.removeAllChannels(),wrongRoute.removeAllChannels(),anonymous.removeAllChannels()]);}
 }
