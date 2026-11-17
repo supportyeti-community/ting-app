@@ -80,13 +80,13 @@ version="$(docker exec "$CONTAINER" psql -X -At -U postgres -d postgres -c 'SHOW
 echo "DISPOSABLE_NATIVE_POSTGRES_VERSION=$version"
 quiet_psql() {
   if ! docker exec -i "$CONTAINER" psql -X -q -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -U postgres -d postgres >"$ROOT/private-psql.log" 2>&1; then
-    code="$(grep -Eo 'ERROR: *[0-9A-Z]{5}' "$ROOT/private-psql.log" | head -1 | grep -Eo '[0-9A-Z]{5}' || true)"
+    code="$(sed -nE 's/.*ERROR:[[:space:]]*([0-9A-Z]{5})([^0-9A-Z]|$).*/\1/p' "$ROOT/private-psql.log" | head -1 || true)"
     echo "DISPOSABLE_RESTORE_SQL_FAILED sqlstate=${code:-unknown} (private logs withheld)"
     exit 1
   fi
 }
 # Native Supabase supplies platform Auth, Storage, roles and extensions.
-quiet_psql < "$RAW/schema.sql"
+echo 'DISPOSABLE_RESTORE_PHASE=schema'\nquiet_psql < "$RAW/schema.sql"
 printf '%s\n' \
   'CREATE SCHEMA IF NOT EXISTS supabase_migrations;' \
   'CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations(version text PRIMARY KEY, statements text[], name text);' | quiet_psql
@@ -95,7 +95,7 @@ printf '%s\n' \
   printf '%s\n' 'BEGIN;' 'SET LOCAL session_replication_role = replica;'
   cat "$RAW/data.sql"
   printf '%s\n' 'COMMIT;'
-} | quiet_psql
+} | { echo 'DISPOSABLE_RESTORE_PHASE=data'; quiet_psql; }
 python3 "$GITHUB_WORKSPACE/scripts/prod-db-backup/restore_check.py" --data "$RAW/data.sql" --container "$CONTAINER"
 echo 'PRODUCTION_WRITES=0'
 if ! "$CLI" stop --project-id "$PROJECT_ID" --no-backup --workdir "$RESTORE" >"$ROOT/local-stop.log" 2>&1; then
