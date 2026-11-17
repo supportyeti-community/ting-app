@@ -79,8 +79,9 @@ version="$(docker exec "$CONTAINER" psql -X -At -U postgres -d postgres -c 'SHOW
 [[ "$version" == 17.6* ]] || { echo "LOCAL_POSTGRES_VERSION_UNEXPECTED"; exit 1; }
 echo "DISPOSABLE_NATIVE_POSTGRES_VERSION=$version"
 quiet_psql() {
-  if ! docker exec -i "$CONTAINER" psql -X -q -v ON_ERROR_STOP=1 -U postgres -d postgres >"$ROOT/private-psql.log" 2>&1; then
-    echo "DISPOSABLE_RESTORE_SQL_FAILED (private logs withheld)"
+  if ! docker exec -i "$CONTAINER" psql -X -q -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -U postgres -d postgres >"$ROOT/private-psql.log" 2>&1; then
+    code="$(grep -Eo 'ERROR: *[0-9A-Z]{5}' "$ROOT/private-psql.log" | head -1 | grep -Eo '[0-9A-Z]{5}' || true)"
+    echo "DISPOSABLE_RESTORE_SQL_FAILED sqlstate=${code:-unknown} (private logs withheld)"
     exit 1
   fi
 }
