@@ -12,15 +12,10 @@ on:
   push:
     branches: ['main']
     paths: ['.github/workflows/prod-db-backup.yml']
-  pull_request:
-    types: [opened, reopened, synchronize]
-    paths:
-      - '.github/workflows/prod-db-backup.yml'
-      - 'scripts/prod-db-backup/**'
 permissions:
   contents: read
 concurrency:
-  group: ting-prod-db-backup-${{ github.event_name == 'pull_request' && 'pr' || 'main' }}
+  group: ting-prod-db-backup-main
   cancel-in-progress: false
 jobs:
   first-run-dispatch:
@@ -44,7 +39,7 @@ jobs:
             -d '{"ref":"main","inputs":{"reason":"founder-first-production-backup"}}'
           echo "INITIAL_BACKUP_DISPATCH=REQUESTED"
   backup-and-disposable-restore:
-    if: ${{ github.event_name != 'push' && (github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == 'supportyeti-community/ting-app' && github.head_ref == 'ops/prod-db-backup')) }}
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     env:
@@ -73,7 +68,7 @@ jobs:
           echo 'Production database encrypted backup and disposable restore PASS:' >> "$GITHUB_STEP_SUMMARY"
           cat "$RUNNER_TEMP/prod-db-backup-sanitized-report.txt" >> "$GITHUB_STEP_SUMMARY"
       - name: Publish ONLY verified AES256 ciphertext (never raw SQL)
-        if: ${{ success() && github.event_name != 'pull_request' }}
+        if: ${{ success() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ting-production-db-encrypted-${{ github.run_id }}
