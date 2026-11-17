@@ -49,7 +49,16 @@ jobs:
           "$cli" db dump --linked --data-only --use-copy --schema public,auth,supabase_migrations --file "$tmp/data.sql" --workdir "$tmp"
           for f in roles.sql schema.sql data.sql; do test -s "$tmp/$f"; done
           echo "DUMP_BYTES=$(wc -c < "$tmp/data.sql")"
-          grep '^COPY ' "$tmp/data.sql" | sed -E 's/^(COPY [^ ]+).*/\\1/' | sort -u | head -80 || true
+          python3 - "$tmp/data.sql" <<'PY'
+          import pathlib,re,sys,collections
+          lines=pathlib.Path(sys.argv[1]).read_text(errors='replace').splitlines()
+          print('DATA_LINE_COUNT',len(lines))
+          print('FIRST_LINE_TYPES',[re.match(r'^([A-Za-z\\- ]+)',x).group(1)[:25] if re.match(r'^([A-Za-z\\- ]+)',x) else '<other>' for x in lines[:20]])
+          print('COPY_LINE_COUNT',sum(bool(re.match(r'^\\s*COPY ',x)) for x in lines))
+          print('INSERT_LINE_COUNT',sum(bool(re.match(r'^\\s*INSERT INTO ',x)) for x in lines))
+          print('SAFE_COPY_TABLE_NAMES',sorted({m.group(1) for x in lines if (m:=re.match(r'^\\s*COPY\\s+([A-Za-z0-9_\\.\\"]+)',x))})[:90])
+          print('SAFE_INSERT_TABLE_NAMES',sorted({m.group(1) for x in lines if (m:=re.match(r'^\\s*INSERT INTO\\s+([A-Za-z0-9_\\.\\"]+)',x))})[:90])
+          PY
           for table in public.tenants public.menu_items public.orders public.menu_allergen_codes public.menu_item_allergen_reviews auth.users supabase_migrations.schema_migrations; do
             if grep -Eq "^COPY (public\\.)?${table#*.} " "$tmp/data.sql" || grep -Fq "COPY $table " "$tmp/data.sql"; then
               echo "DUMP_COPY_PRESENT=$table"
