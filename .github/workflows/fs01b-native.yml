@@ -39,6 +39,19 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
+      - name: Verify Vercel deployment-source exclusions and runtime allowlist
+        shell: bash
+        run: |
+          set -euo pipefail
+          for directory in supabase tests docs .github scripts; do
+            grep -Fxq "$directory" .vercelignore
+          done
+          grep -Fxq '*.sql' .vercelignore
+          for asset in index.html admin.html fs01b-menu-import.js fs01b-allergen-review.js fs01b-category-editor.js fs01b-guest-allergy.js ting11b-cart.js; do
+            test -s "$asset"
+            if grep -Fxq "$asset" .vercelignore; then echo "Runtime asset ignored: $asset"; exit 1; fi
+          done
+          echo 'Vercel static source exclusion contract PASS; deployment URL probes remain a post-build gate.'
       - name: Syntax-check browser import and native harness
         run: |
           node --check fs01b-menu-import.js
