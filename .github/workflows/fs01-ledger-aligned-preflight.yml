@@ -52,7 +52,7 @@ jobs:
             const manifest=JSON.parse(fs.readFileSync(process.env.FS01_STAGE+"/manifest.json","utf8"));
             const text=fs.readFileSync(process.env.RUNNER_TEMP+"/fs01-ledger-aligned-list.txt","utf8");
             const rows=text.split(/\r?\n/).filter(s=>/^\s*`?\d{14}`?\s*\|/.test(s));
-            const pairs=rows.map(s=>{const columns=s.split("|").map(c=>c.trim().replaceAll("`",""));return [columns[0],columns[1]||null];});
+            const pairs=rows.map(s=>{const columns=s.split("|").map(c=>c.replaceAll("`","").trim());return [columns[0],columns[1]||null];});
             const applied=new Set(manifest.productionLedgerVersions);
             assert.equal(pairs.length,29,"ledger row count");
             for(const [local,remote] of pairs){
