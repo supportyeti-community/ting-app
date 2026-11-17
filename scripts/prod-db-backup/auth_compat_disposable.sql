@@ -41,4 +41,8 @@ CREATE TABLE IF NOT EXISTS auth.scim_users (
   updated_at timestamptz NOT NULL DEFAULT now(),
   deleted_at timestamptz
 );
+-- Newer hosted Auth has nullable fields absent from pinned native image.
+ALTER TABLE auth.one_time_tokens ADD COLUMN IF NOT EXISTS expires_at timestamptz;
+ALTER TABLE auth.one_time_tokens ADD COLUMN IF NOT EXISTS link_token_hash text;
+ALTER TABLE auth.saml_providers ADD COLUMN IF NOT EXISTS dedicated_scope boolean;
 COMMIT;
