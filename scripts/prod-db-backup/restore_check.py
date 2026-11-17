@@ -77,13 +77,13 @@ def main():
           AND c.relname IN ('menu_categories','menu_allergen_codes',
                             'menu_item_allergen_reviews','menu_item_allergen_assessments','menu_import_batches')
           AND c.relrowsecurity AND NOT c.relforcerowsecurity
-        """,args.db_url)
+        """,args.container)
     if int(catalog)!=5:
         raise RuntimeError("Not all five FS-01 tables retain ENABLE RLS without FORCE RLS")
-    policies=int(scalar("SELECT count(*) FROM pg_policies WHERE schemaname='public';",args.db_url))
+    policies=int(scalar("SELECT count(*) FROM pg_policies WHERE schemaname='public';",args.container))
     if policies<5:
         raise RuntimeError("Production RLS policies missing from restored schema")
-    migrated=scalar("SELECT string_agg(version, ',' ORDER BY version) FROM supabase_migrations.schema_migrations;",args.db_url).split(',')
+    migrated=scalar("SELECT string_agg(version, ',' ORDER BY version) FROM supabase_migrations.schema_migrations;",args.container).split(',')
     if len(migrated)!=29 or len(set(migrated))!=29:
         raise RuntimeError("Migration history is not 29 unique versions")
     if not {'20261116000000','20261117000000'}.issubset(migrated):
