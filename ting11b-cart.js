@@ -297,7 +297,13 @@
         document.body.appendChild(cartModal);
     }
 
+    const allergyBlocked = itemId => Boolean(window.tingFs01Allergy?.blocked(itemId));
+
     async function fetchMenuItem(itemId) {
+        if (allergyBlocked(itemId)) {
+            showToastNotification('⚠️ Selected allergy assessment requires staff consultation. This dish cannot be added.');
+            return null;
+        }
         if (!orderContextAvailable()) return null;
         const { data, error } = await supabaseInstance
             .from('menu_items')
@@ -314,6 +320,10 @@
 
     async function changeQuantity(itemId, delta) {
         if (submitting) return;
+        if (delta > 0 && allergyBlocked(itemId)) {
+            showToastNotification('⚠️ Selected allergy assessment blocks adding this dish. Ask staff.');
+            return;
+        }
         if (checkoutAttempt) {
             showToastNotification('⚠️ We still need to confirm your previous order attempt. Retry that order before changing the cart.');
             return;
@@ -349,6 +359,15 @@
             card.appendChild(host);
         }
         const item = cart.get(itemId);
+        if (allergyBlocked(itemId)) {
+            host.replaceChildren();
+            const note=document.createElement('span');
+            note.className='ting-allergy-cart-block';
+            note.textContent='⚠️ Ordering blocked for selected allergy';
+            note.style.cssText='font-size:12px;color:#991b1b;font-weight:700';
+            host.append(note);
+            return;
+        }
         if (!item) {
             host.innerHTML = `<button type="button" class="ting-add-btn">+ Add</button>`;
             host.querySelector('button').addEventListener('click', event => {
@@ -400,7 +419,8 @@
             <div id="tingCartLines"></div>
             <div class="ting-cart-summary"><span>Estimated total</span><span>${money(cartEstimate())}</span></div>
             <div class="ting-cart-note">Final pricing and availability are revalidated by TinG when you place the order.</div>
-            <button type="button" class="ting-place-order" ${submitting ? 'disabled' : ''}>${submitting ? 'Placing order…' : 'Place Order'}</button>`;
+            ${items.some(i => allergyBlocked(i.id)) ? '<p role="alert" class="ting-allergy-checkout-warning">⚠️ Your cart includes a dish blocked for a selected allergy. Remove it or change your selected allergies before ordering. Ask staff for guidance.</p>' : ''}
+            <button type="button" class="ting-place-order" ${submitting || items.some(i => allergyBlocked(i.id)) ? 'disabled' : ''}>${submitting ? 'Placing order…' : 'Place Order'}</button>`;
         sheet.querySelector('.ting-cart-close').addEventListener('click', closeCart);
         const lineHost = sheet.querySelector('#tingCartLines');
         for (const item of items) {
@@ -452,6 +472,11 @@
 
     async function placeOrder() {
         if (submitting || !cart.size || !orderContextAvailable()) return;
+        if ([...cart.keys()].some(allergyBlocked)) {
+            showToastNotification('⚠️ At least one dish is blocked for your selected allergy. Remove it or ask staff.');
+            renderCartState();
+            return;
+        }
         submitting = true;
         renderCartSheet();
 
@@ -533,6 +558,7 @@
             injectStyles();
             injectCartUi();
             startMenuObserver();
+            window.addEventListener('ting:allergies-updated', () => renderCartState());
             renderCartState();
             window.ting11bCartReady = true;
         } catch (error) {
