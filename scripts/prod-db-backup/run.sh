@@ -95,7 +95,7 @@ printf '%s\n' \
 python3 - "$RAW/data.sql" "$CONTAINER" <<'PY'
 import pathlib,re,subprocess,sys
 sql=pathlib.Path(sys.argv[1]).read_text(encoding='utf-8')
-tables=sorted({m.group(1).replace('"','') for m in re.finditer(r'(?m)^COPY\\s+((?:\"?\\w+\"?\\.)?\"?\\w+\"?)\\s*\\(',sql)})
+tables=sorted({m.group(1).replace('"','') for m in re.finditer(r'(?m)^COPY\s+((?:\"?\w+\"?\.)?\"?\w+\"?)\s*\(',sql)})
 missing=[]
 for table in tables:
     result=subprocess.run(["docker","exec",sys.argv[2],"psql","-X","-q","-t","-A","-U","postgres","-d","postgres","-c","SELECT (to_regclass('"+table+"') IS NOT NULL)::int"],
