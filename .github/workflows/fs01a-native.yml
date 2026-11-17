@@ -1,0 +1,46 @@
+name: FS-01A disposable native contract
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261116000000_fs01a_menu_category_allergen_contract.sql'
+      - 'supabase/tests/fs01a/**'
+      - 'supabase/baseline/native/fs01a.mjs'
+      - 'supabase/baseline/native/run-fs01a.mjs'
+      - '.github/workflows/fs01a-native.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fs01a-native-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  disposable-fs01a:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      TING_TEST_ISSUE: fs01a
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Run deterministic model classification tests
+        run: node --test tests/fs-01a-allergen-classification.mjs
+      - name: Install pinned native harness dependencies
+        run: npm ci --prefix supabase/baseline/native
+      - name: Reconstruct and exercise FS-01A only in disposable local Supabase
+        run: node supabase/baseline/native/run-fs01a.mjs
+      - name: Report sanitized result
+        if: always()
+        shell: bash
+        run: |
+          if test -f supabase/baseline/native/result.json; then
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            cat supabase/baseline/native/result.json >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi

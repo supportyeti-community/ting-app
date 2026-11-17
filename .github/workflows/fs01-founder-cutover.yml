@@ -1,0 +1,94 @@
+name: FS-01 Founder gated production schema cutover
+on:
+  pull_request:
+    types: [edited]
+permissions:
+  contents: read
+concurrency:
+  group: fs01-founder-prod-schema
+  cancel-in-progress: false
+jobs:
+  founder-approved-cutover:
+    if: ${{ github.event.pull_request.number == 51 && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.repo.full_name == 'supportyeti-community/ting-app' && github.head_ref == 'fs-01a-menu-allergen-contract' && contains(github.event.pull_request.title, '[FS01-FOUNDER-CUTOVER-20261117]') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: fs01-founder-cutover
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      EXPECTED_PROJECT_REF: okrwklulwrfnrhnffbwp
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install pinned CLI
+        run: npm ci --prefix supabase/baseline/native
+      - name: Build exact isolated migration overlay and verify expected forward SQL hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/fs01-stage-migrations.mjs > "$RUNNER_TEMP/fs01-manifest.txt"
+          stage=$(grep '^STAGE_DIR=' "$RUNNER_TEMP/fs01-manifest.txt" | cut -d= -f2-)
+          test -n "$stage"
+          echo "FS01_STAGE=$stage" >> "$GITHUB_ENV"
+          test "$(find "$stage/supabase/migrations" -name '*.sql' -maxdepth 1 | wc -l)" -eq 29
+          echo '197d985951489a98d2f728fb8cb0513c59621881c9d5b3add8a7cd4267960ff0  supabase/migrations/20261116000000_fs01a_menu_category_allergen_contract.sql' | sha256sum -c -
+          echo 'd55c74d4080b1814f24aa10b76a9be93428ccc2fd0eb3ab2709c371563733244  supabase/migrations/20261117000000_fs01b_bulk_menu_draft_import.sql' | sha256sum -c -
+      - name: PRODUCTION — link and independently reconfirm exactly two pending
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN" && test -n "$SUPABASE_DB_PASSWORD"
+          CLI="$GITHUB_WORKSPACE/supabase/baseline/native/node_modules/.bin/supabase"
+          test "$("$CLI" --version)" = '2.117.0'
+          "$CLI" init --yes --workdir "$FS01_STAGE"
+          "$CLI" link --project-ref "$EXPECTED_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD" --workdir "$FS01_STAGE"
+          "$CLI" migration list --linked --workdir "$FS01_STAGE" > "$RUNNER_TEMP/ledger.txt" 2>&1
+          "$CLI" db push --dry-run --linked --skip-vault --workdir "$FS01_STAGE" > "$RUNNER_TEMP/dryrun.txt" 2>&1
+          node --input-type=module -e '
+            import fs from "node:fs"; import assert from "node:assert/strict";
+            const stage=process.env.FS01_STAGE;
+            const manifest=JSON.parse(fs.readFileSync(stage+"/manifest.json","utf8"));
+            const ledger=fs.readFileSync(process.env.RUNNER_TEMP+"/ledger.txt","utf8");
+            const rows=ledger.split(/\r?\n/).filter(s=>/^\s*`?\d{14}`?\s*\|/.test(s));
+            const pairs=rows.map(s=>{const cells=s.split("|").map(c=>c.replaceAll("`","").trim()); return [cells[0],cells[1]||null];});
+            assert.equal(pairs.length,29,"exact ledger size");
+            const applied=new Set(manifest.productionLedgerVersions);
+            for(const [local,remote] of pairs) {
+              if(applied.has(local))assert.equal(remote,local,"remote ledger drift");
+              else assert(["20261116000000","20261117000000"].includes(local)&&remote===null,"unexpected pending migration");
+            }
+            assert.equal(pairs.filter(([l,r])=>r===null).length,2,"exactly two pending");
+            const dry=fs.readFileSync(process.env.RUNNER_TEMP+"/dryrun.txt","utf8");
+            const found=[...new Set((dry.match(/\b20\d{12}_[a-zA-Z0-9_-]+\.sql\b/g)||[]))].sort();
+            assert.deepEqual(found,["20261116000000_fs01a_menu_category_allergen_contract.sql","20261117000000_fs01b_bulk_menu_draft_import.sql"]);
+            assert(/DRY RUN/i.test(dry));
+            console.log("FINAL_PRODUCTION_GATE=PASS exact_forward_count=2");
+          '
+      - name: FOUNDER AUTHORIZED — apply only FS-01A and FS-01B to linked production
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$GITHUB_WORKSPACE/supabase/baseline/native/node_modules/.bin/supabase"
+          "$CLI" db push --linked --skip-vault --yes --workdir "$FS01_STAGE" 2>&1 | tee "$RUNNER_TEMP/apply.txt"
+          grep -q '20261116000000' "$RUNNER_TEMP/apply.txt"
+          grep -q '20261117000000' "$RUNNER_TEMP/apply.txt"
+          echo 'FS01_PRODUCTION_PUSH_EXIT_ZERO=true' >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify remote migration ledger now has both entries
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$GITHUB_WORKSPACE/supabase/baseline/native/node_modules/.bin/supabase"
+          "$CLI" migration list --linked --workdir "$FS01_STAGE" > "$RUNNER_TEMP/post-ledger.txt" 2>&1
+          node --input-type=module -e '
+            import fs from "node:fs"; import assert from "node:assert/strict";
+            const rows=fs.readFileSync(process.env.RUNNER_TEMP+"/post-ledger.txt","utf8").split(/\r?\n/).filter(s=>/^\s*`?\d{14}`?\s*\|/.test(s));
+            const pairs=rows.map(s=>{const c=s.split("|").map(x=>x.replaceAll("`","").trim());return [c[0],c[1]];});
+            assert.equal(pairs.length,29);
+            assert(pairs.every(([l,r])=>l===r),"migration ledger has unmatched versions");
+            console.log("FS01_PRODUCTION_LEDGER_POSTCONDITION=PASS applied=29");
+          '
