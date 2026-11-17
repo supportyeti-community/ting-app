@@ -1,7 +1,7 @@
 name: TinG production database encrypted backup and disposable restore
 on:
   schedule:
-    - cron: '17 16 * * *' # 02:47 Adelaide standard / 03:17 daylight time
+    - cron: '17 16 * * *' # 01:47 Adelaide standard (ACST) / 02:47 daylight (ACDT)
   workflow_dispatch:
     inputs:
       reason:
