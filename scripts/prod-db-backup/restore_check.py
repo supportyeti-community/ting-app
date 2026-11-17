@@ -42,23 +42,23 @@ def dump_counts(filename):
         raise RuntimeError("COPY section missing terminator")
     return counts
 
-def scalar(sql, db_url):
-    if not db_url.startswith("postgresql://127.0.0.1:") and not db_url.startswith("postgresql://localhost:"):
-        raise RuntimeError("Refusing to query non-loopback restore URL")
-    result=subprocess.run(["psql","-X","-q","-t","-A","-v","ON_ERROR_STOP=1","--dbname",db_url,"--command",sql],
+def scalar(sql, container):
+    if not re.fullmatch(r"supabase_db_fs01-backup-restore-[0-9]+",container):
+        raise RuntimeError("Refusing to query any non-disposable container")
+    result=subprocess.run(["docker","exec",container,"psql","-X","-q","-t","-A","-v","ON_ERROR_STOP=1","-U","postgres","-d","postgres","--command",sql],
                           capture_output=True,text=True,timeout=25,check=True)
     return result.stdout.strip()
 
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--data",required=True)
-    parser.add_argument("--db-url",required=True)
+    parser.add_argument("--container",required=True)
     args=parser.parse_args()
     expected=dump_counts(args.data)
     for table in REQUIRED:
         if table not in expected:
             raise RuntimeError("Required COPY table absent: "+table)
-        actual=int(scalar("SELECT count(*) FROM "+table+";",args.db_url))
+        actual=int(scalar("SELECT count(*) FROM "+table+";",args.container))
         if actual!=expected[table]:
             raise RuntimeError("RESTORE_COUNT_MISMATCH "+table+" expected="+str(expected[table])+" actual="+str(actual))
         print("RESTORE_COUNT_MATCH "+table+" "+str(actual))
