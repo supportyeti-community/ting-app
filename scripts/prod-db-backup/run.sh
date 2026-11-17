@@ -2,11 +2,11 @@
 # Founder-approved logical backup: production is NEVER a restore destination.
 set -euo pipefail
 umask 077
-: "\${RUNNER_TEMP:?}"
-: "\${GITHUB_WORKSPACE:?}"
-: "\${GITHUB_RUN_ID:?}"
-: "\${SUPABASE_ACCESS_TOKEN:?}"
-: "\${SUPABASE_DB_PASSWORD:?}"
+: "${RUNNER_TEMP:?}"
+: "${GITHUB_WORKSPACE:?}"
+: "${GITHUB_RUN_ID:?}"
+: "${SUPABASE_ACCESS_TOKEN:?}"
+: "${SUPABASE_DB_PASSWORD:?}"
 TARGET_REF="okrwklulwrfnrhnffbwp"
 CLI="$GITHUB_WORKSPACE/supabase/baseline/native/node_modules/.bin/supabase"
 test "$("$CLI" --version)" = '2.117.0'
@@ -15,8 +15,8 @@ SOURCE="$ROOT/production-link"
 RESTORE="$ROOT/disposable-restore"
 RAW="$ROOT/plaintext"
 OUT="$GITHUB_WORKSPACE/_certified_encrypted_backup"
-PROJECT_ID="fs01-backup-restore-\${GITHUB_RUN_ID}"
-CONTAINER="supabase_db_\${PROJECT_ID}"
+PROJECT_ID="fs01-backup-restore-${GITHUB_RUN_ID}"
+CONTAINER="supabase_db_${PROJECT_ID}"
 mkdir -p "$SOURCE" "$RESTORE" "$RAW" "$OUT"
 chmod 700 "$ROOT" "$SOURCE" "$RESTORE" "$RAW" "$OUT"
 cleanup() {
@@ -52,7 +52,7 @@ for f in roles.sql schema.sql data.sql; do
   test -s "$RAW/$f" || { echo "INCOMPLETE_PRODUCTION_DUMP=$f"; exit 1; }
 done
 for table in 'public.tenants' 'public.menu_items' 'public.menu_categories' 'public.menu_allergen_codes' 'public.menu_item_allergen_reviews' 'public.orders' 'auth.users' 'supabase_migrations.schema_migrations'; do
-  schema="\${table%%.*}"; relation="\${table#*.}"
+  schema="${table%%.*}"; relation="${table#*.}"
   if ! grep -Fq "COPY \"$schema\".\"$relation\" " "$RAW/data.sql"; then
     echo "REQUIRED_TABLE_NOT_EXPORTED=$table"
     exit 1
@@ -112,7 +112,7 @@ echo "DISPOSABLE_CLEANUP=PASS"
     'not_included=storage_files,edge_functions,auth_settings,api_keys,secrets' > MANIFEST.txt
   tar -czf "$ROOT/production-backup.tar.gz" roles.sql schema.sql data.sql SHA256SUMS MANIFEST.txt
 )
-CIPHERTEXT="$OUT/ting-prod-\${GITHUB_RUN_ID}.tar.gz.gpg"
+CIPHERTEXT="$OUT/ting-prod-${GITHUB_RUN_ID}.tar.gz.gpg"
 gpg --batch --yes --pinentry-mode loopback --passphrase-file "$ROOT/secret" \
   --symmetric --cipher-algo AES256 --s2k-digest-algo SHA512 \
   --output "$CIPHERTEXT" "$ROOT/production-backup.tar.gz" >/dev/null 2>&1
