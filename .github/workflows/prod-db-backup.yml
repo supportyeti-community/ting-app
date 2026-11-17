@@ -50,14 +50,16 @@ jobs:
           for f in roles.sql schema.sql data.sql; do test -s "$tmp/$f"; done
           echo "DUMP_BYTES=$(wc -c < "$tmp/data.sql")"
           python3 - "$tmp/data.sql" <<'PY'
-          import pathlib,re,sys,collections
+          import pathlib,sys
           lines=pathlib.Path(sys.argv[1]).read_text(errors='replace').splitlines()
+          copies=[line.lstrip() for line in lines if line.lstrip().upper().startswith('COPY ')]
+          inserts=[line.lstrip() for line in lines if line.lstrip().upper().startswith('INSERT INTO ')]
           print('DATA_LINE_COUNT',len(lines))
-          print('FIRST_LINE_TYPES',[re.match(r'^([A-Za-z\\- ]+)',x).group(1)[:25] if re.match(r'^([A-Za-z\\- ]+)',x) else '<other>' for x in lines[:20]])
-          print('COPY_LINE_COUNT',sum(bool(re.match(r'^\\s*COPY ',x)) for x in lines))
-          print('INSERT_LINE_COUNT',sum(bool(re.match(r'^\\s*INSERT INTO ',x)) for x in lines))
-          print('SAFE_COPY_TABLE_NAMES',sorted({m.group(1) for x in lines if (m:=re.match(r'^\\s*COPY\\s+([A-Za-z0-9_\\.\\"]+)',x))})[:90])
-          print('SAFE_INSERT_TABLE_NAMES',sorted({m.group(1) for x in lines if (m:=re.match(r'^\\s*INSERT INTO\\s+([A-Za-z0-9_\\.\\"]+)',x))})[:90])
+          print('COPY_LINE_COUNT',len(copies))
+          print('INSERT_LINE_COUNT',len(inserts))
+          print('COPY_TABLE_HEADERS',[line.split(' ',2)[1] for line in copies[:90]])
+          print('INSERT_TABLE_HEADERS',[line.split(' ',3)[2] for line in inserts[:90]])
+          print('FIRST_NONEMPTY_LINE_KIND',[line.split(' ',1)[0][:20] for line in lines[:20] if line.strip()])
           PY
           for table in public.tenants public.menu_items public.orders public.menu_allergen_codes public.menu_item_allergen_reviews auth.users supabase_migrations.schema_migrations; do
             if grep -Eq "^COPY (public\\.)?${table#*.} " "$tmp/data.sql" || grep -Fq "COPY $table " "$tmp/data.sql"; then
