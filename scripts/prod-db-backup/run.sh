@@ -115,7 +115,7 @@ PY
   printf '%s\n' 'BEGIN;' 'SET LOCAL session_replication_role = replica;'
   cat "$RAW/data.sql"
   printf '%s\n' 'COMMIT;'
-} | { echo 'DISPOSABLE_RESTORE_PHASE=data'; quiet_psql; }
+} | { echo 'DISPOSABLE_RESTORE_PHASE=data'; quiet_psql supabase_admin; }
 python3 "$GITHUB_WORKSPACE/scripts/prod-db-backup/restore_check.py" --data "$RAW/data.sql" --container "$CONTAINER"
 echo 'PRODUCTION_WRITES=0'
 if ! "$CLI" stop --project-id "$PROJECT_ID" --no-backup --workdir "$RESTORE" >"$ROOT/local-stop.log" 2>&1; then
