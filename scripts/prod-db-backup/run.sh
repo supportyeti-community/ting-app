@@ -86,10 +86,27 @@ quiet_psql() {
   fi
 }
 # Native Supabase supplies platform Auth, Storage, roles and extensions.
-echo 'DISPOSABLE_RESTORE_PHASE=schema'\nquiet_psql < "$RAW/schema.sql"
+echo 'DISPOSABLE_RESTORE_PHASE=schema'
+quiet_psql < "$RAW/schema.sql"
 printf '%s\n' \
   'CREATE SCHEMA IF NOT EXISTS supabase_migrations;' \
   'CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations(version text PRIMARY KEY, statements text[], name text);' | quiet_psql
+# Compare COPY targets with catalog before touching disposable data.
+python3 - "$RAW/data.sql" "$CONTAINER" <<'PY'
+import pathlib,re,subprocess,sys
+sql=pathlib.Path(sys.argv[1]).read_text(encoding='utf-8')
+tables=sorted({m.group(1).replace('"','') for m in re.finditer(r'(?m)^COPY\\s+((?:\"?\\w+\"?\\.)?\"?\\w+\"?)\\s*\\(',sql)})
+missing=[]
+for table in tables:
+    result=subprocess.run(["docker","exec",sys.argv[2],"psql","-X","-q","-t","-A","-U","postgres","-d","postgres","-c","SELECT (to_regclass('"+table+"') IS NOT NULL)::int"],
+      capture_output=True,text=True,check=True)
+    if result.stdout.strip()!="1": missing.append(table)
+print("DISPOSABLE_COPY_TARGET_COUNT="+str(len(tables)))
+if missing:
+    print("DISPOSABLE_SCHEMA_MISSING_TABLES="+",".join(missing))
+    raise SystemExit(1)
+print("DISPOSABLE_ALL_COPY_TARGET_TABLES_PRESENT=PASS")
+PY
 # Disable row-trigger side effects solely within the isolated restore transaction.
 {
   printf '%s\n' 'BEGIN;' 'SET LOCAL session_replication_role = replica;'
