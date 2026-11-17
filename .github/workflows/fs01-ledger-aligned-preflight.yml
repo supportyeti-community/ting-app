@@ -1,0 +1,80 @@
+name: FS-01 production ledger-aligned read-only release gate
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    paths:
+      - scripts/fs01-stage-migrations.mjs
+      - .github/workflows/fs01-ledger-aligned-preflight.yml
+      - supabase/migrations/20261116000000_fs01a_menu_category_allergen_contract.sql
+      - supabase/migrations/20261117000000_fs01b_bulk_menu_draft_import.sql
+permissions:
+  contents: read
+jobs:
+  ledger-aligned-readonly:
+    if: ${{ github.event.pull_request.number == 51 && github.event.pull_request.head.repo.full_name == 'supportyeti-community/ting-app' && github.head_ref == 'fs-01a-menu-allergen-contract' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      EXPECTED_PROJECT_REF: okrwklulwrfnrhnffbwp
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install exact certified Supabase CLI 2.117.0
+        run: npm ci --prefix supabase/baseline/native
+      - name: Build isolated ledger overlay and compare ALL local migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/fs01-stage-migrations.mjs | tee "$RUNNER_TEMP/fs01-stage-report.txt"
+          stage=$(grep '^STAGE_DIR=' "$RUNNER_TEMP/fs01-stage-report.txt" | cut -d= -f2-)
+          test -n "$stage"
+          echo "FS01_STAGE=$stage" >> "$GITHUB_ENV"
+          test "$(find "$stage/supabase/migrations" -maxdepth 1 -name '*.sql' | wc -l)" -eq 29
+      - name: Link temporary overlay to exact production target (read-only ledger reconciliation)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN" && test -n "$SUPABASE_DB_PASSWORD"
+          CLI="$GITHUB_WORKSPACE/supabase/baseline/native/node_modules/.bin/supabase"
+          test "$("$CLI" --version)" = '2.117.0'
+          "$CLI" init --yes --workdir "$FS01_STAGE"
+          "$CLI" link --project-ref "$EXPECTED_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD" --workdir "$FS01_STAGE"
+          "$CLI" migration list --linked --workdir "$FS01_STAGE" 2>&1 | tee "$RUNNER_TEMP/fs01-ledger-aligned-list.txt"
+          node --input-type=module -e '
+            import fs from "node:fs"; import assert from "node:assert/strict";
+            const manifest=JSON.parse(fs.readFileSync(process.env.FS01_STAGE+"/manifest.json","utf8"));
+            const text=fs.readFileSync(process.env.RUNNER_TEMP+"/fs01-ledger-aligned-list.txt","utf8");
+            const rows=text.split(/\r?\n/).map(s=>s.match(/^\s*`?(\d{14})`?\s*\|\s*`?(\d{14})?`?\s*\|/)).filter(Boolean);
+            const pairs=rows.map(r=>[r[1],r[2]||null]);
+            const applied=new Set(manifest.productionLedgerVersions);
+            assert.equal(pairs.length,29,"ledger row count");
+            for(const [local,remote] of pairs){
+              if(applied.has(local))assert.equal(remote,local,"applied version not aligned: "+local);
+              else assert(["20261116000000","20261117000000"].includes(local)&&!remote,"unexpected pending version "+local);
+            }
+            assert.equal(pairs.filter(([l,r])=>!r).length,2,"pending count");
+            console.log("LEDGER_ALIGNMENT=PASS applied=27 pending_exactly_2=true");
+          '
+      - name: Production CLI dry-run (must be precisely two migrations; no DDL)
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$GITHUB_WORKSPACE/supabase/baseline/native/node_modules/.bin/supabase"
+          "$CLI" db push --dry-run --linked --workdir "$FS01_STAGE" 2>&1 | tee "$RUNNER_TEMP/fs01-ledger-aligned-dryrun.txt"
+          node --input-type=module -e '
+            import fs from "node:fs"; import assert from "node:assert/strict";
+            const t=fs.readFileSync(process.env.RUNNER_TEMP+"/fs01-ledger-aligned-dryrun.txt","utf8");
+            const found=[...new Set((t.match(/\b20\d{12}_[a-zA-Z0-9_-]+\.sql\b/g)||[]))].sort();
+            const expected=["20261116000000_fs01a_menu_category_allergen_contract.sql","20261117000000_fs01b_bulk_menu_draft_import.sql"];
+            assert.deepEqual(found,expected,"dry-run must name exactly two expected SQL files");
+            assert(/DRY RUN/i.test(t),"CLI must have run dry-run");
+            console.log("EXACT_FS01_DRY_RUN=PASS count=2 production_writes=0");
+          '
+          echo 'LEDGER_ALIGNED_EXACT_TWO_DRYRUN=PASS' >> "$GITHUB_STEP_SUMMARY"
