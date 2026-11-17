@@ -1,0 +1,8 @@
+# Internal development, database, governance and test material must never ship as Vercel static assets.
+# Keep root index.html, admin.html, runtime *.js, and api/ server functions deployable.
+supabase
+tests
+docs
+.github
+scripts
+*.sql
