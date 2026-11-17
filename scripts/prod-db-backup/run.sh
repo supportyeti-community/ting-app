@@ -88,6 +88,8 @@ quiet_psql() {
 # Native Supabase supplies platform Auth, Storage, roles and extensions.
 echo 'DISPOSABLE_RESTORE_PHASE=schema'
 quiet_psql < "$RAW/schema.sql"
+echo "DISPOSABLE_AUTH_COMPATIBILITY=creating_only_missing_managed_auth_tables"
+quiet_psql < "$GITHUB_WORKSPACE/scripts/prod-db-backup/auth_compat_disposable.sql"
 printf '%s\n' \
   'CREATE SCHEMA IF NOT EXISTS supabase_migrations;' \
   'CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations(version text PRIMARY KEY, statements text[], name text);' | quiet_psql
