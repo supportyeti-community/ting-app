@@ -48,8 +48,10 @@ jobs:
           "$cli" db dump --linked --file "$tmp/schema.sql" --workdir "$tmp"
           "$cli" db dump --linked --data-only --use-copy --schema public,auth,supabase_migrations --file "$tmp/data.sql" --workdir "$tmp"
           for f in roles.sql schema.sql data.sql; do test -s "$tmp/$f"; done
+          echo "DUMP_BYTES=$(wc -c < "$tmp/data.sql")"
+          grep '^COPY ' "$tmp/data.sql" | sed -E 's/^(COPY [^ ]+).*/\\1/' | sort -u | head -80 || true
           for table in public.tenants public.menu_items public.orders public.menu_allergen_codes public.menu_item_allergen_reviews auth.users supabase_migrations.schema_migrations; do
-            if grep -Eq "^COPY ${table//./\\.} " "$tmp/data.sql"; then
+            if grep -Eq "^COPY (public\\.)?${table#*.} " "$tmp/data.sql" || grep -Fq "COPY $table " "$tmp/data.sql"; then
               echo "DUMP_COPY_PRESENT=$table"
             else
               echo "DUMP_COPY_MISSING=$table"
