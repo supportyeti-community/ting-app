@@ -92,40 +92,4 @@ jobs:
             echo '```' >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  founder-production-readonly-preflight:
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 51 && github.event.pull_request.head.repo.full_name == 'supportyeti-community/ting-app' && github.head_ref == 'fs-01a-menu-allergen-contract' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-      EXPECTED_PROJECT_REF: okrwklulwrfnrhnffbwp
-    steps:
-      - name: Checkout exact candidate commit; never persist GitHub token
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
-      - name: Set up pinned Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: '24'
-      - name: Install pinned Supabase CLI
-        run: npm ci --prefix supabase/baseline/native
-      - name: Linked production ledger and dry-run ONLY (no production writes)
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "$SUPABASE_ACCESS_TOKEN"
-          test -n "$SUPABASE_DB_PASSWORD"
-          CLI="$GITHUB_WORKSPACE/supabase/baseline/native/node_modules/.bin/supabase"
-          test "$("$CLI" --version)" = '2.117.0'
-          "$CLI" link --project-ref "$EXPECTED_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
-          echo 'Linked production migration ledger (read-only)'
-          "$CLI" migration list --linked 2>&1 | tee "$RUNNER_TEMP/fs01-production-list.txt"
-          echo 'Production db push --dry-run --linked only'
-          "$CLI" db push --dry-run --linked 2>&1 | tee "$RUNNER_TEMP/fs01-production-dryrun.txt"
-          grep -q '20261116000000' "$RUNNER_TEMP/fs01-production-dryrun.txt"
-          grep -q '20261117000000' "$RUNNER_TEMP/fs01-production-dryrun.txt"
-          echo 'Both expected migrations present in dry-run; manual exact-only reconciliation required before any write.'
-          echo 'PRODUCTION_PREFLIGHT_COMMANDS_COMPLETED=true' >> "$GITHUB_STEP_SUMMARY"
+# Production ledger-aligned read-only preflight is exclusively in fs01-ledger-aligned-preflight.yml.
