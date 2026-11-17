@@ -1,72 +1,92 @@
-name: TinG production database encrypted backup and restore certification
+name: TinG production database encrypted backup and disposable restore
 on:
   schedule:
-    - cron: '17 16 * * *' # 02:47 ACDT, 01:47 ACST
+    - cron: '17 16 * * *' # 02:47 Adelaide standard / 03:17 daylight time
   workflow_dispatch:
+    inputs:
+      reason:
+        description: "Nightly, pre-release, or emergency snapshot reason"
+        required: false
+        default: "pre-release"
+        type: string
+  push:
+    branches: ['main']
+    paths: ['.github/workflows/prod-db-backup.yml']
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, reopened, synchronize]
     paths:
       - '.github/workflows/prod-db-backup.yml'
       - 'scripts/prod-db-backup/**'
 permissions:
   contents: read
 concurrency:
-  group: ting-prod-db-backup
+  group: ting-prod-db-backup-${{ github.event_name == 'pull_request' && 'pr' || 'main' }}
   cancel-in-progress: false
 jobs:
-  backup-restore:
-    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == 'supportyeti-community/ting-app' && github.head_ref == 'ops/prod-db-backup') }}
+  first-run-dispatch:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    permissions:
+      actions: write
+      contents: read
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
+    timeout-minutes: 3
+    steps:
+      - name: Launch initial workflow_dispatch after merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl -fsS --retry 3 --max-time 30 -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/supportyeti-community/ting-app/actions/workflows/prod-db-backup.yml/dispatches \
+            -d '{"ref":"main","inputs":{"reason":"founder-first-production-backup"}}'
+          echo "INITIAL_BACKUP_DISPATCH=REQUESTED"
+  backup-and-disposable-restore:
+    if: ${{ github.event_name != 'push' && (github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == 'supportyeti-community/ting-app' && github.head_ref == 'ops/prod-db-backup')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-      EXPECTED_PROJECT_REF: okrwklulwrfnrhnffbwp
+      TING_BACKUP_PASSPHRASE: ${{ secrets.TING_BACKUP_PASSPHRASE }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Trusted repository checkout without persisting credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - name: Use Node.js 24 for pinned Supabase CLI
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
-      - name: Install pinned Supabase 2.117.0
+      - name: Install exact Supabase CLI 2.117.0 from lockfile
         run: npm ci --prefix supabase/baseline/native
-      - name: Test read-only capture boundaries (no artifacts until certified)
+      - name: Capture read-only, restore into disposable PG 17.6, encrypt and verify
         shell: bash
         run: |
           set -euo pipefail
-          test -n "$SUPABASE_ACCESS_TOKEN" && test -n "$SUPABASE_DB_PASSWORD"
-          cli="$GITHUB_WORKSPACE/supabase/baseline/native/node_modules/.bin/supabase"
-          test "$("$cli" --version)" = 2.117.0
-          umask 077
-          tmp="$(mktemp -d)"
-          trap 'rm -rf "$tmp"' EXIT
-          "$cli" init --yes --workdir "$tmp"
-          "$cli" link --project-ref "$EXPECTED_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD" --workdir "$tmp"
-          export PGOPTIONS='-c default_transaction_read_only=on'
-          "$cli" db dump --linked --role-only --file "$tmp/roles.sql" --workdir "$tmp"
-          "$cli" db dump --linked --file "$tmp/schema.sql" --workdir "$tmp"
-          "$cli" db dump --linked --data-only --use-copy --schema public,auth,supabase_migrations --file "$tmp/data.sql" --workdir "$tmp"
-          for f in roles.sql schema.sql data.sql; do test -s "$tmp/$f"; done
-          echo "DUMP_BYTES=$(wc -c < "$tmp/data.sql")"
-          python3 - "$tmp/data.sql" <<'PY'
-          import pathlib,sys
-          lines=pathlib.Path(sys.argv[1]).read_text(errors='replace').splitlines()
-          copies=[line.lstrip() for line in lines if line.lstrip().upper().startswith('COPY ')]
-          inserts=[line.lstrip() for line in lines if line.lstrip().upper().startswith('INSERT INTO ')]
-          print('DATA_LINE_COUNT',len(lines))
-          print('COPY_LINE_COUNT',len(copies))
-          print('INSERT_LINE_COUNT',len(inserts))
-          print('COPY_TABLE_HEADERS',[line.split(' ',2)[1] for line in copies[:90]])
-          print('INSERT_TABLE_HEADERS',[line.split(' ',3)[2] for line in inserts[:90]])
-          print('FIRST_NONEMPTY_LINE_KIND',[line.split(' ',1)[0][:20] for line in lines[:20] if line.strip()])
-          PY
-          for table in public.tenants public.menu_items public.orders public.menu_allergen_codes public.menu_item_allergen_reviews auth.users supabase_migrations.schema_migrations; do
-            if grep -Eq "^COPY (public\\.)?${table#*.} " "$tmp/data.sql" || grep -Fq "COPY $table " "$tmp/data.sql"; then
-              echo "DUMP_COPY_PRESENT=$table"
-            else
-              echo "DUMP_COPY_MISSING=$table"
-              exit 1
-            fi
-          done
-          echo 'Read-only multi-schema data capture includes Auth and the 29-version ledger'
+          bash scripts/prod-db-backup/run.sh | tee "$RUNNER_TEMP/prod-db-backup-sanitized-report.txt"
+          grep -Fxq 'ENCRYPTED_BACKUP_READY=PASS' "$RUNNER_TEMP/prod-db-backup-sanitized-report.txt"
+          grep -q 'DISPOSABLE_RESTORE_CERTIFICATION=PASS' "$RUNNER_TEMP/prod-db-backup-sanitized-report.txt"
+          grep -Fxq 'PRODUCTION_WRITES=0' "$RUNNER_TEMP/prod-db-backup-sanitized-report.txt"
+          echo 'Production database encrypted backup and disposable restore PASS:' >> "$GITHUB_STEP_SUMMARY"
+          cat "$RUNNER_TEMP/prod-db-backup-sanitized-report.txt" >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish ONLY verified AES256 ciphertext (never raw SQL)
+        if: ${{ success() && github.event_name != 'pull_request' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ting-production-db-encrypted-${{ github.run_id }}
+          path: _certified_encrypted_backup/*.tar.gz.gpg
+          retention-days: 30
+          if-no-files-found: error
+          compression-level: 0
+      - name: Verify no plaintext backup artifact paths are present
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          test ! -e backup.sql
+          test ! -e data.sql
+          test ! -e schema.sql
+          test ! -e roles.sql
+          echo 'NO_PLAINTEXT_BACKUP_IN_WORKSPACE=PASS'
