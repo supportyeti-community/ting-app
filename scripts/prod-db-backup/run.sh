@@ -109,6 +109,23 @@ if missing:
     print("DISPOSABLE_SCHEMA_MISSING_TABLES="+",".join(missing))
     raise SystemExit(1)
 print("DISPOSABLE_ALL_COPY_TARGET_TABLES_PRESENT=PASS")
+missing_columns=[]
+for line in sql.splitlines():
+    if not line.startswith("COPY "): continue
+    m=re.match(r'^COPY\s+((?:\"?\w+\"?\.)?\"?\w+\"?)\s*\(([^)]*)\)\s+FROM stdin;',line)
+    if not m: raise RuntimeError("Unrecognized COPY header; fail closed")
+    table=m.group(1).replace('"','')
+    cols=[x.strip().replace('"','') for x in m.group(2).split(',')]
+    result=subprocess.run(["docker","exec",sys.argv[2],"psql","-X","-q","-t","-A","-U","postgres","-d","postgres","-c",
+        "SELECT attname FROM pg_attribute WHERE attrelid=to_regclass('"+table+"') AND attnum>0 AND NOT attisdropped"],
+        capture_output=True,text=True,check=True)
+    actual=set(result.stdout.splitlines())
+    missing_columns.extend(table+"."+col for col in cols if col not in actual)
+print("DISPOSABLE_COPY_COLUMN_DIFF_COUNT="+str(len(missing_columns)))
+if missing_columns:
+    print("DISPOSABLE_SCHEMA_MISSING_COLUMNS="+",".join(missing_columns))
+    raise SystemExit(1)
+print("DISPOSABLE_ALL_COPY_COLUMNS_PRESENT=PASS")
 PY
 # Disable row-trigger side effects solely within the isolated restore transaction.
 {
