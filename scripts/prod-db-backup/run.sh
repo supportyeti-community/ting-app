@@ -79,7 +79,8 @@ version="$(docker exec "$CONTAINER" psql -X -At -U postgres -d postgres -c 'SHOW
 [[ "$version" == 17.6* ]] || { echo "LOCAL_POSTGRES_VERSION_UNEXPECTED"; exit 1; }
 echo "DISPOSABLE_NATIVE_POSTGRES_VERSION=$version"
 quiet_psql() {
-  if ! docker exec -i "$CONTAINER" psql -X -q -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -U postgres -d postgres >"$ROOT/private-psql.log" 2>&1; then
+  local db_role="${1:-postgres}"
+  if ! docker exec -i "$CONTAINER" psql -X -q -v ON_ERROR_STOP=1 -v VERBOSITY=sqlstate -U "$db_role" -d postgres >"$ROOT/private-psql.log" 2>&1; then
     code="$(sed -nE 's/.*ERROR:[[:space:]]*([0-9A-Z]{5})([^0-9A-Z]|$).*/\1/p' "$ROOT/private-psql.log" | head -1 || true)"
     echo "DISPOSABLE_RESTORE_SQL_FAILED sqlstate=${code:-unknown} (private logs withheld)"
     exit 1
@@ -89,7 +90,7 @@ quiet_psql() {
 echo 'DISPOSABLE_RESTORE_PHASE=schema'
 quiet_psql < "$RAW/schema.sql"
 echo "DISPOSABLE_AUTH_COMPATIBILITY=creating_only_missing_managed_auth_tables"
-quiet_psql < "$GITHUB_WORKSPACE/scripts/prod-db-backup/auth_compat_disposable.sql"
+quiet_psql supabase_admin < "$GITHUB_WORKSPACE/scripts/prod-db-backup/auth_compat_disposable.sql"
 printf '%s\n' \
   'CREATE SCHEMA IF NOT EXISTS supabase_migrations;' \
   'CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations(version text PRIMARY KEY, statements text[], name text);' | quiet_psql
