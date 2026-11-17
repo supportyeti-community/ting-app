@@ -93,9 +93,9 @@ echo "DISPOSABLE_AUTH_COMPATIBILITY=creating_only_missing_managed_auth_tables"
 quiet_psql supabase_admin < "$GITHUB_WORKSPACE/scripts/prod-db-backup/auth_compat_disposable.sql"
 printf '%s\n' \
   'CREATE SCHEMA IF NOT EXISTS supabase_migrations;' \
-  'CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations(version text PRIMARY KEY, statements text[], name text);'
-  'ALTER TABLE supabase_migrations.schema_migrations ADD COLUMN IF NOT EXISTS created_by text;' \\
-  'ALTER TABLE supabase_migrations.schema_migrations ADD COLUMN IF NOT EXISTS idempotency_key text;' \\
+  'CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations(version text PRIMARY KEY, statements text[], name text);' \
+  'ALTER TABLE supabase_migrations.schema_migrations ADD COLUMN IF NOT EXISTS created_by text;' \
+  'ALTER TABLE supabase_migrations.schema_migrations ADD COLUMN IF NOT EXISTS idempotency_key text;' \
   'ALTER TABLE supabase_migrations.schema_migrations ADD COLUMN IF NOT EXISTS rollback text[];' | quiet_psql
 # Compare COPY targets with catalog before touching disposable data.
 python3 - "$RAW/data.sql" "$CONTAINER" <<'PY'
