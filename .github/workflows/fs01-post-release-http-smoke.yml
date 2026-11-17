@@ -1,0 +1,35 @@
+name: FS-01 post-release public HTTP smoke (read-only)
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths: ['.github/workflows/fs01-post-release-http-smoke.yml']
+permissions:
+  contents: read
+jobs:
+  production-http-read-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Verify public runtime assets and private source denial without posting data
+        shell: bash
+        run: |
+          set -euo pipefail
+          origin='https://ting.supportyeti.com'
+          tmp=$(mktemp -d)
+          trap 'rm -rf "$tmp"' EXIT
+          for f in / /index.html /admin.html /fs01b-menu-import.js /fs01b-allergen-review.js /fs01b-category-editor.js /fs01b-guest-allergy.js /ting11b-cart.js; do
+            status=$(curl -L -sS --retry 2 --max-time 25 -o "$tmp/body" -w '%{http_code}' "$origin$f")
+            printf 'RUNTIME %s HTTP %s\n' "$f" "$status"
+            test "$status" = 200
+            test -s "$tmp/body"
+          done
+          for f in /supabase/migrations/20261116000000_fs01a_menu_category_allergen_contract.sql /supabase/migrations/20261117000000_fs01b_bulk_menu_draft_import.sql /supabase/baseline/native/fs01b.mjs /tests/fs-01a-allergen-classification.mjs /docs/FS01-ledger-aligned-production-cutover.md; do
+            status=$(curl -L -sS --retry 2 --max-time 25 -o "$tmp/body" -w '%{http_code}' "$origin$f")
+            printf 'INTERNAL %s HTTP %s\n' "$f" "$status"
+            if test "$status" = 200; then
+              echo "FAIL internal URL unexpectedly served HTTP 200: $f"
+              exit 1
+            fi
+            test "$status" = 403 -o "$status" = 404 -o "$status" = 410
+          done
+          echo 'FS01_LIVE_HTTP_SMOKE=PASS (read-only)'
