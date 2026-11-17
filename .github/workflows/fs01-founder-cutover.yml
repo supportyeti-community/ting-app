@@ -48,7 +48,7 @@ jobs:
           "$CLI" init --yes --workdir "$FS01_STAGE"
           "$CLI" link --project-ref "$EXPECTED_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD" --workdir "$FS01_STAGE"
           "$CLI" migration list --linked --workdir "$FS01_STAGE" > "$RUNNER_TEMP/ledger.txt" 2>&1
-          "$CLI" db push --dry-run --linked --workdir "$FS01_STAGE" > "$RUNNER_TEMP/dryrun.txt" 2>&1
+          "$CLI" db push --dry-run --linked --skip-vault --workdir "$FS01_STAGE" > "$RUNNER_TEMP/dryrun.txt" 2>&1
           node --input-type=module -e '
             import fs from "node:fs"; import assert from "node:assert/strict";
             const stage=process.env.FS01_STAGE;
@@ -74,7 +74,7 @@ jobs:
         run: |
           set -euo pipefail
           CLI="$GITHUB_WORKSPACE/supabase/baseline/native/node_modules/.bin/supabase"
-          "$CLI" db push --linked --yes --workdir "$FS01_STAGE" 2>&1 | tee "$RUNNER_TEMP/apply.txt"
+          "$CLI" db push --linked --skip-vault --yes --workdir "$FS01_STAGE" 2>&1 | tee "$RUNNER_TEMP/apply.txt"
           grep -q '20261116000000' "$RUNNER_TEMP/apply.txt"
           grep -q '20261117000000' "$RUNNER_TEMP/apply.txt"
           echo 'FS01_PRODUCTION_PUSH_EXIT_ZERO=true' >> "$GITHUB_STEP_SUMMARY"
