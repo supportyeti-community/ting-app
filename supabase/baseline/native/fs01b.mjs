@@ -116,6 +116,55 @@ export async function rehearseFs01b(db,status,report,command,workdir){
   assert((await db.query('SELECT verified_version FROM public.menu_item_allergen_reviews WHERE menu_item_id=$1',[first])).rows[0].verified_version===null);
   await denied(owner.rpc('verify_menu_item_allergens',{p_item_id:first,p_expected_version:1}),'verify unassessed dish');
   pass('Imported dish requires FS-01A complete structured assessment and authorised verification');
+  // Emergency global Guest-ordering kill-switch: exact observed overloads, transactional REVOKE, ROLLBACK.
+  // Disposable database only. No production DDL, no lasting privilege changes.
+  const orderSignatures=(await db.query(`
+    SELECT p.oid, p.oid::regprocedure::text AS signature
+    FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+    WHERE n.nspname='public' AND p.proname='submit_order'
+    ORDER BY p.oid::regprocedure::text`)).rows;
+  assert(orderSignatures.length>0,'submit_order signature missing');
+  const grantBefore=(await db.query(`
+    SELECT p.oid::regprocedure::text AS signature,
+      has_function_privilege('anon',p.oid,'EXECUTE') AS anon_execute,
+      has_function_privilege('authenticated',p.oid,'EXECUTE') AS auth_execute,
+      p.proacl::text AS acl
+    FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+    WHERE n.nspname='public' AND p.proname='submit_order'
+    ORDER BY p.oid::regprocedure::text`)).rows;
+  assert(grantBefore.some(r=>r.anon_execute),'expected guest order execute permission was absent before emergency halt');
+  const rehearsalSql=`BEGIN;
+    DO $halt$
+    DECLARE f record; n integer:=0;
+    BEGIN
+      FOR f IN SELECT p.oid::regprocedure AS signature
+        FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace
+        WHERE s.nspname='public' AND p.proname='submit_order' LOOP
+        EXECUTE format('REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon, authenticated',f.signature);
+        n:=n+1;
+      END LOOP;
+      IF n=0 THEN RAISE EXCEPTION 'no submit_order signatures'; END IF;
+      IF EXISTS (
+        SELECT 1 FROM pg_proc p JOIN pg_namespace s ON s.oid=p.pronamespace
+        WHERE s.nspname='public' AND p.proname='submit_order'
+          AND (has_function_privilege('anon',p.oid,'EXECUTE')
+           OR has_function_privilege('authenticated',p.oid,'EXECUTE'))
+      ) THEN RAISE EXCEPTION 'ordering permission remained after kill switch'; END IF;
+    END $halt$;
+    ROLLBACK;`;
+  await db.query(rehearsalSql);
+  const grantAfter=(await db.query(`
+    SELECT p.oid::regprocedure::text AS signature,
+      has_function_privilege('anon',p.oid,'EXECUTE') AS anon_execute,
+      has_function_privilege('authenticated',p.oid,'EXECUTE') AS auth_execute,
+      p.proacl::text AS acl
+    FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+    WHERE n.nspname='public' AND p.proname='submit_order'
+    ORDER BY p.oid::regprocedure::text`)).rows;
+  assert.deepEqual(grantAfter,grantBefore,'rollback failed to restore exact preexisting function grants');
+  assert.deepEqual((await db.query('SELECT id,subtotal,total,status FROM public.orders ORDER BY id')).rows,beforeOrders,'emergency halt changed old orders');
+  pass('Emergency global submit_order kill-switch: all discovered overloads denied for anon/authenticated, exact ACL restored by rollback, historical orders unchanged');
+
   await rehearseFs01bBrowser({db,status,owner,email:o.email,password,report});
  }finally{await Promise.allSettled([svc.removeAllChannels(),owner.removeAllChannels(),floor.removeAllChannels(),outsider.removeAllChannels(),wrongRoute.removeAllChannels(),anonymous.removeAllChannels()]);}
 }
